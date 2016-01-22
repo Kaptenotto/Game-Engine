@@ -7,7 +7,7 @@
 using namespace std;
 int main()
 {
-	string objFile("testing.obj"), special;
+	string objFile("test.obj"), special;
 	string nextLine;
 	string slashes;
 	ifstream file(objFile);

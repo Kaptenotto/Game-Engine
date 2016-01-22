@@ -149,6 +149,7 @@
     <ClCompile Include="OBJ-main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Object Include="test.obj" />
     <Object Include="testing.obj" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
