@@ -3,9 +3,10 @@
 
 #include <d3d11.h>
 #include <d3dcompiler.h>
-#include <DirectXMath.h>
+//#include <DirectXMath.h>
 
 #include <string>
+#include "Structs.h"
 using namespace DirectX;
 
 #pragma comment (lib, "d3d11.lib")
@@ -41,11 +42,6 @@ XMVECTOR upVector = { 0, 1, 0 };
 ID3D11Buffer* gVertexBuffer = nullptr;
 ID3D11Buffer* gConstantBuffer = nullptr;
 
-struct MatrixBuffer {
-	XMMATRIX World;
-	XMMATRIX View;
-	XMMATRIX Projection;
-};
 MatrixBuffer matrices;
 
 void CreateShaders()
@@ -129,12 +125,6 @@ void CreateShaders()
 
 void CreateTriangle()
 {
-	struct TriangleVertex
-	{
-		float x, y, z;
-		float r, g, b;
-	};
-
 	TriangleVertex triangleVertices[3] =
 	{
 		0.0f, 0.5f, 0.0f,	//v0 pos
