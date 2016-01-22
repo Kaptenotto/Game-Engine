@@ -70,7 +70,7 @@ int main()
 		}
 		else if (nextLine.substr(0, 2) == "f ")
 		{
-			inputString >> special >> idx.face_pos >> ;
+		
 		}
 	}
 
