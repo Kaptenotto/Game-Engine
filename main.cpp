@@ -1,9 +1,11 @@
+
 #include <windows.h>
 
 #include <d3d11.h>
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
 
+#include <string>
 using namespace DirectX;
 
 #pragma comment (lib, "d3d11.lib")
