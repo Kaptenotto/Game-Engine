@@ -9,6 +9,7 @@ int main()
 {
 	string objFile("testing.obj"), special;
 	string nextLine;
+	string slashes;
 	ifstream file(objFile);
 	istringstream inputString;
 
@@ -21,6 +22,7 @@ int main()
 	{
 		float u, v;
 	};
+
 	struct NormDir 
 	{
 		float nx, ny, nz;
@@ -70,7 +72,11 @@ int main()
 		}
 		else if (nextLine.substr(0, 2) == "f ")
 		{
+			inputString >> special >> idx.face_pos.push_back >> slashes >> idx.face_tex >> slashes >> idx.face_norm >> 
+				idx.face_pos.push_back >> slashes >> idx.face_tex >> slashes >> idx.face_norm >> 
+				idx.face_pos.push_back >> slashes >> idx.face_tex >> slashes >> idx.face_norm;
 			
+			face_idxs.push_back(idx);
 		}
 	}
 
