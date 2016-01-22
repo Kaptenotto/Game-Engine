@@ -12,43 +12,54 @@ using namespace DirectX;
 #pragma comment (lib, "d3dcompiler.lib")
 
 HWND InitWindow(HINSTANCE hInstance);
+
 // message procedure, HWND = handle to window.
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
-
 HRESULT CreateDirect3DContext(HWND wndHandle);
-
 IDXGISwapChain* gSwapChain = nullptr;
+
+// DEVICE **********************************************************
 ID3D11Device* gDevice = nullptr;
 ID3D11DeviceContext* gDeviceContext = nullptr;
-ID3D11RenderTargetView* gBackBufferRTV = nullptr;
-
-
-ID3D11Texture2D* gBackBuffer = nullptr;
+// INITIALIZE LAYOUTS **********************************************
 ID3D11InputLayout* gVertexLayout = nullptr;
-
+ID3D11InputLayout* gVertexLayout2 = nullptr;
+ // INITIALIZE SHADERS *********************************************
 ID3D11VertexShader* gVertexShader = nullptr;
-ID3D11PixelShader* gPixelShader = nullptr;
-ID3D11GeometryShader* gGeometryShader = nullptr;
+ID3D11VertexShader* gVertexShader2 = nullptr;
 
+ID3D11PixelShader* gPixelShader = nullptr;
+
+ID3D11GeometryShader* gGeometryShader = nullptr;
+//INITIALIZE VECTORS ***********************************************
 XMVECTOR cameraPosVector = { 0, 0, -2};
 XMVECTOR lookAtVector = { 0, 0, 0 };
 XMVECTOR upVector = { 0, 1, 0 };
-
-
-//MyWindow myWindow;
-
+// INITIALIZE BUFFERS ***********************************************
 ID3D11Buffer* gVertexBuffer = nullptr;
+ID3D11Buffer* gVertexBuffer2 = nullptr;
+
 ID3D11Buffer* gConstantBuffer = nullptr;
 
+ID3D11Texture2D* gBackBuffer = nullptr;
+
+ID3D11RenderTargetView* gBackBufferRTV = nullptr;
+
+// INITIALIZE STRUCTS ***********************************************
 struct MatrixBuffer {
 	XMMATRIX World;
 	XMMATRIX View;
 	XMMATRIX Projection;
 };
 MatrixBuffer matrices;
+// FUNCTIONS********************************************************
 
 void CreateShaders()
 {
+	D3D11_INPUT_ELEMENT_DESC inputDesc[] = {
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+};
 	//Create the vertex shader
 
 	ID3DBlob* pVS = nullptr;
@@ -66,11 +77,25 @@ void CreateShaders()
 
 	HRESULT Hr = gDevice->CreateVertexShader(pVS->GetBufferPointer(), pVS->GetBufferSize(), nullptr, &gVertexShader);
 
-	D3D11_INPUT_ELEMENT_DESC inputDesc[] = {
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
+	ID3DBlob* pVS2 = nullptr;
+	D3DCompileFromFile(
+		L"VertexShader2.hlsl",	//Name of file
+		nullptr,
+		nullptr,
+		"VS_main",				// Name of main in file
+		"vs_4_0",
+		0,
+		0,
+		&pVS2,
+		nullptr
+		);
+
+	HRESULT hr = gDevice->CreateVertexShader(pVS2->GetBufferPointer(), pVS2->GetBufferSize(), nullptr, &gVertexShader2);
+
+	//Create an input-layout to describe the input buffer data for the input-assembler stage
 	gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), pVS->GetBufferPointer(), pVS->GetBufferSize(), &gVertexLayout);
+	gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), pVS2->GetBufferPointer(), pVS2->GetBufferSize(), &gVertexLayout2);
+
 	//Do not need the com object anymore therefor releasing it
 	pVS->Release();
 
@@ -141,6 +166,37 @@ void CreateTriangle()
 	HRESULT hr = gDevice->CreateBuffer(&bufferDesc, &data, &gVertexBuffer);
 }
 
+void createTriangle2()
+{
+	struct TriangleVertex2
+	{
+		float x, y, z;
+		float r, g, b;
+	};
+
+	TriangleVertex2 triangleVertices2[3] =
+	{
+		1.0f, 0.5f, 0.0f,	//v0 pos
+		1.0f, 0.0f, 0.0f,	//v0 color
+
+		0.5f, -0.5f, 0.0f,	//v1
+		1.0f, 0.0f, 0.0f,	//v1 color
+
+		-0.5f, -0.5f, 0.0f, //v2
+		1.0f, 0.0f, 0.0f	//v2 color
+	};
+
+	D3D11_BUFFER_DESC bufferdesc2;
+	memset(&bufferdesc2, 0, sizeof(D3D11_BUFFER_DESC));
+	bufferdesc2.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	bufferdesc2.Usage = D3D11_USAGE_DEFAULT;
+	bufferdesc2.ByteWidth = sizeof(triangleVertices2);
+
+	D3D11_SUBRESOURCE_DATA data2;
+	data2.pSysMem = triangleVertices2;
+	HRESULT hr = gDevice->CreateBuffer(&bufferdesc2, &data2, &gVertexBuffer2);
+}
+
 void ConstantBuffer()
 {
 	matrices.View = XMMatrixLookAtLH((cameraPosVector), (lookAtVector),(upVector));
@@ -204,6 +260,7 @@ void Render()
 	gDeviceContext->ClearRenderTargetView(gBackBufferRTV, clearColor);
 
 	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
+	gDeviceContext->VSSetShader(gVertexShader2, nullptr, 0);
 	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
@@ -212,6 +269,11 @@ void Render()
 	UINT32 vertexSize = sizeof(float)* 6;
 	UINT32 offset = 0;
 	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &vertexSize, &offset);
+
+	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	gDeviceContext->IASetInputLayout(gVertexLayout);
+
+	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer2, &vertexSize, &offset);
 
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	gDeviceContext->IASetInputLayout(gVertexLayout);
@@ -238,6 +300,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		ConstantBuffer();
 
 		CreateTriangle();
+		
+		createTriangle2();
 
 		//Shows the window
 		ShowWindow(wndHandle, nCmdShow);
