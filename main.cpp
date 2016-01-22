@@ -3,9 +3,11 @@
 
 #include <d3d11.h>
 #include <d3dcompiler.h>
-#include <DirectXMath.h>
+//#include <DirectXMath.h>
 
 #include <string>
+#include "Structs.h"
+
 using namespace DirectX;
 
 #pragma comment (lib, "d3d11.lib")
@@ -25,8 +27,10 @@ ID3D11RenderTargetView* gBackBufferRTV = nullptr;
 
 ID3D11Texture2D* gBackBuffer = nullptr;
 ID3D11InputLayout* gVertexLayout = nullptr;
+ID3D11InputLayout* gVertexLayoutShader = nullptr;
 
 ID3D11VertexShader* gVertexShader = nullptr;
+ID3D11VertexShader* gVertexShadowShader = nullptr;
 ID3D11PixelShader* gPixelShader = nullptr;
 ID3D11GeometryShader* gGeometryShader = nullptr;
 
@@ -40,11 +44,6 @@ XMVECTOR upVector = { 0, 1, 0 };
 ID3D11Buffer* gVertexBuffer = nullptr;
 ID3D11Buffer* gConstantBuffer = nullptr;
 
-struct MatrixBuffer {
-	XMMATRIX World;
-	XMMATRIX View;
-	XMMATRIX Projection;
-};
 MatrixBuffer matrices;
 
 void CreateShaders()
@@ -108,16 +107,36 @@ void CreateShaders()
 		);
 	gDevice->CreateGeometryShader(pGS->GetBufferPointer(), pGS->GetBufferSize(), nullptr, &gGeometryShader);
 	pGS->Release();
+
+	//Create VertexShadow shader
+
+	ID3DBlob* pVSShadow = nullptr;
+	D3DCompileFromFile(
+		L"VertexShadow.hlsl",	//name of file
+		nullptr,			//optional macros
+		nullptr,			// optional include files
+		"VSShadow_main",			// Entry point
+		"ps_4_0",			// Shader model target
+		0,					//shader compile options
+		0,					// Effect compile options
+		&pVSShadow,				//double pointer to ID3DBlob
+		nullptr				// point for error blob messages
+		);
+	Hr = gDevice->CreateVertexShader(pVSShadow->GetBufferPointer(), pVSShadow->GetBufferSize(), nullptr, &gVertexShadowShader);
+
+	D3D11_INPUT_ELEMENT_DESC inputDescShadow[] = {
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 18, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 30, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	};
+
+	gDevice->CreateInputLayout(inputDescShadow, ARRAYSIZE(inputDescShadow), pVSShadow->GetBufferPointer(), pVSShadow->GetBufferSize(), &gVertexLayoutShader);
+	pVSShadow->Release();
 }
 
 void CreateTriangle()
 {
-	struct TriangleVertex
-	{
-		float x, y, z;
-		float r, g, b;
-	};
-
 	TriangleVertex triangleVertices[3] =
 	{
 		0.0f, 0.5f, 0.0f,	//v0 pos
