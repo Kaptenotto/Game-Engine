@@ -30,9 +30,8 @@ int main()
 
 	struct Indexes
 	{
-		vector<float> face_pos;
-		vector<float> face_tex;
-		vector<float> face_norm;
+		vector<float> face_pos, face_tex, face_norm;
+		float temp_face_pos, temp_face_tex, temp_face_norm;
 	};
 
 	vector<VertexPos> vertices;
@@ -70,14 +69,24 @@ int main()
 			inputString >> special >> norm.nx >> norm.ny >> norm.nz;
 			normals.push_back(norm);
 		}
-		else if (nextLine.substr(0, 2) == "f ")
-		{
-			inputString >> special >> idx.face_pos.push_back >> slashes >> idx.face_tex >> slashes >> idx.face_norm >> 
-				idx.face_pos.push_back >> slashes >> idx.face_tex >> slashes >> idx.face_norm >> 
-				idx.face_pos.push_back >> slashes >> idx.face_tex >> slashes >> idx.face_norm;
-			
-			face_idxs.push_back(idx);
-		}
+		//else if (nextLine.substr(0, 2) == "f ")
+		//{
+		//	inputString >> special >> idx.temp_face_pos >> idx.temp_face_tex >> idx.temp_face_norm;
+		//	idx.face_pos.push_back(idx.temp_face_pos);
+		//	idx.face_tex.push_back(idx.temp_face_tex);
+		//	idx.face_norm.push_back(idx.temp_face_norm);
+		//	/*inputString >> special >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
+		//	idx.face_pos.push_back(idx.temp_face_pos);
+		//	idx.face_tex.push_back(idx.temp_face_tex);
+		//	idx.face_norm.push_back(idx.temp_face_norm);
+		//	inputString >> special >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
+		//	idx.face_pos.push_back(idx.temp_face_pos);
+		//	idx.face_tex.push_back(idx.temp_face_tex);
+		//	idx.face_norm.push_back(idx.temp_face_norm);*/
+
+		//	
+		//	face_idxs.push_back(idx);
+		//}
 	}
 
 	for (int i = 0; i < vertices.size(); i++)
