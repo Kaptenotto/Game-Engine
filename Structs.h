@@ -11,8 +11,9 @@ struct TriangleVertex
 	float x, y, z;
 	float r, g, b;
 };
-struct ShaderMatrixBuffer {
+struct LightMatrixBuffer {
 	DirectX::XMMATRIX LightView;
 	DirectX::XMMATRIX LightProjection;
 };
+
 #endif
