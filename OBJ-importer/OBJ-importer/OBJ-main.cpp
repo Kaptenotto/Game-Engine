@@ -7,11 +7,12 @@
 using namespace std;
 int main()
 {
-	string objFile("test.obj"), special;
+	string objFile("cube.obj"), special;
 	string nextLine;
-	string slashes;
+	char slashes;
 	ifstream file(objFile);
 	istringstream inputString;
+	int counter = 0;
 
 	struct VertexPos 
 	{ 
@@ -69,27 +70,38 @@ int main()
 			inputString >> special >> norm.nx >> norm.ny >> norm.nz;
 			normals.push_back(norm);
 		}
-		//else if (nextLine.substr(0, 2) == "f ")
-		//{
-		//	inputString >> special >> idx.temp_face_pos >> idx.temp_face_tex >> idx.temp_face_norm;
-		//	idx.face_pos.push_back(idx.temp_face_pos);
-		//	idx.face_tex.push_back(idx.temp_face_tex);
-		//	idx.face_norm.push_back(idx.temp_face_norm);
-		//	/*inputString >> special >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
-		//	idx.face_pos.push_back(idx.temp_face_pos);
-		//	idx.face_tex.push_back(idx.temp_face_tex);
-		//	idx.face_norm.push_back(idx.temp_face_norm);
-		//	inputString >> special >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
-		//	idx.face_pos.push_back(idx.temp_face_pos);
-		//	idx.face_tex.push_back(idx.temp_face_tex);
-		//	idx.face_norm.push_back(idx.temp_face_norm);*/
+		else if (nextLine.substr(0, 2) == "f ")
+		{
+			inputString >> special >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
+			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex <<  "/" << idx.temp_face_norm << " ";
+			idx.face_pos.push_back(idx.temp_face_pos);
+			idx.face_tex.push_back(idx.temp_face_tex);
+			idx.face_norm.push_back(idx.temp_face_norm);
+			
+			inputString >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
+			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex << "/" << idx.temp_face_norm << " ";
+			idx.face_pos.push_back(idx.temp_face_pos);
+			idx.face_tex.push_back(idx.temp_face_tex);
+			idx.face_norm.push_back(idx.temp_face_norm);
+			
+			inputString >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
+			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex << "/" << idx.temp_face_norm << " ";
+			idx.face_pos.push_back(idx.temp_face_pos);
+			idx.face_tex.push_back(idx.temp_face_tex);
+			idx.face_norm.push_back(idx.temp_face_norm);
 
-		//	
-		//	face_idxs.push_back(idx);
-		//}
+			inputString >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
+			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex << "/" << idx.temp_face_norm << "\n";
+			idx.face_pos.push_back(idx.temp_face_pos);
+			idx.face_tex.push_back(idx.temp_face_tex);
+			idx.face_norm.push_back(idx.temp_face_norm);
+
+			
+			face_idxs.push_back(idx);
+		}
 	}
 
-	for (int i = 0; i < vertices.size(); i++)
+	/*for (int i = 0; i < vertices.size(); i++)
 	{
 		cout << "x: " << vertices[i].x << " ";
 		cout << "y: " << vertices[i].y << " ";
@@ -107,7 +119,22 @@ int main()
 		cout << "nx: " << normals[i].nx << " ";
 		cout << "ny: " << normals[i].ny << " ";
 		cout << "nz: " << normals[i].nz << "\n";
+	}*/
+
+	for (int i = 0; i < face_idxs.size(); i++)
+	{
+		for (int j = 0; j < face_idxs[i].face_pos.size(); j++)
+		{
+			cout << face_idxs[i].face_pos[j] << "/" << face_idxs[i].face_tex[j] << "/" << face_idxs[i].face_norm[j] << " ";
+			counter++;
+			if (counter == 4)
+			{
+				cout << "\n";
+				counter = 0;
+			}
+		}
 	}
+
 
 	cin.ignore();
 
