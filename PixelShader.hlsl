@@ -6,6 +6,11 @@ cbuffer lightBuffer
 	float4 diffuseColor;
 	float3 lightDirection;
 };
+cbuffer lightBuffer2
+{
+	float3 lightPosition;
+	float padding;
+};
 
 struct PS_IN
 {
@@ -13,8 +18,8 @@ struct PS_IN
 	float2 tex : TEXCOORD0;
 	float3 normal : NORMAL;
 	float3 tangent : TANGENT;
-	float3 binormal : BINORMAL;
-
+	float4 lightViewPosition : TEXCOORD1;
+	float3 lightPos : TEXCOORD2;
 };
 
 
@@ -22,6 +27,7 @@ float4 main() : SV_TARGET
 {
 	//return float4(1.0f, 1.0f, 1.0f, 1.0f);
 
+<<<<<<< HEAD
 	float4 textureColor;
 	float4 bumpMap;
 	float3 bumpNormal;
@@ -43,4 +49,7 @@ float4 main() : SV_TARGET
 	color = color*textureColor;
 
 	return color;
+=======
+
+>>>>>>> origin/Normal/texture-Map
 }

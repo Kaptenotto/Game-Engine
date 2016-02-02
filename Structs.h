@@ -15,5 +15,16 @@ struct LightMatrixBuffer {
 	DirectX::XMMATRIX LightView;
 	DirectX::XMMATRIX LightProjection;
 };
+struct LightBufferType
+{
+	DirectX::XMVECTOR ambientColor;
+	DirectX::XMVECTOR diffuseColor;
+};
+
+struct LightBufferType2
+{
+	DirectX::XMVECTOR lightPosition;
+	float padding;
+};
 
 #endif

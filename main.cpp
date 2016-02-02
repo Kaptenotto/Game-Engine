@@ -35,6 +35,13 @@ ID3D11PixelShader* gPixelShader = nullptr;
 ID3D11GeometryShader* gGeometryShader = nullptr;
 ID3D11GeometryShader* gGeoShaderNormal = nullptr;
 
+ID3D11SamplerState* m_sampleStateWrap;
+
+ID3D11SamplerState* m_sampleStateClamp;
+ID3D11Buffer* m_matrixBuffer;
+ID3D11Buffer* m_lightBuffer;
+ID3D11Buffer* m_lightBuffer2;
+
 XMVECTOR cameraPosVector = { 0, 0, -2};
 XMVECTOR lookAtVector = { 0, 0, 0 };
 XMVECTOR upVector = { 0, 1, 0 };
@@ -117,8 +124,10 @@ void CreateShaders()
 
 	D3D11_INPUT_ELEMENT_DESC inputDesc[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 12, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 2, DXGI_FORMAT_R32G32_FLOAT, 0, 28, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 	gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), pVSShadow->GetBufferPointer(), pVSShadow->GetBufferSize(), &gVertexLayout);
 	//Do not need the com object anymore therefor releasing it
@@ -263,6 +272,8 @@ void Render()
 	gDeviceContext->ClearRenderTargetView(gBackBufferRTV, clearColor);
 
 	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
+	//gDeviceContext->VSSetShader(gVertexNormal, nullptr, 0);
+	//gDeviceContext->VSSetShader(gVertexShadow, nullptr, 0);
 	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
