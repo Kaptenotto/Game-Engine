@@ -14,6 +14,8 @@ int main()
 	istringstream inputString;
 	int index_counter = 0;
 	int counter = 0;
+	string tmp_grp;
+	string tmp_shadeGroup;
 
 	struct VertexPos 
 	{ 
@@ -40,7 +42,9 @@ int main()
 	vector<TexCoord> uvs;
 	vector<NormDir> normals;
 	vector<Indexes> face_idxs;
-	
+	vector<string> groups;
+	vector<string> shadingGroups;
+	string mtlFileName;
 	VertexPos vtx;
 	TexCoord tex;
 	NormDir norm;
@@ -149,12 +153,36 @@ int main()
 			index_counter++;
 
 
-			
-			
-			
+		}
+		else if (nextLine.substr(0, 2) == "g ")
+		{
+			inputString >> special >> tmp_grp;
+			if (tmp_grp != "default")
+			{
+				groups.push_back(tmp_grp);
+				//cout << tmp_grp << "\n";
+			}
 			
 			
 		}
+		else if (nextLine.substr(0, 7) == "mtllib ")
+		{
+			inputString >> special >> mtlFileName;
+		}
+		else if(nextLine.substr(0,7) == "usemtl ")
+		{
+			inputString >> special >> tmp_shadeGroup;
+			shadingGroups.push_back(tmp_shadeGroup);
+			cout << tmp_shadeGroup;
+		}
+
+	}
+	ifstream mtlFile(mtlFileName);
+	while (std::getline(mtlFile, nextLine))
+	{
+		inputString.clear();
+		inputString.str(nextLine);
+
 	}
 
 	/*for (int i = 0; i < vertices.size(); i++)
@@ -194,7 +222,7 @@ int main()
 	}*/
 
 
-	//cin.ignore();
+	cin.ignore();
 
 
 	file.close();
