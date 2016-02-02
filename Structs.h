@@ -5,6 +5,8 @@ struct MatrixBuffer {
 	DirectX::XMMATRIX World;
 	DirectX::XMMATRIX View;
 	DirectX::XMMATRIX Projection;
+	DirectX::XMMATRIX lightView;
+	DirectX::XMMATRIX lightProjection;
 };
 struct TriangleVertex
 {
