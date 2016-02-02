@@ -22,4 +22,25 @@ float4 main() : SV_TARGET
 {
 	//return float4(1.0f, 1.0f, 1.0f, 1.0f);
 
+	float4 textureColor;
+	float4 bumpMap;
+	float3 bumpNormal;
+	float3 lightDir;
+	float lightIntesity;
+	float4 color;
+
+	textureColor = shaderTextures[0].Sample(SampleType, input.tex);
+	bumpMap = shaderTextures[1].Sample(Sampletype, input.tex);
+	bumpMa = (bumpMap * 2.0f) - 1.0f;
+
+	bumpNormal = (bumpMap.x *input.tangent) + (bumpMap.y * input.binormal) + (bumpMap.z*input.Normal);
+
+	bumpNormal = normalize(bumpNormal);
+
+	lightDir = -lightDirection;
+	lightIntesity = saturate(dot(bumpNormal, lightDir));
+	color = saturate(diffuseColor*lightIntensity);
+	color = color*textureColor;
+
+	return color;
 }

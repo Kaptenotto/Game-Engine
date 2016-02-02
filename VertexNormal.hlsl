@@ -12,7 +12,7 @@ struct VSNormal_IN
 	float2 tex : TEXCOORD0;
 	float3 normal : NORMAL;
 	float3 tangent : TANGENT;
-	float3 binormal : BINORMAL;
+	//float3 binormal : BINORMAL;
 
 };
 
@@ -22,7 +22,7 @@ struct VSNormal_OUT
 	float2 tex : TEXCOORD0;
 	float3 normal : NORMAL;
 	float3 tangent : TANGENT;
-	float3 binormal : BINORMAL;
+	//float3 binormal : BINORMAL;
 };
 
 VSNormal_OUT VSNormal_main(VSNormal_IN input)
@@ -31,9 +31,9 @@ VSNormal_OUT VSNormal_main(VSNormal_IN input)
 
 	VSNormal_OUT output = (VSNormal_OUT)0;
 
-	
-	output.position = float4(input.position, 1);
-
+	output.position = mul(input.position, worldMatrix);
+	output.position = mul(output.position, viewMatrix);
+	output.position = mul(output.position, projectionMatrix);
 
 	output.tex = input.tex;
 
@@ -45,7 +45,7 @@ VSNormal_OUT VSNormal_main(VSNormal_IN input)
 
 	output.binormal = mul(input.binormal, (float3x3)worldMatrix);
 	output.binormal = normalize(output.binormal);
-
+	output.position = float4(input.position, 1);
 
 
 	return output;
