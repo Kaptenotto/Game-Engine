@@ -131,28 +131,28 @@ void createTriangle()
 	TriangleVertex2 triangleVertices[] =
 	{
 		-1.0f,-1.0f,-1.0f,
-		0,   0,   0,
+		1.0f,   1.0f,   1.0f,
 
 		-1.0f,+1.0f,-1.0f,
-		0,   0,   1 
+		1.0f,   0.0f,   0.0f,
 
-		+1.0f,+1.0f,-1.0f,
-		0,   1,   0,
+		+ 1.0f,+1.0f,-1.0f,
+		1.0f,   0.0f,   0.0f,
 
 		+1.0f,-1.0f,-1.0f,
-		0,   1,   1,
+		1.0f,   0.0f,   0.0f,
 
 		-1.0f,-1.0f,+1.0f,
-		1,   0,   0,
-		
+		1.0f,   1.0f,   1.0f,
+
 		-1.0f,+1.0f,+1.0f,
-		1,   0,   1,
+		1.0f,   0.0f,   0.0f,
 
 		+1.0f,+1.0f,+1.0f,
-		1,   1,   0,
+		1.0f,   1.0f,   1.0f,
 
 		+1.0f,-1.0f,+1.0f,
-		1,   1,   1,
+		1.0f,   0.0f,   0.0f,
 
 	};
 
@@ -293,7 +293,7 @@ void Render()
 
 	float clearColor[] = { 0, 0, 0, 1 };
 	gDeviceContext->ClearRenderTargetView(gBackBufferRTV, clearColor);
-	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 
 	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
