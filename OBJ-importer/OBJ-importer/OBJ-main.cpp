@@ -16,21 +16,19 @@ int main()
 	int index_counter = 0;
 	int counter = 0;
 	int objCounter = 0;
-	string tmp_grp;
-	string tmp_shadeGroup;
-	string tmp_mtlShadeGroup;
+	
 
-	struct VertexPos 
-	{ 
+	struct VertexPos
+	{
 		float x, y, z;
 	};
 
-	struct TexCoord 
+	struct TexCoord
 	{
 		float u, v;
 	};
 
-	struct NormDir 
+	struct NormDir
 	{
 		float nx, ny, nz;
 	};
@@ -41,25 +39,53 @@ int main()
 		float temp_face_pos, temp_face_tex, temp_face_norm;
 	};
 
-	struct DiffCoord
+	struct DiffColor
 	{
 		float r, g, b;
 	};
+
+	struct AmbientColor
+	{
+		float r, g, b;
+	};
+	struct SpecularColor
+	{
+		float r, g, b;
+	};
+	struct TransparencyRGB
+	{
+		float r, g, b;
+	};
+
+
 
 	vector<VertexPos> vertices;
 	vector<TexCoord> uvs;
 	vector<NormDir> normals;
 	vector<Indexes> face_idxs;
-	vector<DiffCoord> diffuse;
+	vector<DiffColor> diffuses;
+	vector<AmbientColor> ambients;
+	vector<SpecularColor> speculars;
+	vector<TransparencyRGB> transes;
 	vector<string> groups;
 	vector<string> shadingGroups;
 	vector<string> mtlShadingGroups;
+	vector<string> textureMap;
+	vector<string> normalMap;
 	
 	VertexPos tmp_vtx;
 	TexCoord tmp_tex;
 	NormDir tmp_norm;
 	Indexes idx;
-	DiffCoord tmp_diff;
+	string tmp_grp;
+	string tmp_shadeGroup;
+	string tmp_mtlShadeGroup;
+	DiffColor tmp_diff;
+	AmbientColor tmp_ambient;
+	SpecularColor tmp_specular;
+	TransparencyRGB tmp_trans;
+	string tmp_texMap;
+	string tmp_normMap;
 
 	while (std::getline(file, nextLine))
 	{
@@ -215,7 +241,43 @@ int main()
 
 			//cout << tmp_diff.r << " ###### " << tmp_diff.g << " ###### " << tmp_diff.b << " ###### ";
 
-			diffuse.push_back(tmp_diff);
+			diffuses.push_back(tmp_diff);
+		}
+		else if (nextLine.substr(0,3) == "Ka ")
+		{
+			inputString >> special >> tmp_ambient.r >> tmp_ambient.g >> tmp_ambient.b;
+
+			//cout << tmp_ambient.r << " ###### " << tmp_ambient.g << " ###### " << tmp_ambient.b << " ###### ";
+
+			ambients.push_back(tmp_ambient);
+		}
+		else if (nextLine.substr(0, 3) == "Ks ")
+		{
+			inputString >> special >> tmp_specular.r >> tmp_specular.g >> tmp_specular.b;
+
+			//cout << tmp_ambient.r << " ###### " << tmp_ambient.g << " ###### " << tmp_ambient.b << " ###### ";
+
+			speculars.push_back(tmp_specular);
+		}
+
+		//Transparency
+		else if (nextLine.substr(0, 3) == "Tf ")
+		{
+			inputString >> special >> tmp_trans.r >> tmp_trans.g >> tmp_trans.b;
+
+			transes.push_back(tmp_trans);
+		}
+		else if (nextLine.substr(0,7) == "map_Kd ")
+		{
+			inputString >> special >> tmp_texMap;
+
+			textureMap.push_back(tmp_texMap);
+		}
+		else if (nextLine.substr(0, 5) == "bump ")
+		{
+			inputString >> special >> tmp_normMap;
+
+			normalMap.push_back(tmp_normMap);
 		}
 
 	}
