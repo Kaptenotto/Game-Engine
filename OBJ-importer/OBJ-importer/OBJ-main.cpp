@@ -53,8 +53,13 @@ int main()
 		
 		if (nextLine.substr(0, 2) == "v ")
 		{
+			// Reading Vertex Positions from the file
+			// and adding them to a temporary variable
 			inputString >> special >> vtx.x >> vtx.y >> vtx.z;
+
+			// Adding the vertex positions to a vector
 			vertices.push_back(vtx);
+
 			/*cout << special << "\n";
 			cout << vtx.x << " ";
 			cout << vtx.y << " ";
@@ -63,56 +68,87 @@ int main()
 
 		else if (nextLine.substr(0, 3) == "vt ")
 		{
+			//Reading UV-Values
 			inputString >> special >> tex.u >> tex.v;
+			//Adding UV-Values to a Vector
 			uvs.push_back(tex);
 		}
 		else if (nextLine.substr(0, 3) == "vn ")
 		{
+			//Reading normals
 			inputString >> special >> norm.nx >> norm.ny >> norm.nz;
+
+			//Adding Normals to a Vector
 			normals.push_back(norm);
 		}
 		else if (nextLine.substr(0, 2) == "f ")
 		{
-			
+			//Reading the first Face-Index (*i/j/k* i/j/k i/j/k)
 			inputString >> special >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
 			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex <<  "/" << idx.temp_face_norm << " ";
+
+			//Clearing the temporairy Vectors they are put in
 			idx.face_pos.clear();
 			idx.face_tex.clear();
 			idx.face_norm.clear();
+
+			//Adding the values to their temporairy Vectors
 			idx.face_pos.push_back(idx.temp_face_pos);
 			idx.face_tex.push_back(idx.temp_face_tex);
 			idx.face_norm.push_back(idx.temp_face_norm);
+
+			//Pushing the temporairy vectors to the final vector
 			face_idxs.push_back(idx);
+
+			//How many indexes there are
 			index_counter++;
 
-
 			
+
+			//Reading the second Face-Index (i/j/k *i/j/k* i/j/k)
 			inputString >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
 			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex << "/" << idx.temp_face_norm << " ";
+
+			//Clearing the temporairy Vectors they are put in
 			idx.face_pos.clear();
 			idx.face_tex.clear();
 			idx.face_norm.clear();
+
+			//Adding the values to their temporairy Vectors
 			idx.face_pos.push_back(idx.temp_face_pos);
 			idx.face_tex.push_back(idx.temp_face_tex);
 			idx.face_norm.push_back(idx.temp_face_norm);
+
+			//Pushing the temporairy vectors to the final vector
 			face_idxs.push_back(idx);
+
+			//How many indexes there are
 			index_counter++;
 
 
 			
-			
+			//Reading the third Face-Index (i/j/k i/j/k *i/j/k*)
 			inputString >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
 			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex << "/" << idx.temp_face_norm << "\n";
+
+			//Clearing the temporairy Vectors they are put in
 			idx.face_pos.clear();
 			idx.face_tex.clear();
 			idx.face_norm.clear();
+
+			//Adding the values to their temporairy Vectors
 			idx.face_pos.push_back(idx.temp_face_pos);
 			idx.face_tex.push_back(idx.temp_face_tex);
 			idx.face_norm.push_back(idx.temp_face_norm);
+
+			//Pushing the temporairy vectors to the final vector
+			face_idxs.push_back(idx);
+
+			//How many indexes there are
 			index_counter++;
 
 
-			face_idxs.push_back(idx);
+			
 			
 			
 			
