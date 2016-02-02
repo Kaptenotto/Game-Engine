@@ -35,5 +35,13 @@
     <FxCompile Include="VertexNormal.hlsl">
       <Filter>Source Files</Filter>
     </FxCompile>
+    <FxCompile Include="VertexShadow.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Structs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

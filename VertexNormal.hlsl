@@ -6,7 +6,7 @@ cbuffer MatrixBuffer
 
 };
 
-struct VS_IN
+struct VSNormal_IN
 {
 	float4 position : POSITION;
 	float2 tex : TEXCOORD0;
@@ -16,7 +16,7 @@ struct VS_IN
 
 };
 
-struct VS_OUT
+struct VSNormal_OUT
 {
 	float4 position : SV_POSITION;
 	float2 tex : TEXCOORD0;
@@ -25,11 +25,11 @@ struct VS_OUT
 	float3 binormal : BINORMAL;
 };
 
-VS_OUT VS_main(VS_IN input)
+VSNormal_OUT VSNormal_main(VSNormal_IN input)
 {
 
 
-	VS_OUT output = (VS_OUT)0;
+	VSNormal_OUT output = (VSNormal_OUT)0;
 
 	
 	output.position = float4(input.position, 1);
