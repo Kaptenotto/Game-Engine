@@ -136,6 +136,7 @@ int main()
 			idx.face_tex.clear();
 			idx.face_norm.clear();
 
+
 			//Adding the values to their temporairy Vectors
 			idx.face_pos.push_back(idx.temp_face_pos);
 			idx.face_tex.push_back(idx.temp_face_tex);
