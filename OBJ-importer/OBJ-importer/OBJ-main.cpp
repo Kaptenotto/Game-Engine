@@ -157,6 +157,8 @@ int main()
 		else if (nextLine.substr(0, 2) == "g ")
 		{
 			inputString >> special >> tmp_grp;
+
+			// If the group we found are the default group, skip it!
 			if (tmp_grp != "default")
 			{
 				groups.push_back(tmp_grp);
@@ -167,6 +169,8 @@ int main()
 		}
 		else if (nextLine.substr(0, 7) == "mtllib ")
 		{
+			//Eftersom det bara finns en mtl fil per ".obj" så
+			//räcker det med att läsa in ett filnamn.
 			inputString >> special >> mtlFileName;
 		}
 		else if(nextLine.substr(0,7) == "usemtl ")
