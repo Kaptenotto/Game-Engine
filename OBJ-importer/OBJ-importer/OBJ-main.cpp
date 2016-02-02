@@ -173,7 +173,7 @@ int main()
 		{
 			inputString >> special >> tmp_shadeGroup;
 			shadingGroups.push_back(tmp_shadeGroup);
-			cout << tmp_shadeGroup;
+			//cout << tmp_shadeGroup;
 		}
 
 	}
