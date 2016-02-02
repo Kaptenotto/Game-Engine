@@ -20,9 +20,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Fragment.hlsl">
-      <Filter>Source Files</Filter>
-    </FxCompile>
     <FxCompile Include="Vertex.hlsl">
       <Filter>Source Files</Filter>
     </FxCompile>
@@ -36,6 +33,9 @@
       <Filter>Source Files</Filter>
     </FxCompile>
     <FxCompile Include="VertexShadow.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
+    <FxCompile Include="Fragment.hlsl">
       <Filter>Source Files</Filter>
     </FxCompile>
   </ItemGroup>

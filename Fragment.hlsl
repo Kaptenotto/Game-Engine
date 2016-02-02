@@ -20,7 +20,6 @@ struct PS_IN
 
 struct PS_OUT
 {
-	float bias;
 	float4 pos : SV_POSITION;
 	float3 Color : COLOR;
 	float3 normal : NORMAL;

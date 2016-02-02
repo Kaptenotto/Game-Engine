@@ -230,6 +230,8 @@ void ConstantBuffer()
 	HRESULT hr = gDevice->CreateBuffer(&desc, &data, &gConstantBuffer); // Creating a buffer in this case constantbuffer.
 
 	gDeviceContext->GSSetConstantBuffers(0, 1, &gConstantBuffer); //Setting the constant buffer to the geometry shader.
+
+	//lägg till två nya matriser mit ze codings
 }
 
 void SetViewport()
