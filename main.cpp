@@ -51,6 +51,13 @@ struct MatrixBuffer {
 	XMMATRIX Projection;
 };
 MatrixBuffer matrices;
+
+struct TriangleVertex2
+{
+	float x, y, z;
+	float r, g, b;
+};
+
 // FUNCTIONS********************************************************
 
 void CreateShaders()
@@ -120,11 +127,6 @@ void CreateShaders()
 
 void createTriangle()
 {
-	struct TriangleVertex2
-	{
-		float x, y, z;
-		float r, g, b;
-	};
 
 	TriangleVertex2 triangleVertices[] =
 	{
@@ -134,7 +136,7 @@ void createTriangle()
 		-1.0f,+1.0f,-1.0f,
 		0,   0,   1 
 
-		+ 1.0f,+1.0f,-1.0f,
+		+1.0f,+1.0f,-1.0f,
 		0,   1,   0,
 
 		+1.0f,-1.0f,-1.0f,
@@ -157,8 +159,10 @@ void createTriangle()
 	D3D11_BUFFER_DESC bufferdesc;
 	memset(&bufferdesc, 0, sizeof(bufferdesc));
 	bufferdesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	bufferdesc.Usage = D3D11_USAGE_DEFAULT;
-	bufferdesc.ByteWidth = sizeof(triangleVertices) * 8;
+	bufferdesc.Usage = D3D11_USAGE_IMMUTABLE;
+	bufferdesc.ByteWidth = sizeof(TriangleVertex2) * 8;
+	bufferdesc.MiscFlags = 0;
+	bufferdesc.StructureByteStride = 0;
 
 	D3D11_SUBRESOURCE_DATA data;
 	data.pSysMem = triangleVertices;
@@ -289,7 +293,7 @@ void Render()
 
 	float clearColor[] = { 0, 0, 0, 1 };
 	gDeviceContext->ClearRenderTargetView(gBackBufferRTV, clearColor);
-	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 
 	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
@@ -298,16 +302,16 @@ void Render()
 	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShader, nullptr, 0);
 
-	UINT32 vertexSize = sizeof(float)* 6;
+	UINT32 vertexSize = sizeof(TriangleVertex2);
 	UINT32 offset = 0;
 
 	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &vertexSize, &offset);
-	gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R16_UINT , 0); // sets the index buffer
+	gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT , 0); // sets the index buffer
 
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	gDeviceContext->IASetInputLayout(gVertexLayout);
 
-	gDeviceContext->Draw(8, 0);
+	gDeviceContext->DrawIndexed(36,0,0);
 }
 
 // handle of instance                      commandline		 how the window is shown
