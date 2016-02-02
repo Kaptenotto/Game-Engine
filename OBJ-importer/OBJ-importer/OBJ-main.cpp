@@ -157,7 +157,7 @@ int main()
 		}
 	}
 
-	for (int i = 0; i < vertices.size(); i++)
+	/*for (int i = 0; i < vertices.size(); i++)
 	{
 		cout << "x: " << vertices[i].x << " ";
 		cout << "y: " << vertices[i].y << " ";
@@ -191,10 +191,10 @@ int main()
 				counter = 0;
 			}
 		}
-	}
+	}*/
 
 
-	cin.ignore();
+	//cin.ignore();
 
 
 	file.close();
