@@ -8,14 +8,17 @@ using namespace std;
 int main()
 {
 	string objFile("cube.obj"), special;
+	string mtlFileName;
 	string nextLine;
 	char slashes;
 	ifstream file(objFile);
 	istringstream inputString;
 	int index_counter = 0;
 	int counter = 0;
+	int objCounter = 0;
 	string tmp_grp;
 	string tmp_shadeGroup;
+	string tmp_mtlShadeGroup;
 
 	struct VertexPos 
 	{ 
@@ -38,17 +41,25 @@ int main()
 		float temp_face_pos, temp_face_tex, temp_face_norm;
 	};
 
+	struct DiffCoord
+	{
+		float r, g, b;
+	};
+
 	vector<VertexPos> vertices;
 	vector<TexCoord> uvs;
 	vector<NormDir> normals;
 	vector<Indexes> face_idxs;
+	vector<DiffCoord> diffuse;
 	vector<string> groups;
 	vector<string> shadingGroups;
-	string mtlFileName;
-	VertexPos vtx;
-	TexCoord tex;
-	NormDir norm;
+	vector<string> mtlShadingGroups;
+	
+	VertexPos tmp_vtx;
+	TexCoord tmp_tex;
+	NormDir tmp_norm;
 	Indexes idx;
+	DiffCoord tmp_diff;
 
 	while (std::getline(file, nextLine))
 	{
@@ -59,10 +70,10 @@ int main()
 		{
 			// Reading Vertex Positions from the file
 			// and adding them to a temporary variable
-			inputString >> special >> vtx.x >> vtx.y >> vtx.z;
+			inputString >> special >> tmp_vtx.x >> tmp_vtx.y >> tmp_vtx.z;
 
 			// Adding the vertex positions to a vector
-			vertices.push_back(vtx);
+			vertices.push_back(tmp_vtx);
 
 			/*cout << special << "\n";
 			cout << vtx.x << " ";
@@ -73,17 +84,17 @@ int main()
 		else if (nextLine.substr(0, 3) == "vt ")
 		{
 			//Reading UV-Values
-			inputString >> special >> tex.u >> tex.v;
+			inputString >> special >> tmp_tex.u >> tmp_tex.v;
 			//Adding UV-Values to a Vector
-			uvs.push_back(tex);
+			uvs.push_back(tmp_tex);
 		}
 		else if (nextLine.substr(0, 3) == "vn ")
 		{
 			//Reading normals
-			inputString >> special >> norm.nx >> norm.ny >> norm.nz;
+			inputString >> special >> tmp_norm.nx >> tmp_norm.ny >> tmp_norm.nz;
 
 			//Adding Normals to a Vector
-			normals.push_back(norm);
+			normals.push_back(tmp_norm);
 		}
 		else if (nextLine.substr(0, 2) == "f ")
 		{
@@ -162,6 +173,7 @@ int main()
 			if (tmp_grp != "default")
 			{
 				groups.push_back(tmp_grp);
+				objCounter++;
 				//cout << tmp_grp << "\n";
 			}
 			
@@ -175,17 +187,36 @@ int main()
 		}
 		else if(nextLine.substr(0,7) == "usemtl ")
 		{
+			//Reading shader group
 			inputString >> special >> tmp_shadeGroup;
+
+			//pushing the found shader group to a Vector
 			shadingGroups.push_back(tmp_shadeGroup);
 			//cout << tmp_shadeGroup;
 		}
 
 	}
+
 	ifstream mtlFile(mtlFileName);
 	while (std::getline(mtlFile, nextLine))
 	{
 		inputString.clear();
 		inputString.str(nextLine);
+
+		if (nextLine.substr(0, 7) == "newmtl ")
+		{
+			inputString >> special >> tmp_mtlShadeGroup;
+
+			mtlShadingGroups.push_back(tmp_mtlShadeGroup);
+		}
+		else if (nextLine.substr(0, 3) == "Kd ")
+		{
+			inputString >> special >> tmp_diff.r >> tmp_diff.g >> tmp_diff.b;
+
+			//cout << tmp_diff.r << " ###### " << tmp_diff.g << " ###### " << tmp_diff.b << " ###### ";
+
+			diffuse.push_back(tmp_diff);
+		}
 
 	}
 
