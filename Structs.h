@@ -5,8 +5,6 @@ struct MatrixBuffer {
 	DirectX::XMMATRIX World;
 	DirectX::XMMATRIX View;
 	DirectX::XMMATRIX Projection;
-	DirectX::XMMATRIX lightView;
-	DirectX::XMMATRIX lightProjection;
 };
 struct TriangleVertex
 {
@@ -16,6 +14,17 @@ struct TriangleVertex
 struct LightMatrixBuffer {
 	DirectX::XMMATRIX LightView;
 	DirectX::XMMATRIX LightProjection;
+};
+struct LightBufferType
+{
+	DirectX::XMVECTOR ambientColor;
+	DirectX::XMVECTOR diffuseColor;
+};
+
+struct LightBufferType2
+{
+	DirectX::XMVECTOR lightPosition;
+	float padding;
 };
 
 #endif
