@@ -73,31 +73,46 @@ int main()
 		else if (nextLine.substr(0, 2) == "f ")
 		{
 			inputString >> special >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
-			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex <<  "/" << idx.temp_face_norm << " ";
-			idx.face_pos.push_back(idx.temp_face_pos);
-			idx.face_tex.push_back(idx.temp_face_tex);
-			idx.face_norm.push_back(idx.temp_face_norm);
-			
-			inputString >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
-			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex << "/" << idx.temp_face_norm << " ";
-			idx.face_pos.push_back(idx.temp_face_pos);
-			idx.face_tex.push_back(idx.temp_face_tex);
-			idx.face_norm.push_back(idx.temp_face_norm);
-			
-			inputString >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
-			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex << "/" << idx.temp_face_norm << " ";
+			cout << idx.temp_face_pos << "/" << idx.temp_face_tex <<  "/" << idx.temp_face_norm << " ";
+			idx.face_pos.clear();
+			idx.face_tex.clear();
+			idx.face_norm.clear();
 			idx.face_pos.push_back(idx.temp_face_pos);
 			idx.face_tex.push_back(idx.temp_face_tex);
 			idx.face_norm.push_back(idx.temp_face_norm);
 
-			inputString >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
-			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex << "/" << idx.temp_face_norm << "\n";
-			idx.face_pos.push_back(idx.temp_face_pos);
-			idx.face_tex.push_back(idx.temp_face_tex);
-			idx.face_norm.push_back(idx.temp_face_norm);
 
 			
 			face_idxs.push_back(idx);
+			idx.face_pos.clear();
+			idx.face_tex.clear();
+			idx.face_norm.clear();
+			inputString >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
+			cout << idx.temp_face_pos << "/" << idx.temp_face_tex << "/" << idx.temp_face_norm << " ";
+			idx.face_pos.push_back(idx.temp_face_pos);
+			idx.face_tex.push_back(idx.temp_face_tex);
+			idx.face_norm.push_back(idx.temp_face_norm);
+
+
+
+			face_idxs.push_back(idx);
+			idx.face_pos.clear();
+			idx.face_tex.clear();
+			idx.face_norm.clear();
+			
+			inputString >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
+			cout << idx.temp_face_pos << "/" << idx.temp_face_tex << "/" << idx.temp_face_norm << "\n";
+
+			idx.face_pos.push_back(idx.temp_face_pos);
+			idx.face_tex.push_back(idx.temp_face_tex);
+			idx.face_norm.push_back(idx.temp_face_norm);
+
+
+			face_idxs.push_back(idx);
+			
+			
+			
+			
 		}
 	}
 
@@ -121,13 +136,15 @@ int main()
 		cout << "nz: " << normals[i].nz << "\n";
 	}*/
 
+
+
 	for (int i = 0; i < face_idxs.size(); i++)
 	{
 		for (int j = 0; j < face_idxs[i].face_pos.size(); j++)
 		{
 			cout << face_idxs[i].face_pos[j] << "/" << face_idxs[i].face_tex[j] << "/" << face_idxs[i].face_norm[j] << " ";
 			counter++;
-			if (counter == 4)
+			if (counter == 3)
 			{
 				cout << "\n";
 				counter = 0;
