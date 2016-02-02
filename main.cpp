@@ -30,7 +30,7 @@ ID3D11PixelShader* gPixelShader = nullptr;
 
 ID3D11GeometryShader* gGeometryShader = nullptr;
 //INITIALIZE VECTORS ***********************************************
-XMVECTOR cameraPosVector = { 0, 0, -2};
+XMVECTOR cameraPosVector = { 0, 0, -5};
 XMVECTOR lookAtVector = { 0, 0, 0 };
 XMVECTOR upVector = { 0, 1, 0 };
 // INITIALIZE BUFFERS ***********************************************
@@ -164,39 +164,40 @@ void createTriangle()
 	data.pSysMem = triangleVertices;
 	HRESULT hr = gDevice->CreateBuffer(&bufferdesc, &data, &gVertexBuffer);
 
-	//int indices[] = {
-	//	0,2,1, // -x
-	//	1,2,3,
+	UINT indices[] = {
+		0,1,2, // front face
+		0,2,3,
 
-	//	4,5,6, // +x
-	//	5,7,6,
+		4,6,5, // back face
+		4,7,6,
 
-	//	0,1,5, // -y
-	//	0,5,4,
+		4,5,1, // left
+		4,1,0,
 
-	//	2,6,7, // +y
-	//	2,7,3,
+		3,2,6, // right
+		3,6,7,
 
-	//	0,4,6, // -z
-	//	0,6,2,
+		1,5,6, // top face
+		1,6,2,
 
-	//	1,3,7, // +z
-	//	1,7,5,
-	//};
+		4,0,3, // bot face
+		4,3,7,
+	};
 
 
-	//D3D11_BUFFER_DESC bufferDesc2;
-	//bufferDesc2.ByteWidth = sizeof(indices);
-	//bufferDesc2.Usage = D3D11_USAGE_DEFAULT;
-	//bufferDesc2.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	D3D11_BUFFER_DESC bufferDesc2;
+	bufferDesc2.ByteWidth = sizeof(UINT) * 36;
+	bufferDesc2.Usage = D3D11_USAGE_IMMUTABLE;
+	bufferDesc2.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	bufferDesc2.CPUAccessFlags = 0;
+	bufferDesc2.MiscFlags = 0;
+	bufferDesc2.StructureByteStride = 0;
 
-	//D3D11_SUBRESOURCE_DATA initData;
+	D3D11_SUBRESOURCE_DATA initData;
 	//ZeroMemory(&initData, sizeof(D3D11_SUBRESOURCE_DATA));
-	//initData.pSysMem = indices;
-	//initData.SysMemPitch = 0;
-	//initData.SysMemSlicePitch = 0;
+	initData.pSysMem = indices;
 
-	//hr = gDevice->CreateBuffer(&bufferDesc2, &initData, &gIndexBuffer);
+	hr = gDevice->CreateBuffer(&bufferDesc2, &initData, &gIndexBuffer);
 }
 
 void createDepthStencil()
@@ -272,11 +273,11 @@ void SetViewport()
 
 void Update()
 {
-	/*static float angle = 0.0f;
+	static float angle = 0.0f;
 
 	angle -= 0.01f;
 
-	matrices.World = XMMatrixRotationY(XMConvertToRadians(angle));*/
+	matrices.World = XMMatrixRotationY(XMConvertToRadians(angle));
 	
 	gDeviceContext->UpdateSubresource(gConstantBuffer, 0, 0, &matrices, 0, 0);
 
@@ -351,7 +352,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		}
 
 		gVertexBuffer->Release();
-		//gIndexBuffer->Release();
+		gIndexBuffer->Release();
 		gConstantBuffer->Release();
 		gPixelShader->Release();
 		gGeometryShader->Release();
