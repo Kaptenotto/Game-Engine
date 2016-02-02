@@ -128,28 +128,28 @@ void createTriangle()
 
 	TriangleVertex2 triangleVertices[] =
 	{
-		-0.5f,-0.5f,-0.5f,
+		-1.0f,-1.0f,-1.0f,
 		0,   0,   0,
 
-		-0.5f,-0.5f, 0.5f,
+		-1.0f,+1.0f,-1.0f,
 		0,   0,   1 
 
-		-0.5f, 0.5f,-0.5f,
+		+ 1.0f,+1.0f,-1.0f,
 		0,   1,   0,
 
-		-0.5f, 0.5f, 0.5f, 
+		+1.0f,-1.0f,-1.0f,
 		0,   1,   1,
 
-		0.5f,-0.5f,-0.5f,
+		-1.0f,-1.0f,+1.0f,
 		1,   0,   0,
 		
-		0.5f,-0.5f, 0.5f,
+		-1.0f,+1.0f,+1.0f,
 		1,   0,   1,
 
-		0.5f, 0.5f,-0.5f,
+		+1.0f,+1.0f,+1.0f,
 		1,   1,   0,
 
-		0.5f, 0.5f, 0.5f,
+		+1.0f,-1.0f,+1.0f,
 		1,   1,   1,
 
 	};
@@ -158,7 +158,7 @@ void createTriangle()
 	memset(&bufferdesc, 0, sizeof(bufferdesc));
 	bufferdesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bufferdesc.Usage = D3D11_USAGE_DEFAULT;
-	bufferdesc.ByteWidth = sizeof(triangleVertices);
+	bufferdesc.ByteWidth = sizeof(triangleVertices) * 8;
 
 	D3D11_SUBRESOURCE_DATA data;
 	data.pSysMem = triangleVertices;
@@ -301,7 +301,7 @@ void Render()
 	UINT32 offset = 0;
 
 	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &vertexSize, &offset);
-	gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R16_UINT , 0);
+	gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R16_UINT , 0); // sets the index buffer
 
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	gDeviceContext->IASetInputLayout(gVertexLayout);
