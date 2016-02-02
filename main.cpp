@@ -184,6 +184,7 @@ void createTriangle()
 	//	1,7,5,
 	//};
 
+
 	//D3D11_BUFFER_DESC bufferDesc2;
 	//bufferDesc2.ByteWidth = sizeof(indices);
 	//bufferDesc2.Usage = D3D11_USAGE_DEFAULT;
