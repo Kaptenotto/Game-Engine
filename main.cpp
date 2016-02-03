@@ -6,10 +6,14 @@
 #include <DirectXMath.h>
 
 #include <string>
+#include <dinput.h>
 using namespace DirectX;
+using namespace std;
 
 #pragma comment (lib, "d3d11.lib")
 #pragma comment (lib, "d3dcompiler.lib")
+#pragma comment (lib, "dinput8.lib")
+#pragma comment (lib, "dxguid.lib")
 
 HWND InitWindow(HINSTANCE hInstance);
 
@@ -60,6 +64,15 @@ struct TriangleVertex2
 	float x, y, z;
 	float r, g, b;
 };
+
+typedef struct DIMOUESTATE
+{
+	LONG IX;
+	LONG IY;
+	LONG IZ;
+	BYTE rgbButtons[4];
+};DIMOUSESTATE *LPDIMOUSETATE;
+
 // GLOBALS FOR FIRST PERSON CAMERA *********************************
 
 XMVECTOR defaultForward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
@@ -76,7 +89,36 @@ float moveBackForward = 0.0f;   // Used to move along the camFoward and camRight
 float camYaw = 0.0f;
 float camPitch = 0.0f;
 
+//GLOBALS FOR INPUT ************************************************
+
+IDirectInputDevice8* diKeyboard;
+IDirectInputDevice8* diMouse;
+
+DIMOUSESTATE mouseLastState;
+LPDIRECTINPUT8 directInput;
+
+float rotx = 0;
+float rotz = 0;
+float scaleX = 1.0f;
+float scaleY = 1.0f;
+
+XMMATRIX rotationX;
+XMMATRIX rotationY;
+
+// TIME GLOBALS ****************************************************
+
+double countsPerSecond = 0.0;
+__int64 counterStart = 0;
+
+int frameCount = 0;
+int fps = 0;
+
+__int64 frameTimeOld = 0;
+double frameTime;
+
 // FUNCTIONS********************************************************
+
+//
 
 void CreateShaders()
 {
@@ -307,6 +349,70 @@ void SetViewport()
 	gDeviceContext->RSSetViewports(1, &vP);
 }
 
+bool initDirectInput(HINSTANCE hIstancen)
+{
+	HRESULT hr = DirectInput8Create(
+		hIstancen,
+		DIRECTINPUT_VERSION,
+		IID_IDirectInput8,
+		(void**)&directInput,
+		NULL);
+}
+
+void detectInput(double time) // checking keyboard and mouse input for movement in Engine
+{
+
+	DIMOUSESTATE mouseCurrentState;
+
+	BYTE keyBoardState[256]; // the amount of buttons a char array of 256.
+
+	diKeyboard->Acquire;
+	diMouse->Acquire;
+
+	diMouse->GetDeviceState(sizeof(DIMOUSESTATE), &mouseCurrentState);
+
+	diKeyboard->GetDeviceState(sizeof(keyBoardState), (LPVOID)&keyBoardState);
+
+	if (keyBoardState[DIK_LEFT] & 0x80)
+	{
+		rotz -= 1.0f * time;
+	}
+	if (keyBoardState[DIK_RIGHT] & 0x80)
+	{
+		rotz += 1.0f * time;
+	}
+	if (keyBoardState[DIK_UP] & 0x80)
+	{
+		rotx += 1.0f * time;
+	}
+	if (keyBoardState[DIK_DOWN] & 0x80)
+	{
+		rotx -= 1.0f * time;
+	}
+	if (mouseCurrentState.lX != mouseLastState.lX)
+	{
+		scaleX -= (mouseCurrentState.lX * 0.001f);
+	}
+	if (mouseCurrentState.lY != mouseLastState.lY)
+	{
+		scaleY -= (mouseCurrentState.lY * 0.001f);
+	}
+
+	if (rotx > 6.28)
+		rotx -= 6.28;
+	else if (rotx < 0)
+		rotx = 6.28 + rotx;
+
+	if (rotz > 6.28)
+		rotz -= 6.28;
+	else if (rotz < 0)
+		rotz = 6.28 + rotz;
+
+	mouseLastState = mouseCurrentState;
+
+	return;
+}
+
 void updateCamera()
 {
 	camRotationMatrix = XMMatrixRotationRollPitchYaw(camPitch, camYaw, 0); // Used to rotate around all the axis at the same time with the functoin XMMatixRotationpitchyaw
@@ -333,6 +439,48 @@ void updateCamera()
 	camTarget = camPosition + camTarget;
 
 	matrices.camView = XMMatrixLookAtLH(camPosition, camTarget, camUp);
+}
+
+void RenderText(wstring text, int inInt)
+{
+	void startTimer();
+	double getTime();
+	double getFrameTime();
+}
+
+void startTimer()
+{
+	LARGE_INTEGER frequencycount;
+
+	QueryPerformanceFrequency(&frequencycount);
+	countsPerSecond = double(frequencycount.QuadPart);
+
+	QueryPerformanceCounter(&frequencycount);
+	counterStart = frequencycount.QuadPart;
+}
+
+double getTime()
+{
+	LARGE_INTEGER currentTime;
+	QueryPerformanceCounter(&currentTime);
+	return double(currentTime.QuadPart - counterStart) / countsPerSecond);
+}
+
+double getFrameTime()
+{
+	LARGE_INTEGER currentTime;
+	__int64 tickCount;
+	QueryPerformanceCounter(&currentTime);
+
+	tickCount = currentTime.QuadPart - frameTimeOld;
+	frameTimeOld = currentTime.QuadPart;
+
+	if (tickCount < 0.0f)
+	{
+		tickCount = 0.0f;
+	}
+
+	return float(tickCount) / countsPerSecond;
 }
 
 void Update()
@@ -503,6 +651,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 	DXGI_SWAP_CHAIN_DESC SCD; //Create a struct to hold information about the swap chain
 
 	ZeroMemory(&SCD, sizeof(DXGI_SWAP_CHAIN_DESC)); // clear out the struct for use
+
+	HRESULT WINAPI DirectInput8Create(
+		HINSTANCE hinst,							// is the handle to the instance of our application
+		DWORD dwVersion,							// this is the version of the direct input we want to use
+		REFIID riidltf,								// This is an indentifier to the interface of direct input we want to use
+		LPVOID *ppvOut,								// This is the returned pointer to our direct input object
+		LPUNKNOWN punkOuter);						// This is used for COM aggregation
 
 													// Fill the swap chain description struct
 
