@@ -30,9 +30,12 @@ ID3D11PixelShader* gPixelShader = nullptr;
 
 ID3D11GeometryShader* gGeometryShader = nullptr;
 //INITIALIZE VECTORS ***********************************************
-XMVECTOR cameraPosVector = { 0, 0, -5};
-XMVECTOR lookAtVector = { 0, 0, 0 };
-XMVECTOR upVector = { 0, 1, 0 };
+
+XMVECTOR camPosition = { 0, 0, -5};
+XMVECTOR camTarget = { 0, 0, 0 };
+XMVECTOR camUp = { 0, 1, 0 };
+
+
 // INITIALIZE BUFFERS ***********************************************
 ID3D11Buffer* gVertexBuffer = nullptr;
 ID3D11Buffer* gIndexBuffer = nullptr;
@@ -47,7 +50,7 @@ ID3D11DepthStencilView* gDepthStencilView = nullptr;
 // INITIALIZE STRUCTS ***********************************************
 struct MatrixBuffer {
 	XMMATRIX World;
-	XMMATRIX View;
+	XMMATRIX camView;
 	XMMATRIX Projection;
 };
 MatrixBuffer matrices;
@@ -233,18 +236,32 @@ void createDepthStencil()
 	descDSV.Texture2D.MipSlice = 0;
 
 	hr = gDevice->CreateDepthStencilView(gDepthStencil, &descDSV, &gDepthStencilView);
-
 }
 
 void ConstantBuffer()
 {
-	matrices.View = XMMatrixLookAtLH((cameraPosVector), (lookAtVector),(upVector));
-	matrices.Projection = XMMatrixPerspectiveFovLH((XM_PI * 0.45), (640.0 / 480.0), (0.5), (20));
-	//                                           FOV(Field of view)| Windowsize |Near plane | Far plane
+	float fovangleY = XM_PI * 0.45;
+	float aspectRatio = 640.0 / 480.0;
+	float nearZ = 0.5;
+	float farZ = 20.0;
 
-	matrices.View = XMMatrixTranspose(matrices.View);
+	matrices.camView = XMMatrixLookAtLH(
+		(camPosition),
+		(camTarget),
+		(camUp));
+
+	matrices.Projection = XMMatrixPerspectiveFovLH(
+		(fovangleY),    //  The field of view in radians along the y-axis
+		(aspectRatio),  //  The aspect ratio, usually width/height
+		(nearZ),		//  A float describing the distance from the camera to the near z-plane
+		(farZ)			//  A float describing the distance from the camera to the far plane
+		);
+
+	matrices.camView = XMMatrixTranspose(matrices.camView);
 	matrices.Projection = XMMatrixTranspose(matrices.Projection); // Transposing the projection and view matrices.
 	matrices.World = XMMatrixIdentity();              // Setting the world matrix as a identity matrix
+
+	// = matrices.World * matrices.camView * matrices.Projection;
 
 	D3D11_BUFFER_DESC desc;
 	memset(&desc, 0, sizeof(D3D11_BUFFER_DESC));
@@ -275,14 +292,15 @@ void SetViewport()
 	gDeviceContext->RSSetViewports(1, &vP);
 }
 
+
 void Update()
 {
 	static float angle = 0.0f;
 
-	angle -= 0.01f;
+	angle -= 0.0001f;
 
-	matrices.World = XMMatrixRotationY(XMConvertToRadians(angle));
-	
+	matrices.World = XMMatrixRotationY(angle);
+
 	gDeviceContext->UpdateSubresource(gConstantBuffer, 0, 0, &matrices, 0, 0);
 
 	gDeviceContext->GSSetConstantBuffers(0, 1, &gConstantBuffer);
