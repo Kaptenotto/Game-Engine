@@ -60,6 +60,21 @@ struct TriangleVertex2
 	float x, y, z;
 	float r, g, b;
 };
+// GLOBALS FOR FIRST PERSON CAMERA *********************************
+
+XMVECTOR defaultForward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
+XMVECTOR defaultRight = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
+XMVECTOR camForward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
+XMVECTOR camRight = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
+
+XMMATRIX camRotationMatrix;
+XMMATRIX groundWorld;
+
+float moveLeftRight = 0.0f;		// Used to move along the camFoward and camRight vectors
+float moveBackForward = 0.0f;   // Used to move along the camFoward and camRight vectors
+
+float camYaw = 0.0f;
+float camPitch = 0.0f;
 
 // FUNCTIONS********************************************************
 
