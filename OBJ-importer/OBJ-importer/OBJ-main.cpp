@@ -7,7 +7,7 @@
 using namespace std;
 int main()
 {
-	string objFile("cube.obj"), special;
+	string objFile("normalCube.obj"), special;
 	string mtlFileName;
 	string nextLine;
 	char slashes;
@@ -255,7 +255,7 @@ int main()
 		{
 			inputString >> special >> tmp_specular.r >> tmp_specular.g >> tmp_specular.b;
 
-			//cout << tmp_ambient.r << " ###### " << tmp_ambient.g << " ###### " << tmp_ambient.b << " ###### ";
+			cout << tmp_specular.r << " ###### " << tmp_specular.g << " ###### " << tmp_specular.b << "\n";
 
 			speculars.push_back(tmp_specular);
 		}
@@ -265,18 +265,22 @@ int main()
 		{
 			inputString >> special >> tmp_trans.r >> tmp_trans.g >> tmp_trans.b;
 
+			cout << tmp_trans.r << " ###### " << tmp_trans.g << " ###### " << tmp_trans.b << "\n";
 			transes.push_back(tmp_trans);
 		}
 		else if (nextLine.substr(0,7) == "map_Kd ")
 		{
 			inputString >> special >> tmp_texMap;
 
+			cout << tmp_texMap << "\n";
+			
 			textureMap.push_back(tmp_texMap);
 		}
 		else if (nextLine.substr(0, 5) == "bump ")
 		{
 			inputString >> special >> tmp_normMap;
 
+			cout << tmp_normMap << "\n";
 			normalMap.push_back(tmp_normMap);
 		}
 
