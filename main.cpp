@@ -74,6 +74,12 @@ struct TriangleVertex2
 	float r, g, b;
 };
 
+struct GroundVertex
+{
+	float x, y, z;
+	float r, g, b;
+};
+
 typedef struct DIMOUESTATE
 {
 	LONG IX;
@@ -195,6 +201,39 @@ void CreateShaders()
 	gDevice->CreateGeometryShader(pGS->GetBufferPointer(), pGS->GetBufferSize(), nullptr, &gGeometryShader);
 	pGS->Release();
 }
+
+void createGround()
+{
+	GroundVertex ground[] = {
+		-1.0f, -1.0f, -1.0f,
+		0.0f, 1.0f, 0.0f,
+
+		1.0f, -1.0f, -1.0f,
+		0.0f, 1.0f, 0.0f,
+
+		1.0f, -1.0f, 1.0f,
+		0.0f, 1.0f, 0.0f,
+
+		-1.0f, -1.0f, 1.0f,
+		0.0f, 1.0f, 0.0f
+	};
+
+	D3D11_BUFFER_DESC iBD;
+	memset(&iBD, 0, sizeof(iBD));
+	iBD.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	iBD.Usage = D3D11_USAGE_IMMUTABLE;
+	iBD.ByteWidth = sizeof(TriangleVertex2) * 8;
+	iBD.MiscFlags = 0;
+	iBD.StructureByteStride = 0;
+
+	D3D11_SUBRESOURCE_DATA dataG;
+	dataG.pSysMem = triangleVertices;
+	HRESULT hr = gDevice->CreateBuffer(&iBD, &dataG, &gVertexBuffer);
+
+
+	
+}
+
 
 void createTriangle()
 {
@@ -452,6 +491,8 @@ void updateCamera()
 	matrices.camView = XMMatrixLookAtLH(camPosition, camTarget, camUp);
 }
 
+
+//TIME FUNCTIONS*********************************************************
 void RenderText(wstring text, int inInt)
 {
 	void startTimer();
@@ -493,6 +534,8 @@ double getFrameTime()
 
 	return float(tickCount) / countsPerSecond;
 }
+
+// END TIME FUNCTIONS ********************************************************
 
 void Update()
 {
