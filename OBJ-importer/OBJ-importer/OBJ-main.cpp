@@ -255,7 +255,7 @@ int main()
 		{
 			inputString >> special >> tmp_specular.r >> tmp_specular.g >> tmp_specular.b;
 
-			cout << tmp_specular.r << " ###### " << tmp_specular.g << " ###### " << tmp_specular.b << "\n";
+			//cout << tmp_specular.r << " ###### " << tmp_specular.g << " ###### " << tmp_specular.b << "\n";
 
 			speculars.push_back(tmp_specular);
 		}
@@ -265,14 +265,14 @@ int main()
 		{
 			inputString >> special >> tmp_trans.r >> tmp_trans.g >> tmp_trans.b;
 
-			cout << tmp_trans.r << " ###### " << tmp_trans.g << " ###### " << tmp_trans.b << "\n";
+			//cout << tmp_trans.r << " ###### " << tmp_trans.g << " ###### " << tmp_trans.b << "\n";
 			transes.push_back(tmp_trans);
 		}
 		else if (nextLine.substr(0,7) == "map_Kd ")
 		{
 			inputString >> special >> tmp_texMap;
 
-			cout << tmp_texMap << "\n";
+			//cout << tmp_texMap << "\n";
 			
 			textureMap.push_back(tmp_texMap);
 		}
@@ -280,7 +280,7 @@ int main()
 		{
 			inputString >> special >> tmp_normMap;
 
-			cout << tmp_normMap << "\n";
+			//cout << tmp_normMap << "\n";
 			normalMap.push_back(tmp_normMap);
 		}
 
@@ -305,25 +305,25 @@ int main()
 		cout << "nY: " << normals[i].ny << " ";
 		cout << "nZ: " << normals[i].nz << "\n";
 	}
-
+	*/
 
 
 	for (int i = 0; i < face_idxs.size(); i++)
 	{
 		for (int j = 0; j < face_idxs[i].face_pos.size(); j++)
 		{
-			cout << face_idxs[i].face_pos[j] << "/" << face_idxs[i].face_tex[j] << "/" << face_idxs[i].face_norm[j] << " ";
+			//cout << face_idxs[i].face_pos[j] << ", " << face_idxs[i].face_tex[j] << ", " << face_idxs[i].face_norm[j] << ", ";
 			counter++;
 			if (counter == 3)
 			{
-				cout << "\n";
+				//cout << "\n";
 				counter = 0;
 			}
 		}
-	}*/
+	}
 
 
-	cin.ignore();
+	//cin.ignore();
 
 
 	file.close();
