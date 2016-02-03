@@ -307,6 +307,33 @@ void SetViewport()
 	gDeviceContext->RSSetViewports(1, &vP);
 }
 
+void updateCamera()
+{
+	camRotationMatrix = XMMatrixRotationRollPitchYaw(camPitch, camYaw, 0); // Used to rotate around all the axis at the same time with the functoin XMMatixRotationpitchyaw
+	camTarget = XMVector3TransformCoord(defaultForward, camRotationMatrix); // sets the camera target vector by rotating the defaultforward vector with the
+	// rotation matrix we created
+	camTarget = XMVector3Normalize(camTarget); // normalizing the camtarget vector
+
+	XMMATRIX RotateYTempMatrix;
+	RotateYTempMatrix = XMMatrixRotationY(camPitch); // Finding the new right and forward directions of the camera by  using a rotation matrix 
+	//which will be rotated on the Y-axis, since its a first perosn camera we need to keep our cam forward and right pointing only in x and z axis
+
+	// transforming the cameras right up and forwards vectors using the matrix just defined.
+	// also rotating the default right up and default foward vectors and set the result in the right up and foward vectors.
+	/**/ camRight = XMVector3TransformCoord(defaultRight, RotateYTempMatrix); 
+	/**/ camUp = XMVector3TransformCoord(camUp, RotateYTempMatrix);
+	/**/ camForward = XMVector3TransformCoord(defaultForward, RotateYTempMatrix);
+
+	camPosition += moveLeftRight* camRight;
+	camPosition += moveBackForward* camForward;
+
+	moveLeftRight = 0.0f;
+	moveBackForward = 0.0f;
+
+	camTarget = camPosition + camTarget;
+
+	matrices.camView = XMMatrixLookAtLH(camPosition, camTarget, camUp);
+}
 
 void Update()
 {
@@ -484,6 +511,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 	SCD.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;  // How swap chain is to be used
 	SCD.OutputWindow = windowHandle;						// The window to be used
 	SCD.SampleDesc.Count = 4;							// How many multisamples
+	SCD.Windowed = false;
+	SCD.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	SCD.Windowed = TRUE;
 
 	//Create a device, device context and swap chain using the information in the SCD struct
