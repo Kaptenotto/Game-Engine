@@ -4,4 +4,12 @@
     <ClCompile Include="OBJ-main.cpp" />
     <ClCompile Include="OBJ_Structs.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header">
+      <UniqueIdentifier>{3c514ae6-49e9-478e-8575-e3209778a899}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="importer.h" />
+  </ItemGroup>
 </Project>

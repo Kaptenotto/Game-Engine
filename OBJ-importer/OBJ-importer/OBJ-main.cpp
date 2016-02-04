@@ -1,55 +1,61 @@
 
+#include "importer.h"
 
-#include "OBJ_Structs.cpp"
 
 using namespace std;
-int main()
+Importer::Importer()
 {
-	string objFile("normalCube.obj"), special;
-	string mtlFileName;
-	string nextLine;
-	char slashes;
-	ifstream file(objFile);
-	istringstream inputString;
-	int index_counter = 0;
-	int counter = 0;
-	int objCounter = 0;
+	objFile = ("normalCube.obj");
 
-	vector<VertexPos> vertices;
-	vector<TexCoord> uvs;
-	vector<NormDir> normals;
-	vector<Indexes> face_idxs;
-	vector<DiffColor> diffuses;
-	vector<AmbientColor> ambients;
-	vector<SpecularColor> speculars;
-	vector<TransparencyRGB> transes;
-	vector<string> groups;
-	vector<string> shadingGroups;
-	vector<string> mtlShadingGroups;
-	vector<string> textureMap;
-	vector<string> normalMap;
+	index_counter = 0;
+	objCounter = 0;
+	//string mtlFileName;
+	//string nextLine;
+	//char slashes;
+	//ifstream file(objFile);
+	//istringstream inputString;
 	
-	//Temporary variables
 
-	VertexPos tmp_vtx;
-	TexCoord tmp_tex;
-	NormDir tmp_norm;
-	Indexes idx;
-	string tmp_grp;
-	string tmp_shadeGroup;
-	string tmp_mtlShadeGroup;
-	DiffColor tmp_diff;
-	AmbientColor tmp_ambient;
-	SpecularColor tmp_specular;
-	TransparencyRGB tmp_trans;
-	string tmp_texMap;
-	string tmp_normMap;
+	//vector<VertexPos> vertices;
+	//vector<TexCoord> uvs;
+	//vector<NormDir> normals;
+	//vector<Indexes> face_idxs;
+	//vector<DiffColor> diffuses;
+	//vector<AmbientColor> ambients;
+	//vector<SpecularColor> speculars;
+	//vector<TransparencyRGB> transes;
+	//vector<string> groups;
+	//vector<string> shadingGroups;
+	//vector<string> mtlShadingGroups;
+	//vector<string> textureMap;
+	//vector<string> normalMap;
+	//
+	////Temporary variables
 
+	//VertexPos tmp_vtx;
+	//TexCoord tmp_tex;
+	//NormDir tmp_norm;
+	//Indexes idx;
+	//string tmp_grp;
+	//string tmp_shadeGroup;
+	//string tmp_mtlShadeGroup;
+	//DiffColor tmp_diff;
+	//AmbientColor tmp_ambient;
+	//SpecularColor tmp_specular;
+	//TransparencyRGB tmp_trans;
+	//string tmp_texMap;
+	//string tmp_normMap;
+
+}
+
+void Importer::reader()
+{
+	ifstream file(objFile);
 	while (std::getline(file, nextLine))
 	{
 		inputString.clear();
 		inputString.str(nextLine);
-		
+
 		if (nextLine.substr(0, 2) == "v ")
 		{
 			// Reading Vertex Positions from the file
@@ -102,7 +108,7 @@ int main()
 			//How many indexes there are
 			index_counter++;
 
-			
+
 
 			//Reading the second Face-Index (i/j/k *i/j/k* i/j/k)
 			inputString >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
@@ -125,7 +131,7 @@ int main()
 			index_counter++;
 
 
-			
+
 			//Reading the third Face-Index (i/j/k i/j/k *i/j/k*)
 			inputString >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
 			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex << "/" << idx.temp_face_norm << "\n";
@@ -160,8 +166,8 @@ int main()
 				objCounter++;
 				//cout << tmp_grp << "\n";
 			}
-			
-			
+
+
 		}
 		else if (nextLine.substr(0, 7) == "mtllib ")
 		{
@@ -169,7 +175,7 @@ int main()
 			//räcker det med att läsa in ett filnamn.
 			inputString >> special >> mtlFileName;
 		}
-		else if(nextLine.substr(0,7) == "usemtl ")
+		else if (nextLine.substr(0, 7) == "usemtl ")
 		{
 			//Reading shader group
 			inputString >> special >> tmp_shadeGroup;
@@ -201,7 +207,7 @@ int main()
 
 			diffuses.push_back(tmp_diff);
 		}
-		else if (nextLine.substr(0,3) == "Ka ")
+		else if (nextLine.substr(0, 3) == "Ka ")
 		{
 			inputString >> special >> tmp_ambient.r >> tmp_ambient.g >> tmp_ambient.b;
 
@@ -226,12 +232,12 @@ int main()
 			//cout << tmp_trans.r << " ###### " << tmp_trans.g << " ###### " << tmp_trans.b << "\n";
 			transes.push_back(tmp_trans);
 		}
-		else if (nextLine.substr(0,7) == "map_Kd ")
+		else if (nextLine.substr(0, 7) == "map_Kd ")
 		{
 			inputString >> special >> tmp_texMap;
 
 			//cout << tmp_texMap << "\n";
-			
+
 			textureMap.push_back(tmp_texMap);
 		}
 		else if (nextLine.substr(0, 5) == "bump ")
@@ -243,6 +249,10 @@ int main()
 		}
 
 	}
+	mtlFile.close();
+	file.close();
+
+}
 
 	/*for (int i = 0; i < vertices.size(); i++)
 	{
@@ -265,16 +275,21 @@ int main()
 	}
 	*/
 
+int main()
+{
+	Importer import;
+	import.reader();
 
-	for (int i = 0; i < face_idxs.size(); i++)
+	int counter = 0;
+	for (int i = 0; i < import.face_idxs.size(); i++)
 	{
-		for (int j = 0; j < face_idxs[i].face_pos.size(); j++)
+		for (int j = 0; j < import.face_idxs[i].face_pos.size(); j++)
 		{
-			//cout << face_idxs[i].face_pos[j] << ", " << face_idxs[i].face_tex[j] << ", " << face_idxs[i].face_norm[j] << ", ";
+			cout << import.face_idxs[i].face_pos[j] << ", " << import.face_idxs[i].face_tex[j] << ", " << import.face_idxs[i].face_norm[j] << ", ";
 			counter++;
 			if (counter == 3)
 			{
-				//cout << "\n";
+				cout << "\n";
 				counter = 0;
 			}
 		}
@@ -282,7 +297,4 @@ int main()
 
 
 	//cin.ignore();
-
-
-	file.close();
 }

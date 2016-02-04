@@ -149,6 +149,9 @@
     <ClCompile Include="OBJ-main.cpp" />
     <ClCompile Include="OBJ_Structs.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="importer.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
