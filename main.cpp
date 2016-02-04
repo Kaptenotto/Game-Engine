@@ -46,7 +46,12 @@ XMVECTOR camUp = { 0, 1, 0 };
 
 // INITIALIZE BUFFERS ***********************************************
 ID3D11Buffer* gVertexBuffer = nullptr;
+ID3D11Buffer* gVertexBuffer2 = nullptr;
+
 ID3D11Buffer* gIndexBuffer = nullptr;
+ID3D11Buffer* gIndexBuffer2 = nullptr;
+
+
 
 ID3D11Buffer* gConstantBuffer = nullptr;
 
@@ -105,6 +110,9 @@ float camYaw = 0.0f;
 float camPitch = 0.0f;
 
 //GLOBALS FOR INPUT ************************************************
+
+HWND hWnd = NULL;
+
 
 IDirectInputDevice8* diKeyboard;
 IDirectInputDevice8* diMouse;
@@ -202,7 +210,7 @@ void CreateShaders()
 	pGS->Release();
 }
 
-void createGround()
+void createGround() // FUNCTION FOR VERTEXBUFFER AND INDICESBUFFER FOR GROUND
 {
 	GroundVertex ground[] = {
 		-1.0f, -1.0f, -1.0f,
@@ -215,23 +223,37 @@ void createGround()
 		0.0f, 1.0f, 0.0f,
 
 		-1.0f, -1.0f, 1.0f,
-		0.0f, 1.0f, 0.0f
+		0.0f, 1.0f, 0.0f,
+	};
+
+	D3D11_BUFFER_DESC BD;
+	memset(&BD, 0, sizeof(BD));
+	BD.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	BD.Usage = D3D11_USAGE_IMMUTABLE;
+	BD.ByteWidth = sizeof(GroundVertex) * 4;
+	BD.MiscFlags = 0;
+	BD.StructureByteStride = 0;
+
+	D3D11_SUBRESOURCE_DATA dataG;
+	dataG.pSysMem = ground;
+	HRESULT hr = gDevice->CreateBuffer(&BD, &dataG, &gVertexBuffer2);
+
+	UINT indices[] = {
+		0, 1, 2,
+		0, 2, 3,
 	};
 
 	D3D11_BUFFER_DESC iBD;
-	memset(&iBD, 0, sizeof(iBD));
-	iBD.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	iBD.Usage = D3D11_USAGE_IMMUTABLE;
-	iBD.ByteWidth = sizeof(TriangleVertex2) * 8;
+	ZeroMemory(&iBD, sizeof(iBD));
+	iBD.Usage = D3D11_USAGE_DEFAULT;
+	iBD.ByteWidth = sizeof(UINT) * 6;
+	iBD.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	iBD.CPUAccessFlags = 0;
 	iBD.MiscFlags = 0;
-	iBD.StructureByteStride = 0;
 
-	D3D11_SUBRESOURCE_DATA dataG;
-	dataG.pSysMem = triangleVertices;
-	HRESULT hr = gDevice->CreateBuffer(&iBD, &dataG, &gVertexBuffer);
-
-
-	
+	D3D11_SUBRESOURCE_DATA dataIG;
+	dataIG.pSysMem = indices;
+	hr = gDevice->CreateBuffer(&iBD, &dataIG, &gIndexBuffer2);
 }
 
 
@@ -347,10 +369,10 @@ void createDepthStencil()
 
 void ConstantBuffer()
 {
-	float fovangleY = XM_PI * 0.45;
-	float aspectRatio = 640.0 / 480.0;
-	float nearZ = 0.5;
-	float farZ = 20.0;
+	float fovangleY = XM_PI * 0.45f;
+	float aspectRatio = 640.0f / 480.0f;
+	float nearZ = 0.5f;
+	float farZ = 20.0f;
 
 	matrices.camView = XMMatrixLookAtLH(
 		(camPosition),
@@ -399,141 +421,159 @@ void SetViewport()
 	gDeviceContext->RSSetViewports(1, &vP);
 }
 
-bool initDirectInput(HINSTANCE hIstancen)
-{
-	HRESULT hr = DirectInput8Create(
-		hIstancen,
-		DIRECTINPUT_VERSION,
-		IID_IDirectInput8,
-		(void**)&directInput,
-		NULL);
-}
-
-void detectInput(double time) // checking keyboard and mouse input for movement in Engine
-{
-
-	DIMOUSESTATE mouseCurrentState;
-
-	BYTE keyBoardState[256]; // the amount of buttons a char array of 256.
-
-	diKeyboard->Acquire;
-	diMouse->Acquire;
-
-	diMouse->GetDeviceState(sizeof(DIMOUSESTATE), &mouseCurrentState);
-
-	diKeyboard->GetDeviceState(sizeof(keyBoardState), (LPVOID)&keyBoardState);
-
-	if (keyBoardState[DIK_LEFT] & 0x80)
-	{
-		rotz -= 1.0f * time;
-	}
-	if (keyBoardState[DIK_RIGHT] & 0x80)
-	{
-		rotz += 1.0f * time;
-	}
-	if (keyBoardState[DIK_UP] & 0x80)
-	{
-		rotx += 1.0f * time;
-	}
-	if (keyBoardState[DIK_DOWN] & 0x80)
-	{
-		rotx -= 1.0f * time;
-	}
-	if (mouseCurrentState.lX != mouseLastState.lX)
-	{
-		scaleX -= (mouseCurrentState.lX * 0.001f);
-	}
-	if (mouseCurrentState.lY != mouseLastState.lY)
-	{
-		scaleY -= (mouseCurrentState.lY * 0.001f);
-	}
-
-	if (rotx > 6.28)
-		rotx -= 6.28;
-	else if (rotx < 0)
-		rotx = 6.28 + rotx;
-
-	if (rotz > 6.28)
-		rotz -= 6.28;
-	else if (rotz < 0)
-		rotz = 6.28 + rotz;
-
-	mouseLastState = mouseCurrentState;
-
-	return;
-}
-
-void updateCamera()
-{
-	camRotationMatrix = XMMatrixRotationRollPitchYaw(camPitch, camYaw, 0); // Used to rotate around all the axis at the same time with the functoin XMMatixRotationpitchyaw
-	camTarget = XMVector3TransformCoord(defaultForward, camRotationMatrix); // sets the camera target vector by rotating the defaultforward vector with the
-	// rotation matrix we created
-	camTarget = XMVector3Normalize(camTarget); // normalizing the camtarget vector
-
-	XMMATRIX RotateYTempMatrix;
-	RotateYTempMatrix = XMMatrixRotationY(camPitch); // Finding the new right and forward directions of the camera by  using a rotation matrix 
-	//which will be rotated on the Y-axis, since its a first perosn camera we need to keep our cam forward and right pointing only in x and z axis
-
-	// transforming the cameras right up and forwards vectors using the matrix just defined.
-	// also rotating the default right up and default foward vectors and set the result in the right up and foward vectors.
-	/**/ camRight = XMVector3TransformCoord(defaultRight, RotateYTempMatrix); 
-	/**/ camUp = XMVector3TransformCoord(camUp, RotateYTempMatrix);
-	/**/ camForward = XMVector3TransformCoord(defaultForward, RotateYTempMatrix);
-
-	camPosition += moveLeftRight* camRight;
-	camPosition += moveBackForward* camForward;
-
-	moveLeftRight = 0.0f;
-	moveBackForward = 0.0f;
-
-	camTarget = camPosition + camTarget;
-
-	matrices.camView = XMMatrixLookAtLH(camPosition, camTarget, camUp);
-}
+//bool initDirectInput(HINSTANCE hIstancen)
+//{
+//	HRESULT hr = DirectInput8Create(
+//		hIstancen,
+//		DIRECTINPUT_VERSION,
+//		IID_IDirectInput8,
+//		(void**)&directInput,
+//		NULL);
+//
+//	hr = directInput->CreateDevice(GUID_SysKeyboard,
+//		&diKeyboard,
+//		NULL);
+//
+//	hr = directInput->CreateDevice(GUID_SysMouse,
+//		&diMouse,
+//		NULL);
+//
+//	hr = diKeyboard->SetDataFormat(&c_dfDIKeyboard);
+//	hr = diKeyboard->SetCooperativeLevel(hWnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+//
+//	hr = diMouse->SetDataFormat(&c_dfDIMouse);
+//	hr = diMouse->SetCooperativeLevel(hWnd, DISCL_EXCLUSIVE | DISCL_NOWINKEY | DISCL_FOREGROUND);
+//
+//	return true;
+//}
+//
+//void detectInput(double time) // checking keyboard and mouse input for movement in Engine
+//{
+//
+//	DIMOUSESTATE mouseCurrentState;
+//
+//	BYTE keyBoardState[256]; // the amount of buttons a char array of 256.
+//
+//	diKeyboard->Acquire;
+//	diMouse->Acquire;
+//
+//	diMouse->GetDeviceState(sizeof(DIMOUSESTATE), &mouseCurrentState);
+//
+//	diKeyboard->GetDeviceState(sizeof(keyBoardState), (LPVOID)&keyBoardState);
+//
+//	if (keyBoardState[DIK_LEFT] & 0x80)
+//	{
+//		rotz -= 1.0f * time;
+//	}
+//	if (keyBoardState[DIK_RIGHT] & 0x80)
+//	{
+//		rotz += 1.0f * time;
+//	}
+//	if (keyBoardState[DIK_UP] & 0x80)
+//	{
+//		rotx += 1.0f * time;
+//	}
+//	if (keyBoardState[DIK_DOWN] & 0x80)
+//	{
+//		rotx -= 1.0f * time;
+//	}
+//	if (mouseCurrentState.lX != mouseLastState.lX)
+//	{
+//		scaleX -= (mouseCurrentState.lX * 0.001f);
+//	}
+//	if (mouseCurrentState.lY != mouseLastState.lY)
+//	{
+//		scaleY -= (mouseCurrentState.lY * 0.001f);
+//	}
+//
+//	if (rotx > 6.28)
+//		rotx -= 6.28;
+//	else if (rotx < 0)
+//		rotx = 6.28 + rotx;
+//
+//	if (rotz > 6.28)
+//		rotz -= 6.28;
+//	else if (rotz < 0)
+//		rotz = 6.28 + rotz;
+//
+//	mouseLastState = mouseCurrentState;
+//
+//	return;
+//}
+//
+//void updateCamera()
+//{
+//	camRotationMatrix = XMMatrixRotationRollPitchYaw(camPitch, camYaw, 0); // Used to rotate around all the axis at the same time with the functoin XMMatixRotationpitchyaw
+//	camTarget = XMVector3TransformCoord(defaultForward, camRotationMatrix); // sets the camera target vector by rotating the defaultforward vector with the
+//	// rotation matrix we created
+//	camTarget = XMVector3Normalize(camTarget); // normalizing the camtarget vector
+//
+//	XMMATRIX RotateYTempMatrix;
+//	RotateYTempMatrix = XMMatrixRotationY(camPitch); // Finding the new right and forward directions of the camera by  using a rotation matrix 
+//	//which will be rotated on the Y-axis, since its a first perosn camera we need to keep our cam forward and right pointing only in x and z axis
+//
+//	// transforming the cameras right up and forwards vectors using the matrix just defined.
+//	// also rotating the default right up and default foward vectors and set the result in the right up and foward vectors.
+//	/**/ camRight = XMVector3TransformCoord(defaultRight, RotateYTempMatrix); 
+//	/**/ camUp = XMVector3TransformCoord(camUp, RotateYTempMatrix);
+//	/**/ camForward = XMVector3TransformCoord(defaultForward, RotateYTempMatrix);
+//
+//	camPosition += moveLeftRight* camRight;
+//	camPosition += moveBackForward* camForward;
+//
+//	moveLeftRight = 0.0f;
+//	moveBackForward = 0.0f;
+//
+//	camTarget = camPosition + camTarget;
+//
+//	matrices.camView = XMMatrixLookAtLH(camPosition, camTarget, camUp);
+//}
 
 
 //TIME FUNCTIONS*********************************************************
-void RenderText(wstring text, int inInt)
-{
-	void startTimer();
-	double getTime();
-	double getFrameTime();
-}
-
-void startTimer()
-{
-	LARGE_INTEGER frequencycount;
-
-	QueryPerformanceFrequency(&frequencycount);
-	countsPerSecond = double(frequencycount.QuadPart);
-
-	QueryPerformanceCounter(&frequencycount);
-	counterStart = frequencycount.QuadPart;
-}
-
-double getTime()
-{
-	LARGE_INTEGER currentTime;
-	QueryPerformanceCounter(&currentTime);
-	return double(currentTime.QuadPart - counterStart) / countsPerSecond);
-}
-
-double getFrameTime()
-{
-	LARGE_INTEGER currentTime;
-	__int64 tickCount;
-	QueryPerformanceCounter(&currentTime);
-
-	tickCount = currentTime.QuadPart - frameTimeOld;
-	frameTimeOld = currentTime.QuadPart;
-
-	if (tickCount < 0.0f)
-	{
-		tickCount = 0.0f;
-	}
-
-	return float(tickCount) / countsPerSecond;
-}
+//void RenderText(wstring text, int inInt)
+//{
+//	void startTimer();
+//	double getTime();
+//	double getFrameTime();
+//
+//
+//}
+//
+//void startTimer()
+//{
+//	LARGE_INTEGER frequencycount;
+//
+//	QueryPerformanceFrequency(&frequencycount);
+//	countsPerSecond = double(frequencycount.QuadPart);
+//
+//	QueryPerformanceCounter(&frequencycount);
+//	counterStart = frequencycount.QuadPart;
+//}
+//
+//double getTime()
+//{
+//	LARGE_INTEGER currentTime;
+//	QueryPerformanceCounter(&currentTime);
+//	return double(currentTime.QuadPart - counterStart) / countsPerSecond;
+//}
+//
+//double getFrameTime()
+//{
+//	LARGE_INTEGER currentTime;
+//	__int64 tickCount;
+//	QueryPerformanceCounter(&currentTime);
+//
+//	tickCount = currentTime.QuadPart - frameTimeOld;
+//	frameTimeOld = currentTime.QuadPart;
+//
+//	if (tickCount < 0.0f)
+//	{
+//		tickCount = 0.0f;
+//	}
+//
+//	return float(tickCount) / countsPerSecond;
+//}
 
 // END TIME FUNCTIONS ********************************************************
 
@@ -543,8 +583,8 @@ void Update()
 
 	angle -= 0.0001f;
 
-	matrices.World = XMMatrixRotationY(angle);
-
+	matrices.World = XMMatrixRotationY(angle) /** XMMatrixRotationZ(angle)*/;
+	
 	gDeviceContext->UpdateSubresource(gConstantBuffer, 0, 0, &matrices, 0, 0);
 
 	gDeviceContext->GSSetConstantBuffers(0, 1, &gConstantBuffer);
@@ -565,10 +605,16 @@ void Render()
 	gDeviceContext->PSSetShader(gPixelShader, nullptr, 0);
 
 	UINT32 vertexSize = sizeof(TriangleVertex2);
+	UINT32 vertexSize2 = sizeof(GroundVertex);
+
 	UINT32 offset = 0;
 
 	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &vertexSize, &offset);
+	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer2, &vertexSize2, &offset);
+
 	gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT , 0); // sets the index buffer
+	gDeviceContext->IASetIndexBuffer(gIndexBuffer2, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
+
 
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	gDeviceContext->IASetInputLayout(gVertexLayout);
@@ -617,7 +663,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 			}
 		}
 
+		gSwapChain->SetFullscreenState(false, NULL);
 		gVertexBuffer->Release();
+		//gVertexBuffer2->Release();
 		gIndexBuffer->Release();
 		gConstantBuffer->Release();
 		gPixelShader->Release();
@@ -629,6 +677,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		gSwapChain->Release();
 		gBackBufferRTV->Release();
 		DestroyWindow(wndHandle);
+		
+
+		/*diKeyboard->Unacquire();
+		diMouse->Unacquire();
+		directInput->Release();*/
 	}
 	return (int)msg.wParam;
 }
