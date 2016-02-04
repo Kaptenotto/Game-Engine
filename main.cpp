@@ -8,7 +8,7 @@
 #include <string>
 #include <dinput.h>
 
-#include "./OBJ-importer/OBJ-importer/importer.h"
+#include "importer.h"
 using namespace DirectX;
 using namespace std;
 
