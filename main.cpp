@@ -61,7 +61,7 @@ ID3D11RenderTargetView* gBackBufferRTV = nullptr;
 ID3D11DepthStencilView* gDepthStencilView = nullptr;
 
 // INITIALIZE OBJ-IMPORTER ******************************************
-Importer obj;
+//Importer obj;
 
 
 // INITIALIZE STRUCTS ***********************************************
@@ -226,17 +226,21 @@ void createGround() // FUNCTION FOR VERTEXBUFFER AND INDICESBUFFER FOR GROUND
 		0.0f, 1.0f, 0.0f,
 	};
 
-	D3D11_BUFFER_DESC BD;
-	memset(&BD, 0, sizeof(BD));
-	BD.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	BD.Usage = D3D11_USAGE_IMMUTABLE;
-	BD.ByteWidth = sizeof(GroundVertex) * 4;
-	BD.MiscFlags = 0;
-	BD.StructureByteStride = 0;
+	D3D11_BUFFER_DESC vBD;
+	ZeroMemory(&vBD, sizeof(vBD));
+
+	vBD.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	vBD.Usage = D3D11_USAGE_DEFAULT;
+	vBD.ByteWidth = sizeof(GroundVertex) * 4;
+	vBD.MiscFlags = 0;
+	vBD.MiscFlags = 0;
 
 	D3D11_SUBRESOURCE_DATA dataG;
+	ZeroMemory(&dataG, sizeof(dataG));
+
 	dataG.pSysMem = ground;
-	HRESULT hr = gDevice->CreateBuffer(&BD, &dataG, &gVertexBuffer2);
+	HRESULT hr = gDevice->CreateBuffer(&vBD, &dataG, &gVertexBuffer2);
+	//**********************************************************************
 
 	UINT indices[] = {
 		0, 1, 2,
@@ -245,6 +249,7 @@ void createGround() // FUNCTION FOR VERTEXBUFFER AND INDICESBUFFER FOR GROUND
 
 	D3D11_BUFFER_DESC iBD;
 	ZeroMemory(&iBD, sizeof(iBD));
+
 	iBD.Usage = D3D11_USAGE_DEFAULT;
 	iBD.ByteWidth = sizeof(UINT) * 6;
 	iBD.BindFlags = D3D11_BIND_INDEX_BUFFER;
@@ -583,13 +588,34 @@ void Update()
 
 	angle -= 0.0001f;
 
-	matrices.World = XMMatrixRotationY(angle) /** XMMatrixRotationZ(angle)*/;
+	matrices.World = XMMatrixRotationY(angle) *  XMMatrixRotationZ(angle);
 	
 	gDeviceContext->UpdateSubresource(gConstantBuffer, 0, 0, &matrices, 0, 0);
 
 	gDeviceContext->GSSetConstantBuffers(0, 1, &gConstantBuffer);
 }
 
+void RenderPlane()
+{
+	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
+	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
+	gDeviceContext->PSSetShader(gPixelShader, nullptr, 0);
+
+	UINT32 vertexSize2 = sizeof(GroundVertex);
+
+	UINT32 offset = 0;
+
+	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer2, &vertexSize2, &offset);
+
+	gDeviceContext->IASetIndexBuffer(gIndexBuffer2, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
+
+	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	gDeviceContext->IASetInputLayout(gVertexLayout);
+
+	gDeviceContext->DrawIndexed(6, 0, 0);
+}
 void Render()
 {
 
@@ -605,16 +631,11 @@ void Render()
 	gDeviceContext->PSSetShader(gPixelShader, nullptr, 0);
 
 	UINT32 vertexSize = sizeof(TriangleVertex2);
-	UINT32 vertexSize2 = sizeof(GroundVertex);
-
 	UINT32 offset = 0;
 
 	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &vertexSize, &offset);
-	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer2, &vertexSize2, &offset);
 
 	gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT , 0); // sets the index buffer
-	gDeviceContext->IASetIndexBuffer(gIndexBuffer2, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
-
 
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	gDeviceContext->IASetInputLayout(gVertexLayout);
@@ -641,6 +662,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		ConstantBuffer();
 
 		createTriangle();
+
+		createGround();
 		
 		//Shows the window
 		ShowWindow(wndHandle, nCmdShow);
@@ -658,6 +681,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 				Update();
 
 				Render(); // Rendera
+				RenderPlane();
 
 				gSwapChain->Present(0, 0); // Växla front och back buffer
 			}
