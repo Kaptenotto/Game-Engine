@@ -39,9 +39,9 @@ ID3D11PixelShader* gPixelShader = nullptr;
 ID3D11GeometryShader* gGeometryShader = nullptr;
 //INITIALIZE VECTORS ***********************************************
 
-XMVECTOR camPosition = { 0, 0, 5};
-XMVECTOR camTarget = { 0, 0, 0 };
-XMVECTOR camUp = { 0, 1, 0 };
+XMVECTOR camPosition = XMVectorSet( 0, 0, -5 , 0);
+XMVECTOR camTarget = XMVectorSet( 0, 0, 0,0 );
+XMVECTOR camUp = XMVectorSet( 0, 1, 0, 0 );
 
 
 // INITIALIZE BUFFERS ***********************************************
@@ -85,13 +85,13 @@ struct GroundVertex
 	float r, g, b;
 };
 
-//typedef struct DIMOUSESTATE
-//{
-//	LONG IX;
-//	LONG IY;
-//	LONG IZ;
-//	BYTE rgbButtons[4];
-//};DIMOUSESTATES *LPDIMOUSETATE;
+typedef struct DIMOUSESTATES
+{
+	LONG IX;
+	LONG IY;
+	LONG IZ;
+	BYTE rgbButtons[4];
+};
 
 // GLOBALS FOR FIRST PERSON CAMERA *********************************
 
@@ -117,7 +117,7 @@ HWND hWnd = NULL;
 IDirectInputDevice8* DIKeyboard;
 IDirectInputDevice8* DIMouse;
 
-DIMOUSESTATE mouseLastState;
+DIMOUSESTATES mouseLastState;
 LPDIRECTINPUT8 directInput;
 
 float rotx = 0;
@@ -476,19 +476,20 @@ void updateCamera()
 	camTarget = camPosition + camTarget;
 
 	matrices.camView = XMMatrixLookAtLH(camPosition, camTarget, camUp);
+	matrices.camView = XMMatrixTranspose(matrices.camView);
 }
 
 void detectInput(double time) // checking keyboard and mouse input for movement in Engine
 {
 
-	DIMOUSESTATE mouseCurrentState;
+	DIMOUSESTATES mouseCurrentState;
 
 	BYTE keyBoardState[256]; // the amount of buttons a char array of 256.
 
 	DIKeyboard->Acquire();
 	DIMouse->Acquire();
 
-	DIMouse->GetDeviceState(sizeof(DIMOUSESTATE), &mouseCurrentState);
+	DIMouse->GetDeviceState(sizeof(DIMOUSESTATES), &mouseCurrentState);
 
 	DIKeyboard->GetDeviceState(sizeof(keyBoardState), (LPVOID)&keyBoardState);
 
@@ -514,11 +515,11 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 	{
 		moveBackForward -= speed;
 	}
-	if ((mouseCurrentState.lX != mouseLastState.lX) || (mouseCurrentState.lY != mouseLastState.lY))
+	if ((mouseCurrentState.IX != mouseLastState.IX) || (mouseCurrentState.IY != mouseLastState.IY))
 	{
-		camYaw += mouseLastState.lX * 0.001f;
+		camYaw += mouseLastState.IX * 0.001f;
 
-		camPitch += mouseCurrentState.lY * 0.001f;
+		camPitch += mouseCurrentState.IY * 0.001f;
 
 		mouseLastState = mouseCurrentState;
 	}
@@ -633,7 +634,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 {
 	//Initialize window
 	MSG msg = { 0 };
-	HWND wndHandle = InitWindow(hInstance);						// Skapar fönstret
+	hWnd = InitWindow(hInstance);						// Skapar fönstret
 												//window is valid
 
 	if (!initDirectInput(hInstance))
@@ -642,9 +643,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 			L"ERROR", MB_OK);
 		return 0;
 	}
-	if (wndHandle)
+	if (hWnd)
 	{
-		CreateDirect3DContext(wndHandle); //2. Skapa och koppla SwapChain, Device och Device Context
+		CreateDirect3DContext(hWnd); //2. Skapa och koppla SwapChain, Device och Device Context
 
 		SetViewport();
 		//myWindow.SetViewport(gDevice, gDevContext);
@@ -658,7 +659,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		createGround();
 		
 		//Shows the window
-		ShowWindow(wndHandle, nCmdShow);
+		ShowWindow(hWnd, nCmdShow);
 
 		//Main message loop
 		while (WM_QUIT != msg.message)
@@ -686,7 +687,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 				frameTime = getFrameTime();
 
 				detectInput(frameTime);
-				
 
 				gSwapChain->Present(0, 0); // Växla front och back buffer
 			}
@@ -705,7 +705,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		gDeviceContext->Release();
 		gSwapChain->Release();
 		gBackBufferRTV->Release();
-		DestroyWindow(wndHandle);
+		DestroyWindow(hWnd);
 		
 
 		DIKeyboard->Unacquire();
@@ -771,9 +771,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 
 }
 
-
-
-	HRESULT CreateDirect3DContext(HWND windowHandle)
+HRESULT CreateDirect3DContext(HWND hWnd)
 {
 	DXGI_SWAP_CHAIN_DESC SCD; //Create a struct to hold information about the swap chain
 
@@ -791,7 +789,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 	SCD.BufferCount = 1;								// One back buffer
 	SCD.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // Use 32 bit color
 	SCD.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;  // How swap chain is to be used
-	SCD.OutputWindow = windowHandle;						// The window to be used
+	SCD.OutputWindow = hWnd;						// The window to be used
 	SCD.SampleDesc.Count = 4;							// How many multisamples
 	SCD.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	SCD.Windowed = TRUE;
