@@ -7,6 +7,8 @@
 
 #include <string>
 #include <dinput.h>
+
+#include "./OBJ-importer/OBJ-importer/importer.h"
 using namespace DirectX;
 using namespace std;
 
@@ -21,6 +23,8 @@ HWND InitWindow(HINSTANCE hInstance);
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 HRESULT CreateDirect3DContext(HWND wndHandle);
 IDXGISwapChain* gSwapChain = nullptr;
+
+
 
 // DEVICE **********************************************************
 ID3D11Device* gDevice = nullptr;
@@ -51,11 +55,15 @@ ID3D11Texture2D* gBackBuffer = nullptr;
 ID3D11RenderTargetView* gBackBufferRTV = nullptr;
 ID3D11DepthStencilView* gDepthStencilView = nullptr;
 
+// INITIALIZE OBJ-IMPORTER ******************************************
+Importer OBJ;
+
 // INITIALIZE STRUCTS ***********************************************
 struct MatrixBuffer {
 	XMMATRIX World;
 	XMMATRIX camView;
 	XMMATRIX Projection;
+	
 };
 MatrixBuffer matrices;
 
