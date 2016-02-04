@@ -68,11 +68,7 @@ struct MatrixBuffer {
 };
 MatrixBuffer matrices;
 
-struct TriangleVertex2
-{
-	float x, y, z;
-	float r, g, b;
-};
+
 
 typedef struct DIMOUESTATE
 {
