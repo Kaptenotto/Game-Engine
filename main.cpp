@@ -114,6 +114,8 @@ float scaleY = 1.0f;
 XMMATRIX rotationX;
 XMMATRIX rotationY;
 
+
+
 // TIME GLOBALS ****************************************************
 
 double countsPerSecond = 0.0;
