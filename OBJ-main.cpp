@@ -60,11 +60,10 @@ void Importer::read()
 		{
 			// Reading Vertex Positions from the file
 			// and adding them to a temporary variable
-			inputString >> special >> tmp_vert.x >> tmp_vert.y >> tmp_vert.z;
+			inputString >> special >> tmp_vtx.x >> tmp_vtx.y >> tmp_vtx.z;
 
 			// Adding the vertex positions to a vector
-			vertices.push_back(tmp_vert);
-			
+			vertices.push_back(tmp_vtx);
 
 			/*cout << special << "\n";
 			cout << vtx.x << " ";
@@ -75,9 +74,9 @@ void Importer::read()
 		else if (nextLine.substr(0, 3) == "vt ")
 		{
 			//Reading UV-Values
-			inputString >> special >> tmp_vert.u >> tmp_vert.v;
+			inputString >> special >> tmp_tex.x >> tmp_tex.y;
 			//Adding UV-Values to a Vector
-			vertices.push_back(tmp_vert);
+			uvs.push_back(tmp_tex);
 		}
 		else if (nextLine.substr(0, 3) == "vn ")
 		{
@@ -94,12 +93,14 @@ void Importer::read()
 			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex <<  "/" << idx.temp_face_norm << " ";
 
 			//Clearing the temporairy Vectors they are put in
-			
+			idx.face_pos.clear();
+			idx.face_tex.clear();
+			idx.face_norm.clear();
 
 			//Adding the values to their temporairy Vectors
-			idx.face_pos = temp_face_pos;
-			idx.face_tex = temp_face_tex;
-			idx.face_norm = temp_face_norm;
+			idx.face_pos.push_back(temp_face_pos);
+			idx.face_tex.push_back(temp_face_tex);
+			idx.face_norm.push_back(temp_face_norm);
 
 			//Pushing the temporairy vectors to the final vector
 			face_idxs.push_back(idx);
@@ -114,12 +115,14 @@ void Importer::read()
 			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex << "/" << idx.temp_face_norm << " ";
 
 			//Clearing the temporairy Vectors they are put in
-	
+			idx.face_pos.clear();
+			idx.face_tex.clear();
+			idx.face_norm.clear();
 
 			//Adding the values to their temporairy Vectors
-			idx.face_pos = temp_face_pos;
-			idx.face_tex = temp_face_tex;
-			idx.face_norm = temp_face_norm;
+			idx.face_pos.push_back(temp_face_pos);
+			idx.face_tex.push_back(temp_face_tex);
+			idx.face_norm.push_back(temp_face_norm);
 
 			//Pushing the temporairy vectors to the final vector
 			face_idxs.push_back(idx);
@@ -134,13 +137,15 @@ void Importer::read()
 			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex << "/" << idx.temp_face_norm << "\n";
 
 			//Clearing the temporairy Vectors they are put in
-			
+			idx.face_pos.clear();
+			idx.face_tex.clear();
+			idx.face_norm.clear();
 
 
 			//Adding the values to their temporairy Vectors
-			idx.face_pos = temp_face_pos;
-			idx.face_tex = temp_face_tex;
-			idx.face_norm = temp_face_norm;
+			idx.face_pos.push_back(temp_face_pos);
+			idx.face_tex.push_back(temp_face_tex);
+			idx.face_norm.push_back(temp_face_norm);
 
 			//Pushing the temporairy vectors to the final vector
 			face_idxs.push_back(idx);
