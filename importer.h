@@ -24,10 +24,14 @@ public:
 	int counter = 0;
 	int objCounter = 0;
 
-	vector<XMFLOAT3> vertices;
+	//vector<XMFLOAT3> vertices;
+
+	//TriangleVertex2;
+
 	vector<XMFLOAT2> uvs;
 	vector<XMFLOAT3> normals;
 	vector<Indexes> face_idxs;
+	vector<TriangleVertex2> vertices;
 	vector<XMFLOAT3> diffuses;
 	vector<XMFLOAT3> ambients;
 	vector<XMFLOAT3> speculars;
@@ -40,8 +44,8 @@ public:
 
 	//Temporary variables
 private:
-	float temp_face_pos, temp_face_tex, temp_face_norm;
-	XMFLOAT3 tmp_vtx;
+	int temp_face_pos, temp_face_tex, temp_face_norm;
+	TriangleVertex2 tmp_vert;
 	XMFLOAT2 tmp_tex;
 	XMFLOAT3 tmp_norm;
 	Indexes idx;
