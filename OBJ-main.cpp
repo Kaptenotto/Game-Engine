@@ -74,14 +74,14 @@ void Importer::read()
 		else if (nextLine.substr(0, 3) == "vt ")
 		{
 			//Reading UV-Values
-			inputString >> special >> tmp_tex.u >> tmp_tex.v;
+			inputString >> special >> tmp_tex.x >> tmp_tex.y;
 			//Adding UV-Values to a Vector
 			uvs.push_back(tmp_tex);
 		}
 		else if (nextLine.substr(0, 3) == "vn ")
 		{
 			//Reading normals
-			inputString >> special >> tmp_norm.nx >> tmp_norm.ny >> tmp_norm.nz;
+			inputString >> special >> tmp_norm.x >> tmp_norm.y >> tmp_norm.z;
 
 			//Adding Normals to a Vector
 			normals.push_back(tmp_norm);
@@ -89,7 +89,7 @@ void Importer::read()
 		else if (nextLine.substr(0, 2) == "f ")
 		{
 			//Reading the first Face-Index (*i/j/k* i/j/k i/j/k)
-			inputString >> special >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
+			inputString >> special >> temp_face_pos >> slashes >> temp_face_tex >> slashes >> temp_face_norm;
 			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex <<  "/" << idx.temp_face_norm << " ";
 
 			//Clearing the temporairy Vectors they are put in
@@ -98,9 +98,9 @@ void Importer::read()
 			idx.face_norm.clear();
 
 			//Adding the values to their temporairy Vectors
-			idx.face_pos.push_back(idx.temp_face_pos);
-			idx.face_tex.push_back(idx.temp_face_tex);
-			idx.face_norm.push_back(idx.temp_face_norm);
+			idx.face_pos.push_back(temp_face_pos);
+			idx.face_tex.push_back(temp_face_tex);
+			idx.face_norm.push_back(temp_face_norm);
 
 			//Pushing the temporairy vectors to the final vector
 			face_idxs.push_back(idx);
@@ -111,7 +111,7 @@ void Importer::read()
 
 
 			//Reading the second Face-Index (i/j/k *i/j/k* i/j/k)
-			inputString >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
+			inputString >> temp_face_pos >> slashes >> temp_face_tex >> slashes >> temp_face_norm;
 			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex << "/" << idx.temp_face_norm << " ";
 
 			//Clearing the temporairy Vectors they are put in
@@ -120,9 +120,9 @@ void Importer::read()
 			idx.face_norm.clear();
 
 			//Adding the values to their temporairy Vectors
-			idx.face_pos.push_back(idx.temp_face_pos);
-			idx.face_tex.push_back(idx.temp_face_tex);
-			idx.face_norm.push_back(idx.temp_face_norm);
+			idx.face_pos.push_back(temp_face_pos);
+			idx.face_tex.push_back(temp_face_tex);
+			idx.face_norm.push_back(temp_face_norm);
 
 			//Pushing the temporairy vectors to the final vector
 			face_idxs.push_back(idx);
@@ -133,7 +133,7 @@ void Importer::read()
 
 
 			//Reading the third Face-Index (i/j/k i/j/k *i/j/k*)
-			inputString >> idx.temp_face_pos >> slashes >> idx.temp_face_tex >> slashes >> idx.temp_face_norm;
+			inputString >> temp_face_pos >> slashes >> temp_face_tex >> slashes >> temp_face_norm;
 			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex << "/" << idx.temp_face_norm << "\n";
 
 			//Clearing the temporairy Vectors they are put in
@@ -143,9 +143,9 @@ void Importer::read()
 
 
 			//Adding the values to their temporairy Vectors
-			idx.face_pos.push_back(idx.temp_face_pos);
-			idx.face_tex.push_back(idx.temp_face_tex);
-			idx.face_norm.push_back(idx.temp_face_norm);
+			idx.face_pos.push_back(temp_face_pos);
+			idx.face_tex.push_back(temp_face_tex);
+			idx.face_norm.push_back(temp_face_norm);
 
 			//Pushing the temporairy vectors to the final vector
 			face_idxs.push_back(idx);
@@ -201,7 +201,7 @@ void Importer::read()
 		}
 		else if (nextLine.substr(0, 3) == "Kd ")
 		{
-			inputString >> special >> tmp_diff.r >> tmp_diff.g >> tmp_diff.b;
+			inputString >> special >> tmp_diff.x >> tmp_diff.y >> tmp_diff.z;
 
 			//cout << tmp_diff.r << " ###### " << tmp_diff.g << " ###### " << tmp_diff.b << " ###### ";
 
@@ -209,7 +209,7 @@ void Importer::read()
 		}
 		else if (nextLine.substr(0, 3) == "Ka ")
 		{
-			inputString >> special >> tmp_ambient.r >> tmp_ambient.g >> tmp_ambient.b;
+			inputString >> special >> tmp_ambient.x >> tmp_ambient.y >> tmp_ambient.z;
 
 			//cout << tmp_ambient.r << " ###### " << tmp_ambient.g << " ###### " << tmp_ambient.b << " ###### ";
 
@@ -217,7 +217,7 @@ void Importer::read()
 		}
 		else if (nextLine.substr(0, 3) == "Ks ")
 		{
-			inputString >> special >> tmp_specular.r >> tmp_specular.g >> tmp_specular.b;
+			inputString >> special >> tmp_specular.x >> tmp_specular.y >> tmp_specular.z;
 
 			//cout << tmp_specular.r << " ###### " << tmp_specular.g << " ###### " << tmp_specular.b << "\n";
 
@@ -227,7 +227,7 @@ void Importer::read()
 		//Transparency
 		else if (nextLine.substr(0, 3) == "Tf ")
 		{
-			inputString >> special >> tmp_trans.r >> tmp_trans.g >> tmp_trans.b;
+			inputString >> special >> tmp_trans.x >> tmp_trans.y >> tmp_trans.z;
 
 			//cout << tmp_trans.r << " ###### " << tmp_trans.g << " ###### " << tmp_trans.b << "\n";
 			transes.push_back(tmp_trans);
@@ -278,7 +278,7 @@ void Importer::read()
 int main()
 {
 	Importer import;
-	import.reader();
+	import.read();
 
 	int counter = 0;
 	for (int i = 0; i < import.face_idxs.size(); i++)

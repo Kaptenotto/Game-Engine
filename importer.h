@@ -2,9 +2,10 @@
 #define IMPORTER_H
 
 
-
+#include <DirectXMath.h>
 #include "OBJ_Structs.cpp"
 
+using namespace DirectX;
 using namespace std;
 
 class Importer
@@ -23,14 +24,14 @@ public:
 	int counter = 0;
 	int objCounter = 0;
 
-	vector<VertexPos> vertices;
-	vector<TexCoord> uvs;
-	vector<NormDir> normals;
+	vector<XMFLOAT3> vertices;
+	vector<XMFLOAT2> uvs;
+	vector<XMFLOAT3> normals;
 	vector<Indexes> face_idxs;
-	vector<DiffColor> diffuses;
-	vector<AmbientColor> ambients;
-	vector<SpecularColor> speculars;
-	vector<TransparencyRGB> transes;
+	vector<XMFLOAT3> diffuses;
+	vector<XMFLOAT3> ambients;
+	vector<XMFLOAT3> speculars;
+	vector<XMFLOAT3> transes;
 	vector<string> groups;
 	vector<string> shadingGroups;
 	vector<string> mtlShadingGroups;
@@ -39,17 +40,18 @@ public:
 
 	//Temporary variables
 private:
-	VertexPos tmp_vtx;
-	TexCoord tmp_tex;
-	NormDir tmp_norm;
+	float temp_face_pos, temp_face_tex, temp_face_norm;
+	XMFLOAT3 tmp_vtx;
+	XMFLOAT2 tmp_tex;
+	XMFLOAT3 tmp_norm;
 	Indexes idx;
 	string tmp_grp;
 	string tmp_shadeGroup;
 	string tmp_mtlShadeGroup;
-	DiffColor tmp_diff;
-	AmbientColor tmp_ambient;
-	SpecularColor tmp_specular;
-	TransparencyRGB tmp_trans;
+	XMFLOAT3 tmp_diff;
+	XMFLOAT3 tmp_ambient;
+	XMFLOAT3 tmp_specular;
+	XMFLOAT3 tmp_trans;
 	string tmp_texMap;
 	string tmp_normMap;
 };
