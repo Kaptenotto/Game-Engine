@@ -48,7 +48,7 @@ Importer::Importer()
 
 }
 
-void Importer::reader()
+void Importer::read()
 {
 	ifstream file(objFile);
 	while (std::getline(file, nextLine))
@@ -285,11 +285,11 @@ int main()
 	{
 		for (int j = 0; j < import.face_idxs[i].face_pos.size(); j++)
 		{
-			cout << import.face_idxs[i].face_pos[j] << ", " << import.face_idxs[i].face_tex[j] << ", " << import.face_idxs[i].face_norm[j] << ", ";
+			//cout << import.face_idxs[i].face_pos[j] << ", " << import.face_idxs[i].face_tex[j] << ", " << import.face_idxs[i].face_norm[j] << ", ";
 			counter++;
 			if (counter == 3)
 			{
-				cout << "\n";
+				//cout << "\n";
 				counter = 0;
 			}
 		}

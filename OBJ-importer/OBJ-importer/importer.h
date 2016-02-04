@@ -11,7 +11,7 @@ class Importer
 {
 public:
 	Importer();
-	void reader();
+	void read();
 
 	string objFile, special;
 	string mtlFileName;

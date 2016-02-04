@@ -56,7 +56,8 @@ ID3D11RenderTargetView* gBackBufferRTV = nullptr;
 ID3D11DepthStencilView* gDepthStencilView = nullptr;
 
 // INITIALIZE OBJ-IMPORTER ******************************************
-Importer OBJ;
+Importer obj;
+
 
 // INITIALIZE STRUCTS ***********************************************
 struct MatrixBuffer {
