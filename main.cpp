@@ -50,7 +50,6 @@ MatrixBuffer matrices;
 void CreateShaders()
 {
 	//Create the vertex shader
-
 	ID3DBlob* pVS = nullptr;
 	D3DCompileFromFile(
 		L"Vertex.hlsl",	//Name of file
@@ -68,64 +67,17 @@ void CreateShaders()
 
 	D3D11_INPUT_ELEMENT_DESC inputDesc[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 1, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 2, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TANGET", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 	gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), pVS->GetBufferPointer(), pVS->GetBufferSize(), &gVertexLayout);
-	//Do not need the com object anymore therefor releasing it
-	pVS->Release();
 
-	//Create VertexNormal
-	ID3DBlob* pVSNormal = nullptr;
-	D3DCompileFromFile(
-		L"VertexNormal.hlsl",	//Name of file
-		nullptr,
-		nullptr,
-		"VSNormal_main",				// Name of main in file
-		"vs_4_0",
-		0,
-		0,
-		&pVSNormal,
-		nullptr
-		);
-
-	HRESULT Hr = gDevice->CreateVertexShader(pVSNormal->GetBufferPointer(), pVSNormal->GetBufferSize(), nullptr, &gVertexNormal);
-
-	D3D11_INPUT_ELEMENT_DESC inputDesc[] = {
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 12, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
-	gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), pVSNormal->GetBufferPointer(), pVSNormal->GetBufferSize(), &gVertexLayout);
-	//Do not need the com object anymore therefor releasing it
-	pVS->Release();
-
-	//Create VertexShadow
-	ID3DBlob* pVSShadow = nullptr;
-	D3DCompileFromFile(
-		L"VertexShadow.hlsl",	//Name of file
-		nullptr,
-		nullptr,
-		"VSShadow_main",				// Name of main in file
-		"vs_4_0",
-		0,
-		0,
-		&pVSShadow,
-		nullptr
-		);
-
-	HRESULT Hr = gDevice->CreateVertexShader(pVSShadow->GetBufferPointer(), pVSShadow->GetBufferSize(), nullptr, &gVertexShadow);
-
-	D3D11_INPUT_ELEMENT_DESC inputDesc[] = {
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 12, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
-	gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), pVSShadow->GetBufferPointer(), pVSShadow->GetBufferSize(), &gVertexLayout);
-	//Do not need the com object anymore therefor releasing it
 	pVS->Release();
 
 	//Create pixel shader
-
 	ID3DBlob* pPS = nullptr;
 	D3DCompileFromFile(
 		L"Fragment.hlsl",	//name of file
@@ -143,7 +95,6 @@ void CreateShaders()
 	pPS->Release();
 
 	//Create geometry shader
-
 	ID3DBlob* pGS = nullptr;
 	D3DCompileFromFile(
 		L"GeometryShader.hlsl",
@@ -157,22 +108,8 @@ void CreateShaders()
 		nullptr
 		);
 	gDevice->CreateGeometryShader(pGS->GetBufferPointer(), pGS->GetBufferSize(), nullptr, &gGeometryShader);
-	pGS->Release();
 
-	/*ID3DBlob* pGSN = nullptr;
-	D3DCompileFromFile(
-		L"GeoShaderNormal.hlsl",
-		nullptr,
-		nullptr,
-		"main",
-		"gs_4_0",
-		0,
-		0,
-		&pGSN,
-		nullptr
-		);
-	gDevice->CreateGeometryShader(pGSN->GetBufferPointer(), pGSN->GetBufferSize(), nullptr, &gGeoShaderNormal);
-	pGSN->Release();*/
+	pGS->Release();
 }
 
 
