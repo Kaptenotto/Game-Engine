@@ -26,15 +26,6 @@
     <FxCompile Include="GeometryShader.hlsl">
       <Filter>Source Files</Filter>
     </FxCompile>
-    <FxCompile Include="PixelShader.hlsl">
-      <Filter>Source Files</Filter>
-    </FxCompile>
-    <FxCompile Include="VertexNormal.hlsl">
-      <Filter>Source Files</Filter>
-    </FxCompile>
-    <FxCompile Include="VertexShadow.hlsl">
-      <Filter>Source Files</Filter>
-    </FxCompile>
     <FxCompile Include="Fragment.hlsl">
       <Filter>Source Files</Filter>
     </FxCompile>
