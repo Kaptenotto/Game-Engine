@@ -182,16 +182,31 @@ void CreateShaders()
 
 void CreateTriangle()
 {
-	TriangleVertex triangleVertices[3] =
+	TriangleVertex triangleVertices[] =
 	{
-		0.0f, 0.5f, 0.0f,	//v0 pos
-		1.0f, 0.0f, 0.0f,	//v0 color
+		-1.0f,-1.0f,-1.0f,
+		1.0f,   1.0f,   1.0f,
 
-		0.5f, -0.5f, 0.0f,	//v1
-		0.0f, 1.0f, 0.0f,	//v1 color
+		-1.0f,+1.0f,-1.0f,
+		1.0f,   0.0f,   0.0f,
 
-		-0.5f, -0.5f, 0.0f, //v2
-		0.0f, 0.0f, 1.0f	//v2 color
+		+1.0f,+1.0f,-1.0f,
+		1.0f,   0.0f,   0.0f,
+
+		+1.0f,-1.0f,-1.0f,
+		1.0f,   0.0f,   0.0f,
+
+		-1.0f,-1.0f,+1.0f,
+		1.0f,   1.0f,   1.0f,
+
+		-1.0f,+1.0f,+1.0f,
+		1.0f,   0.0f,   0.0f,
+
+		+1.0f,+1.0f,+1.0f,
+		1.0f,   1.0f,   1.0f,
+
+		+1.0f,-1.0f,+1.0f,
+		1.0f,   0.0f,   0.0f,
 	};
 
 	D3D11_BUFFER_DESC bufferDesc;
@@ -275,7 +290,7 @@ void Render()
 	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShader, nullptr, 0);
 
-	UINT32 vertexSize = sizeof(float)* 6;
+	UINT32 vertexSize = sizeof(TriangleVertex);
 	UINT32 offset = 0;
 	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &vertexSize, &offset);
 
