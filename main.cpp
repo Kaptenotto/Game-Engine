@@ -4,10 +4,10 @@
 #include <d3d11.h>
 #include <d3dcompiler.h>
 //#include <DirectXMath.h>
+#include "Structs.h"
 
 #include <string>
 #include "Structs.h"
-
 using namespace DirectX;
 
 #pragma comment (lib, "d3d11.lib")
@@ -27,12 +27,13 @@ ID3D11RenderTargetView* gBackBufferRTV = nullptr;
 
 ID3D11Texture2D* gBackBuffer = nullptr;
 ID3D11InputLayout* gVertexLayout = nullptr;
-ID3D11InputLayout* gVertexLayoutShader = nullptr;
 
 ID3D11VertexShader* gVertexShader = nullptr;
-ID3D11VertexShader* gVertexShadowShader = nullptr;
+ID3D11VertexShader* gVertexNormal = nullptr;
+ID3D11VertexShader* gVertexShadow = nullptr;
 ID3D11PixelShader* gPixelShader = nullptr;
 ID3D11GeometryShader* gGeometryShader = nullptr;
+ID3D11GeometryShader* gGeoShaderNormal = nullptr;
 
 XMVECTOR cameraPosVector = { 0, 0, -2};
 XMVECTOR lookAtVector = { 0, 0, 0 };
@@ -67,9 +68,59 @@ void CreateShaders()
 
 	D3D11_INPUT_ELEMENT_DESC inputDesc[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 	gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), pVS->GetBufferPointer(), pVS->GetBufferSize(), &gVertexLayout);
+	//Do not need the com object anymore therefor releasing it
+	pVS->Release();
+
+	//Create VertexNormal
+	ID3DBlob* pVSNormal = nullptr;
+	D3DCompileFromFile(
+		L"VertexNormal.hlsl",	//Name of file
+		nullptr,
+		nullptr,
+		"VSNormal_main",				// Name of main in file
+		"vs_4_0",
+		0,
+		0,
+		&pVSNormal,
+		nullptr
+		);
+
+	HRESULT Hr = gDevice->CreateVertexShader(pVSNormal->GetBufferPointer(), pVSNormal->GetBufferSize(), nullptr, &gVertexNormal);
+
+	D3D11_INPUT_ELEMENT_DESC inputDesc[] = {
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 12, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	};
+	gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), pVSNormal->GetBufferPointer(), pVSNormal->GetBufferSize(), &gVertexLayout);
+	//Do not need the com object anymore therefor releasing it
+	pVS->Release();
+
+	//Create VertexShadow
+	ID3DBlob* pVSShadow = nullptr;
+	D3DCompileFromFile(
+		L"VertexShadow.hlsl",	//Name of file
+		nullptr,
+		nullptr,
+		"VSShadow_main",				// Name of main in file
+		"vs_4_0",
+		0,
+		0,
+		&pVSShadow,
+		nullptr
+		);
+
+	HRESULT Hr = gDevice->CreateVertexShader(pVSShadow->GetBufferPointer(), pVSShadow->GetBufferSize(), nullptr, &gVertexShadow);
+
+	D3D11_INPUT_ELEMENT_DESC inputDesc[] = {
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 12, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	};
+	gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), pVSShadow->GetBufferPointer(), pVSShadow->GetBufferSize(), &gVertexLayout);
 	//Do not need the com object anymore therefor releasing it
 	pVS->Release();
 
@@ -108,32 +159,26 @@ void CreateShaders()
 	gDevice->CreateGeometryShader(pGS->GetBufferPointer(), pGS->GetBufferSize(), nullptr, &gGeometryShader);
 	pGS->Release();
 
-	//Create VertexShadow shader
-
-	ID3DBlob* pVSShadow = nullptr;
+	/*ID3DBlob* pGSN = nullptr;
 	D3DCompileFromFile(
-		L"VertexShadow.hlsl",	//name of file
-		nullptr,			//optional macros
-		nullptr,			// optional include files
-		"VSShadow_main",			// Entry point
-		"ps_4_0",			// Shader model target
-		0,					//shader compile options
-		0,					// Effect compile options
-		&pVSShadow,				//double pointer to ID3DBlob
-		nullptr				// point for error blob messages
+		L"GeoShaderNormal.hlsl",
+		nullptr,
+		nullptr,
+		"main",
+		"gs_4_0",
+		0,
+		0,
+		&pGSN,
+		nullptr
 		);
-	Hr = gDevice->CreateVertexShader(pVSShadow->GetBufferPointer(), pVSShadow->GetBufferSize(), nullptr, &gVertexShadowShader);
-
-	D3D11_INPUT_ELEMENT_DESC inputDescShadow[] = {
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 18, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 30, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
-
-	gDevice->CreateInputLayout(inputDescShadow, ARRAYSIZE(inputDescShadow), pVSShadow->GetBufferPointer(), pVSShadow->GetBufferSize(), &gVertexLayoutShader);
-	pVSShadow->Release();
+	gDevice->CreateGeometryShader(pGSN->GetBufferPointer(), pGSN->GetBufferSize(), nullptr, &gGeoShaderNormal);
+	pGSN->Release();*/
 }
+
+
+//skapa en loadtexture class.
+//Calculate modell vectors. alla faces alla normaler och tangents och binormals
+//
 
 void CreateTriangle()
 {
@@ -185,6 +230,8 @@ void ConstantBuffer()
 	HRESULT hr = gDevice->CreateBuffer(&desc, &data, &gConstantBuffer); // Creating a buffer in this case constantbuffer.
 
 	gDeviceContext->GSSetConstantBuffers(0, 1, &gConstantBuffer); //Setting the constant buffer to the geometry shader.
+
+	//lägg till två nya matriser mit ze codings
 }
 
 void SetViewport()
