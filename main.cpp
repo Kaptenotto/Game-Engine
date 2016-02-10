@@ -7,8 +7,11 @@
 
 #include <string>
 #include <dinput.h>
+#include <vector>
 
 #include "importer.h"
+#include "WICTextureLoader.h"
+
 using namespace DirectX;
 using namespace std;
 
@@ -47,9 +50,13 @@ XMVECTOR camUp = XMVectorSet( 0, 1, 0, 0 );
 // INITIALIZE BUFFERS ***********************************************
 ID3D11Buffer* gVertexBuffer = nullptr;
 ID3D11Buffer* gVertexBuffer2 = nullptr;
+ID3D11Buffer* gVertexBuffer3 = nullptr;
+
 
 ID3D11Buffer* gIndexBuffer = nullptr;
 ID3D11Buffer* gIndexBuffer2 = nullptr;
+ID3D11Buffer* gIndexBuffer3 = nullptr;
+
 
 
 
@@ -60,11 +67,17 @@ ID3D11Texture2D* gBackBuffer = nullptr;
 ID3D11RenderTargetView* gBackBufferRTV = nullptr;
 ID3D11DepthStencilView* gDepthStencilView = nullptr;
 
+ID3D11ShaderResourceView* shaderView = nullptr;
+
 // INITIALIZE OBJ-IMPORTER ******************************************
 //Importer obj;
 
 
+
+
 // INITIALIZE STRUCTS ***********************************************
+
+
 struct MatrixBuffer {
 	XMMATRIX World;
 	XMMATRIX camView;
@@ -111,6 +124,37 @@ float camPitch = 0.0f;
 
 //GLOBALS FOR INPUT ************************************************
 
+//LIGHT*************************************************************
+
+ID3D11Buffer* cbPerFrameBuffer;
+
+struct cbPerObject
+{
+	XMMATRIX WVP;
+	XMMATRIX World;
+}cbPerObject;
+
+struct Light
+{
+	Light()
+	{
+		ZeroMemory(this, sizeof(Light));
+	}
+	XMFLOAT3 dir;
+	float pad;
+	XMFLOAT4 ambient;
+	XMFLOAT4 diffuse;
+}light;
+
+
+struct cbPerFrame
+{
+	Light light;
+};
+cbPerFrame constbuffPerFrame;
+
+//******************************************************************
+
 HWND hWnd = NULL;
 
 
@@ -141,6 +185,13 @@ double frameTime;
 
 // FUNCTIONS********************************************************
 
+//TEXTURES *********************************************************
+
+ID3D11ShaderResourceView* cubesTexture;
+ID3D11SamplerState* cubeTextSampler;
+
+
+
 //
 
 void CreateShaders()
@@ -148,7 +199,9 @@ void CreateShaders()
 	D3D11_INPUT_ELEMENT_DESC inputDesc[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-};
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+	};
 	//Create the vertex shader
 
 	ID3DBlob* pVS = nullptr;
@@ -206,6 +259,10 @@ void CreateShaders()
 		);
 	gDevice->CreateGeometryShader(pGS->GetBufferPointer(), pGS->GetBufferSize(), nullptr, &gGeometryShader);
 	pGS->Release();
+
+	
+	//HRESULT hr = CreateWICTextureFromFile(gDevice, L"SCIFI.jpg", );
+
 }
 
 void createGround() // FUNCTION FOR VERTEXBUFFER AND INDICESBUFFER FOR GROUND
@@ -266,25 +323,25 @@ void createTriangle()
 	TriangleVertex2 triangleVertices[] =
 	{
 		-1.0f,-1.0f,-1.0f,
-		1.0f,   1.0f,   1.0f,
+		1.0f,   0.0f,   0.0f,
 
 		-1.0f,+1.0f,-1.0f,
-		1.0f,   0.0f,   0.0f,
+		0.0f,   1.0f,   0.0f,
 
 		+ 1.0f,+1.0f,-1.0f,
-		1.0f,   0.0f,   0.0f,
+		0.0f,   1.0f,   0.0f,
 
 		+1.0f,-1.0f,-1.0f,
 		1.0f,   0.0f,   0.0f,
 
 		-1.0f,-1.0f,+1.0f,
-		1.0f,   1.0f,   1.0f,
+		0.0f,   0.0f,   1.0f,
 
 		-1.0f,+1.0f,+1.0f,
 		1.0f,   0.0f,   0.0f,
 
 		+1.0f,+1.0f,+1.0f,
-		1.0f,   1.0f,   1.0f,
+		1.0f,   0.0f,   0.0f,
 
 		+1.0f,-1.0f,+1.0f,
 		1.0f,   0.0f,   0.0f,
@@ -303,7 +360,7 @@ void createTriangle()
 	data.pSysMem = triangleVertices;
 	HRESULT hr = gDevice->CreateBuffer(&bufferdesc, &data, &gVertexBuffer);
 
-	UINT indices[] = {
+	UINT indices [] = {
 		0,1,2, // front face
 		0,2,3,
 
@@ -375,7 +432,7 @@ void ConstantBuffer()
 	float fovangleY = XM_PI * 0.45f;
 	float aspectRatio = 640.0f / 480.0f;
 	float nearZ = 0.5f;
-	float farZ = 20.0f;
+	float farZ = 1000.0f;
 
 	matrices.camView = XMMatrixLookAtLH(
 		(camPosition),
@@ -569,39 +626,35 @@ double getFrameTime()
 // END TIME FUNCTIONS ********************************************************
 
 void Update()
-{
-	static float angle = 0.0f;
-
-	/*angle -= 0.0001f;*/
-
-	/*matrices.World = XMMatrixRotationY(angle);*/
-	
+{	
 	gDeviceContext->UpdateSubresource(gConstantBuffer, 0, 0, &matrices, 0, 0);
 
 	gDeviceContext->GSSetConstantBuffers(0, 1, &gConstantBuffer);
 }
-//
-//void RenderPlane()
-//{
-//	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
-//	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
-//	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
-//	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
-//	gDeviceContext->PSSetShader(gPixelShader, nullptr, 0);
-//
-//	UINT32 vertexSize2 = sizeof(GroundVertex);
-//
-//	UINT32 offset = 0;
-//
-//	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer2, &vertexSize2, &offset);
-//
-//	gDeviceContext->IASetIndexBuffer(gIndexBuffer2, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
-//
-//	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-//	gDeviceContext->IASetInputLayout(gVertexLayout);
-//
-//	gDeviceContext->DrawIndexed(6, 0, 0);
-//}
+
+
+void RenderPlane()
+{
+	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
+	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
+	gDeviceContext->PSSetShader(gPixelShader, nullptr, 0);
+
+	UINT32 vertexSize2 = sizeof(GroundVertex);
+
+	UINT32 offset = 0;
+
+	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer2, &vertexSize2, &offset);
+
+	gDeviceContext->IASetIndexBuffer(gIndexBuffer2, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
+
+	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	gDeviceContext->IASetInputLayout(gVertexLayout);
+
+	gDeviceContext->DrawIndexed(6, 0, 0);
+}
+
 void Render()
 {
 
@@ -624,6 +677,8 @@ void Render()
 	gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT , 0); // sets the index buffer
 
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	//gDeviceContext->VSSetShaderResources(0, 1, &tex);
+
 	gDeviceContext->IASetInputLayout(gVertexLayout);
 
 	gDeviceContext->DrawIndexed(36,0,0);
@@ -673,7 +728,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 			{
 				Update();
 
-				Render(); // Rendera
+				Render();
+
+				RenderPlane();
+				// Rendera
 				/*RenderPlane();*/
 
 				frameCount++;
@@ -784,6 +842,13 @@ HRESULT CreateDirect3DContext(HWND hWnd)
 		LPVOID *ppvOut,								// This is the returned pointer to our direct input object
 		LPUNKNOWN punkOuter);						// This is used for COM aggregation
 
+
+	HRESULT CreateWICTextureFromFile(_In_ ID3D11Device* gDevice,
+		_In_opt_ ID3D11DeviceContext * gDeviceContext,
+		_Out_opt_ const wchar_t* szFileName,
+		_Out_opt_ ID3D11Resource ** texture,
+		_Out_opt_ ID3D11ShaderResourceView** textureView,
+		_In_ size_t maxsize = 0);
 													// Fill the swap chain description struct
 
 	SCD.BufferCount = 1;								// One back buffer
