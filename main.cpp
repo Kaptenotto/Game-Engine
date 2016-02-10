@@ -7,6 +7,7 @@
 
 #include <string>
 #include <dinput.h>
+#include <vector>
 
 #include "importer.h"
 using namespace DirectX;
@@ -46,7 +47,7 @@ XMVECTOR camUp = { 0, 1, 0 };
 
 // INITIALIZE BUFFERS ***********************************************
 ID3D11Buffer* gVertexBuffer = nullptr;
-ID3D11Buffer* gIndexBuffer = nullptr;
+// ID3D11Buffer* gIndexBuffer = nullptr;
 
 ID3D11Buffer* gConstantBuffer = nullptr;
 
@@ -131,7 +132,6 @@ void CreateShaders()
 {
 	D3D11_INPUT_ELEMENT_DESC inputDesc[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 };
 	//Create the vertex shader
 
@@ -197,7 +197,7 @@ void createTriangle()
 	//Reads obj-File
 	obj.read();
 
-	TriangleVertex2 triangleVertices;
+	//TriangleVertex2 triangleVertices;
 
 	//vector <float> triangleValues;
 	/*for (int i = 0; i < obj.vertices.size(); i++)
@@ -210,6 +210,8 @@ void createTriangle()
 		triangleVertices.b = 1.0f;
 	};*/
 
+
+	
 	
 		/*
 		-1.0f,-1.0f,-1.0f,
@@ -242,48 +244,48 @@ void createTriangle()
 	std::memset(&bufferdesc, 0, sizeof(bufferdesc));
 	bufferdesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bufferdesc.Usage = D3D11_USAGE_IMMUTABLE;
-	bufferdesc.ByteWidth = sizeof(obj.vertices[0]) * obj.vertices.size();
+	bufferdesc.ByteWidth = sizeof(obj.finalVector[0]) * obj.finalVector.size();
 	bufferdesc.MiscFlags = 0;
 	bufferdesc.StructureByteStride = 0;
 
 	D3D11_SUBRESOURCE_DATA data;
-	data.pSysMem = &obj.vertices[0];
+	data.pSysMem = &obj.finalVector[0];
 	HRESULT hr = gDevice->CreateBuffer(&bufferdesc, &data, &gVertexBuffer);
 
-	UINT indices[] = {
-		0,1,2, // front face
-		0,2,3,
+	//UINT indices[] = {
+	//	0,1,2, // front face
+	//	0,2,3,
 
-		4,6,5, // back face
-		4,7,6,
+	//	4,6,5, // back face
+	//	4,7,6,
 
-		4,5,1, // left
-		4,1,0,
+	//	4,5,1, // left
+	//	4,1,0,
 
-		3,2,6, // right
-		3,6,7,
+	//	3,2,6, // right
+	//	3,6,7,
 
-		1,5,6, // top face
-		1,6,2,
+	//	1,5,6, // top face
+	//	1,6,2,
 
-		4,0,3, // bot face
-		4,3,7,
-	};
+	//	4,0,3, // bot face
+	//	4,3,7,
+	//};
 
 
-	D3D11_BUFFER_DESC bufferDesc2;
-	bufferDesc2.ByteWidth = sizeof(obj.face_idxs[0]) * obj.face_idxs.size();
-	bufferDesc2.Usage = D3D11_USAGE_IMMUTABLE;
-	bufferDesc2.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	bufferDesc2.CPUAccessFlags = 0;
-	bufferDesc2.MiscFlags = 0;
-	bufferDesc2.StructureByteStride = 0;
+	//D3D11_BUFFER_DESC bufferDesc2;
+	//bufferDesc2.ByteWidth = sizeof(obj.face_idxs[0]) * obj.face_idxs.size();
+	//bufferDesc2.Usage = D3D11_USAGE_IMMUTABLE;
+	//bufferDesc2.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	//bufferDesc2.CPUAccessFlags = 0;
+	//bufferDesc2.MiscFlags = 0;
+	//bufferDesc2.StructureByteStride = 0;
 
-	D3D11_SUBRESOURCE_DATA initData;
-	//ZeroMemory(&initData, sizeof(D3D11_SUBRESOURCE_DATA));
-	initData.pSysMem = &obj.face_idxs[0];
+	//D3D11_SUBRESOURCE_DATA initData;
+	////ZeroMemory(&initData, sizeof(D3D11_SUBRESOURCE_DATA));
+	//initData.pSysMem = &obj.face_idxs[0];
 
-	hr = gDevice->CreateBuffer(&bufferDesc2, &initData, &gIndexBuffer);
+	//hr = gDevice->CreateBuffer(&bufferDesc2, &initData, &gIndexBuffer);
 }
 
 void createDepthStencil()
@@ -532,16 +534,17 @@ void Render()
 	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShader, nullptr, 0);
 
-	UINT32 vertexSize = sizeof(TriangleVertex2);
+	UINT32 vertexSize = obj.vertices.size();
+	//UINT32 indexSize = obj.index_counter;
 	UINT32 offset = 0;
 
 	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &vertexSize, &offset);
-	gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT , 0); // sets the index buffer
+	//gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT , 0); // sets the index buffer
 
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	gDeviceContext->IASetInputLayout(gVertexLayout);
 
-	gDeviceContext->DrawIndexed(36,0,0);
+	gDeviceContext->Draw(vertexSize,0);
 }
 
 // handle of instance                      commandline		 how the window is shown
@@ -586,7 +589,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		}
 
 		gVertexBuffer->Release();
-		gIndexBuffer->Release();
+		//gIndexBuffer->Release();
 		gConstantBuffer->Release();
 		gPixelShader->Release();
 		gGeometryShader->Release();

@@ -23,37 +23,43 @@ public:
 	int index_counter = 0;
 	int counter = 0;
 	int objCounter = 0;
+	int vtCounter = 0;
 
-	vector<XMFLOAT3> vertices;
-	vector<XMFLOAT2> uvs;
-	vector<XMFLOAT3> normals;
+
+	vector<AllInfo> finalVector;
+	vector<VertexPos> vertices;
+	vector<UVCoord> uvs;
+	vector<Normals> normals;
 	vector<Indexes> face_idxs;
-	vector<XMFLOAT3> diffuses;
-	vector<XMFLOAT3> ambients;
-	vector<XMFLOAT3> speculars;
-	vector<XMFLOAT3> transes;
+	vector<Diffuse> diffuses;
+	vector<Ambient> ambients;
+	vector<Specular> speculars;
+	vector<Trans> transes;
 	vector<string> groups;
 	vector<string> shadingGroups;
 	vector<string> mtlShadingGroups;
 	vector<string> textureMap;
 	vector<string> normalMap;
+	
 
 	//Temporary variables
 private:
+	
 	float temp_face_pos, temp_face_tex, temp_face_norm;
-	XMFLOAT3 tmp_vtx;
-	XMFLOAT2 tmp_tex;
-	XMFLOAT3 tmp_norm;
+	VertexPos tmp_vtx;
+	UVCoord tmp_tex;
+	Normals tmp_norm;
 	Indexes idx;
 	string tmp_grp;
 	string tmp_shadeGroup;
 	string tmp_mtlShadeGroup;
-	XMFLOAT3 tmp_diff;
-	XMFLOAT3 tmp_ambient;
-	XMFLOAT3 tmp_specular;
-	XMFLOAT3 tmp_trans;
+	Diffuse tmp_diff;
+	Ambient tmp_ambient;
+	Specular tmp_specular;
+	Trans tmp_trans;
 	string tmp_texMap;
 	string tmp_normMap;
+	AllInfo tmp_fin;
 };
 
 

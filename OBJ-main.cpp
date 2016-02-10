@@ -65,16 +65,13 @@ void Importer::read()
 			// Adding the vertex positions to a vector
 			vertices.push_back(tmp_vtx);
 
-			/*cout << special << "\n";
-			cout << vtx.x << " ";
-			cout << vtx.y << " ";
-			cout << vtx.z << "\n";*/
+			
 		}
 
 		else if (nextLine.substr(0, 3) == "vt ")
 		{
 			//Reading UV-Values
-			inputString >> special >> tmp_tex.x >> tmp_tex.y;
+			inputString >> special >> tmp_tex.u >> tmp_tex.v;
 			//Adding UV-Values to a Vector
 			uvs.push_back(tmp_tex);
 		}
@@ -251,7 +248,23 @@ void Importer::read()
 	}
 	mtlFile.close();
 	file.close();
+	for (int i = 0; i < face_idxs.size(); i++)
+	{
+		for (int j = 0; j < face_idxs[i].face_pos.size(); j++)
+		{
+			tmp_fin.x = vertices[face_idxs[i].face_pos[j]-1].x;
+			tmp_fin.y = vertices[face_idxs[i].face_pos[j]-1].y;
+			tmp_fin.z = vertices[face_idxs[i].face_pos[j]-1].z;
+			tmp_fin.u = uvs[face_idxs[i].face_tex[j]-1].u;
+			tmp_fin.v = uvs[face_idxs[i].face_tex[j]-1].v;
+			tmp_fin.nx = normals[face_idxs[i].face_norm[j]-1].x;
+			tmp_fin.ny = normals[face_idxs[i].face_norm[j]-1].y;
+			tmp_fin.nz = normals[face_idxs[i].face_norm[j]-1].z;
 
+			finalVector.push_back(tmp_fin);
+			//cout << import.face_idxs[i].face_pos[j] << ", " << import.face_idxs[i].face_tex[j] << ", " << import.face_idxs[i].face_norm[j] << ", ";
+		}
+	}
 }
 
 	/*for (int i = 0; i < vertices.size(); i++)
@@ -275,26 +288,34 @@ void Importer::read()
 	}
 	*/
 
-int main()
-{
-	Importer import;
-	import.read();
-
-	int counter = 0;
-	for (int i = 0; i < import.face_idxs.size(); i++)
-	{
-		for (int j = 0; j < import.face_idxs[i].face_pos.size(); j++)
-		{
-			//cout << import.face_idxs[i].face_pos[j] << ", " << import.face_idxs[i].face_tex[j] << ", " << import.face_idxs[i].face_norm[j] << ", ";
-			counter++;
-			if (counter == 3)
-			{
-				//cout << "\n";
-				counter = 0;
-			}
-		}
-	}
-
-
-	//cin.ignore();
-}
+//int main()
+//{
+//	Importer import;
+//	import.read();
+//
+//	int counter = 0;
+//	for (int i = 0; i < import.face_idxs.size(); i++)
+//	{
+//		for (int j = 0; j < import.face_idxs[i].face_pos.size(); j++)
+//		{
+//			import.finalVector[i].x = import.vertices[import.face_idxs[i].face_pos[j]].x;
+//			import.finalVector[i].y = import.vertices[import.face_idxs[i].face_pos[j]].y;
+//			import.finalVector[i].z = import.vertices[import.face_idxs[i].face_pos[j]].z;
+//			import.finalVector[i].u = import.uvs[import.face_idxs[i].face_tex[j]].u;
+//			import.finalVector[i].v = import.uvs[import.face_idxs[i].face_tex[j]].v;
+//			import.finalVector[i].nx = import.normals[import.face_idxs[i].face_norm[j]].x;
+//			import.finalVector[i].ny = import.normals[import.face_idxs[i].face_norm[j]].y;
+//			import.finalVector[i].nz = import.normals[import.face_idxs[i].face_norm[j]].z;
+//			//cout << import.face_idxs[i].face_pos[j] << ", " << import.face_idxs[i].face_tex[j] << ", " << import.face_idxs[i].face_norm[j] << ", ";
+//			counter++;
+//			if (counter == 3)
+//			{
+//				//cout << "\n";
+//				counter = 0;
+//			}
+//		}
+//	}
+//
+//
+//	//cin.ignore();
+//}
