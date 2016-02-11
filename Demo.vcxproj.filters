@@ -18,29 +18,38 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="OBJ_Structs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="OBJ-main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="OBJ_Structs.cpp">
+    <ClCompile Include="WICTextureLoader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="Fragment.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
     <FxCompile Include="Vertex.hlsl">
       <Filter>Source Files</Filter>
     </FxCompile>
     <FxCompile Include="GeometryShader.hlsl">
       <Filter>Source Files</Filter>
     </FxCompile>
-    <FxCompile Include="Fragment.hlsl">
-      <Filter>Source Files</Filter>
-    </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Structs.h">
+    <ClInclude Include="importer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="importer.h">
+    <ClInclude Include="WICTextureLoader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PlatformHelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
