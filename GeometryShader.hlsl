@@ -1,6 +1,6 @@
 struct GSOutput
 {
-	float4 pos : SV_POSITION;
+	float4 pos : POSITION;
 	float3 Color : COLOR;
 	float3 normal : NORMAL;
 	float3 lightPos : LIGHTPOSITION;

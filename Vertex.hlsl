@@ -37,24 +37,24 @@
 //	}
 //};
 
-cbuffer MatrixBuffer : register (b0)
-{
-	matrix worldMatrix;
-	matrix camView;
-	matrix projectionMatrix;
-}
+//cbuffer MatrixBuffer : register (b0)
+//{
+//	matrix worldMatrix;
+//	matrix camView;
+//	matrix projectionMatrix;
+//}
 
 struct VS_IN
 {
 	float4 pos : POSITION;
-	float3 norm : NORMAL;
 	float3 tex : COLOR;
+	float3 norm : NORMAL;
 };
 
 struct VS_OUT
 {
-	float4 pos : POSITION;
-	float3 norm : NORMAL;
+	float4 pos : SV_POSITION;
+	//float3 norm : TEXCOORD1;
 	float3 tex : COLOR;
 	//float4 posLightH : TEXCOORD3;
 };
@@ -66,10 +66,11 @@ VS_OUT VS_main(VS_IN input)
 {
 	VS_OUT output = (VS_OUT)0;
 
-	matrix cMatrix = mul(mul(worldMatrix, camView), projectionMatrix);
+	//matrix cMatrix = mul(mul(worldMatrix, camView), projectionMatrix);
 
-	output.pos = mul(input.pos, cMatrix);
-	output.norm = mul(input.norm, worldMatrix);
+	//output.pos = mul(input.pos, cMatrix);
+	output.pos = input.pos;
+	//output.norm = mul(input.norm, worldMatrix);
 	output.tex = input.tex;
 	//output.posLightH = mul(input.pos, gLightWVP);
 

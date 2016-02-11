@@ -11,10 +11,10 @@ SamplerState sampAni;
 
 struct VS_OUT
 {
-	float3 pos : POSITION;
-	float3 norm : NORMAL;
+	float4 pos : SV_POSITION;
 	float3 tex : COLOR; //ska va tex
-//	float4 posLightH : TEXCOORD3;
+	float3 norm : NORMAL;
+	float3 posLightH : LIGHTPOSITION;
 };
 //struct Light
 //{
@@ -66,5 +66,5 @@ float4 PS_main(VS_OUT input) : SV_Target
 
 	float3 s = txDiffuse.Sample(sampAni, input.tex).xyz;
 
-	return float4(input.tex, 1.0f);
+	return float4(1.0f, 1.0f, 1.0f, 1.0f);
 };
