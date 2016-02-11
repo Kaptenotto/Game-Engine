@@ -270,6 +270,7 @@ void CreateShaders()
 
 }
 
+
 void createGround() // FUNCTION FOR VERTEXBUFFER AND INDICESBUFFER FOR GROUND
 {
 	GroundVertex ground[] = {
