@@ -196,8 +196,9 @@ void CreateShaders()
 	//Reads obj-File
 	obj.read();
 
-
 }
+
+
 
 void createTriangle()
 {
@@ -505,7 +506,7 @@ void Render()
 	UINT32 vertexCount = obj.finalVector.size();
 	UINT32 indexSize = obj.index_counter;
 	UINT32 offset = 0;
-
+	//skriv en 2a
 	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &vertexSize, &offset);
 	gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT , 0); // sets the index buffer
 

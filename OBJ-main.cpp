@@ -249,6 +249,11 @@ void Importer::read()
 	//reverse(finalVector.begin(), finalVector.end());
 }
 
+
+//SEBBE NORMAL SHEIT
+
+
+
 	/*for (int i = 0; i < vertices.size(); i++)
 	{
 		cout << "x: " << vertices[i].x << " ";
