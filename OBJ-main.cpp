@@ -222,6 +222,8 @@ void Importer::read()
 		{
 			inputString >> special >> tmp_normMap;
 
+			tmp_normMap = "./objFiles/" + tmp_normMap;
+
 			//cout << tmp_normMap << "\n";
 			normalMap.push_back(tmp_normMap);
 		}

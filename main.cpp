@@ -198,7 +198,6 @@ void createTriangle()
 {
 	//Reads obj-File
 	obj.read();
-	
 
 	D3D11_BUFFER_DESC bufferdesc;
 	std::memset(&bufferdesc, 0, sizeof(bufferdesc));
