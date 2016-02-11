@@ -1,11 +1,11 @@
 
-matrix gLightWVP
+matrix gLightWVP;
 
 //shadowdepthmapstuff
-float4 VS(float3 posL : POSITION) : SV_POSITION
+float4 VS(float3 posLight : POSITION) : SV_POSITION
 {
 	return mul(float4(posLight, 1.0f), gLightWVP);
-}
+};
 
 BlendState NoBlend
 {
@@ -17,7 +17,8 @@ RasterizerState rs
 	FillMode = Solid;
 	CullMode = Front;
 };
-DepthStencilState EnableDepth;
+
+DepthStencilState EnableDepth
 {
 	DepthEnable = TRUE;
 	DepthWriteMask = ALL;
@@ -32,8 +33,8 @@ technique10 RenderShadowMap
 		SetPixelShader(NULL);
 		SetDepthStencilState(EnableDepth, 0);
 		SetBlendState(NoBlend, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
-		SetRaserizerState(rs);
-	};
+		SetRasterizerState(rs);
+	}
 };
 
 cbuffer MatrixBuffer : register (b0)
@@ -47,14 +48,14 @@ struct VS_IN
 {
 	float4 pos : POSITION;
 	float3 norm : NORMAL;
-	float2 tex : TEXCOORD0;
+	float2 tex : COLOR;
 };
 
 struct VS_OUT
 {
-	float3 pos : POSITION;
-	float3 norm : NORMAL;
-	float2 tex : TEXCOORD0;
+	float4 pos : POSITION;
+	float3 norm : TEXCOORD1;
+	float2 tex : COLOR;
 	float4 posLightH : TEXCOORD3;
 };
 
@@ -65,12 +66,12 @@ VS_OUT VS_main(VS_IN input)
 {
 	VS_OUT output = (VS_OUT)0;
 
-	matrix cMatrix = mul(mul(worldMatrix, ViewMatrix), projectionMatrix);
+	matrix cMatrix = mul(mul(worldMatrix, camView), projectionMatrix);
 
 	output.pos = mul(input.pos, cMatrix);
-	output.normal = mul(input.normal, WorldMatrix);
+	output.norm = mul(input.norm, worldMatrix);
 	output.tex = input.tex;
-	output.posLightH = mul(input.pos, LightWVP);
+	output.posLightH = mul(input.pos, gLightWVP);
 
 	return output;
 }
