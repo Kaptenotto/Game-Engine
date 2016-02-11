@@ -69,9 +69,6 @@ ID3D11DepthStencilView* gDepthStencilView = nullptr;
 
 ID3D11ShaderResourceView* shaderView = nullptr;
 
-//ID3D11DepthStencilView* gShadowDepthStencilView = nullptr;
-//ID3D11ShaderResourceView* ShadowDepthResource = nullptr;
-
 // INITIALIZE OBJ-IMPORTER ******************************************
 //Importer obj;
 
@@ -84,7 +81,8 @@ ID3D11ShaderResourceView* shaderView = nullptr;
 struct MatrixBuffer {
 	XMMATRIX World;
 	XMMATRIX camView;
-	XMMATRIX Projection;	
+	XMMATRIX Projection;
+	
 };
 MatrixBuffer matrices;
 
@@ -200,9 +198,9 @@ void CreateShaders()
 {
 	D3D11_INPUT_ELEMENT_DESC inputDesc[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 3, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 6, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		//{ "TEXCOORD", 3, DXGI_FORMAT_R32G32_FLOAT, 0, 28, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 20, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 	//Create the vertex shader
 
@@ -318,44 +316,6 @@ void createGround() // FUNCTION FOR VERTEXBUFFER AND INDICESBUFFER FOR GROUND
 	hr = gDevice->CreateBuffer(&iBD, &dataIG, &gIndexBuffer2);
 }
 
-//void createLightDepthStencil()
-//{
-//	
-//	ID3D11Texture2D* shadowDepthStencil = NULL;
-//	
-//	D3D11_TEXTURE2D_DESC descDepth;
-//	descDepth.Width = (float)640;
-//	descDepth.Height = (float)480;
-//	descDepth.MipLevels = 1;
-//	descDepth.ArraySize = 1;
-//	descDepth.Format = DXGI_FORMAT_R32_TYPELESS;
-//	descDepth.SampleDesc.Count = 1;
-//	descDepth.SampleDesc.Quality = 0;
-//	descDepth.Usage = D3D11_USAGE_DEFAULT;
-//	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
-//	descDepth.CPUAccessFlags = 0;
-//	descDepth.MiscFlags = 0;
-//
-//	HRESULT hr = gDevice->CreateTexture2D(&descDepth, NULL, &shadowDepthStencil);
-//	
-//	D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
-//	ZeroMemory(&descDSV, sizeof(descDSV));
-//	descDSV.Format = DXGI_FORMAT_D32_FLOAT;
-//	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
-//	descDSV.Texture2D.MipSlice = 0;
-//
-//	hr = gDevice->CreateDepthStencilView(shadowDepthStencil, &descDSV, &gShadowDepthStencilView);
-//
-//	D3D11_SHADER_RESOURCE_VIEW_DESC ShadowRDesc;
-//	ShadowRDesc.Format = DXGI_FORMAT_R32_FLOAT;
-//	ShadowRDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-//	ShadowRDesc.Texture2D.MostDetailedMip = 0;
-//	ShadowRDesc.Texture2D.MipLevels = 1;
-//
-//	hr = gDevice->CreateShaderResourceView(shadowDepthStencil, &ShadowRDesc, &ShadowDepthResource);
-//
-//	shadowDepthStencil->Release();
-//}
 
 void createTriangle()
 {
@@ -363,28 +323,29 @@ void createTriangle()
 	TriangleVertex2 triangleVertices[] =
 	{
 		-1.0f,-1.0f,-1.0f,
-		1.0f,   1.0f,   1.0f,
+		1.0f,   0.0f,   0.0f,
 
 		-1.0f,+1.0f,-1.0f,
-		1.0f,   1.0f,   1.0f,
+		0.0f,   1.0f,   0.0f,
 
 		+ 1.0f,+1.0f,-1.0f,
-		1.0f,   1.0f,   1.0f,
+		0.0f,   1.0f,   0.0f,
 
 		+1.0f,-1.0f,-1.0f,
-		1.0f,   1.0f,   1.0f,
+		1.0f,   0.0f,   0.0f,
 
 		-1.0f,-1.0f,+1.0f,
-		1.0f,   1.0f,   1.0f,
+		0.0f,   0.0f,   1.0f,
 
 		-1.0f,+1.0f,+1.0f,
-		1.0f,   1.0f,   1.0f,
+		1.0f,   0.0f,   0.0f,
 
 		+1.0f,+1.0f,+1.0f,
-		1.0f,   1.0f,   1.0f,
+		1.0f,   0.0f,   0.0f,
 
 		+1.0f,-1.0f,+1.0f,
-		1.0f,   1.0f,   1.0f,
+		1.0f,   0.0f,   0.0f,
+
 	};
 
 	D3D11_BUFFER_DESC bufferdesc;
