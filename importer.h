@@ -24,6 +24,7 @@ public:
 	int counter = 0;
 	int objCounter = 0;
 	int vtCounter = 0;
+	int materialIndex = 0;
 
 
 	vector<AllInfo> finalVector;
@@ -36,7 +37,7 @@ public:
 	vector<Specular> speculars;
 	vector<Trans> transes;
 	vector<string> groups;
-	vector<string> shadingGroups;
+	vector<Material> materialInfo;
 	vector<string> mtlShadingGroups;
 	vector<string> textureMap;
 	vector<string> normalMap;
@@ -45,13 +46,15 @@ public:
 	//Temporary variables
 private:
 	
-	Indexes tmp_idx;
+	Indexes tmp_idx1;
+	Indexes tmp_idx2;
+	Indexes tmp_idx3;
 	VertexPos tmp_vtx;
 	UVCoord tmp_tex;
 	Normals tmp_norm;
 	Indexes idx;
 	string tmp_grp;
-	string tmp_shadeGroup;
+	Material tmp_materialInfo;
 	string tmp_mtlShadeGroup;
 	Diffuse tmp_diff;
 	Ambient tmp_ambient;

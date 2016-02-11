@@ -132,8 +132,8 @@ void CreateShaders()
 {
 	D3D11_INPUT_ELEMENT_DESC inputDesc[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 3 , D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 5, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 };
 	//Create the vertex shader
 
@@ -198,48 +198,6 @@ void createTriangle()
 {
 	//Reads obj-File
 	obj.read();
-
-	//TriangleVertex2 triangleVertices;
-
-	//vector <float> triangleValues;
-	/*for (int i = 0; i < obj.vertices.size(); i++)
-	{
-		triangleVertices.x = obj.vertices[i].x;
-		triangleVertices.y = obj.vertices[i].y;
-		triangleVertices.z = obj.vertices[i].z;
-		triangleVertices.r = 1.0f;
-		triangleVertices.g = 1.0f;
-		triangleVertices.b = 1.0f;
-	};*/
-
-
-	
-	
-		/*
-		-1.0f,-1.0f,-1.0f,
-		1.0f,   1.0f,   1.0f,
-
-		-1.0f,+1.0f,-1.0f,
-		1.0f,   0.0f,   0.0f,
-
-		+ 1.0f,+1.0f,-1.0f,
-		1.0f,   0.0f,   0.0f,
-
-		+1.0f,-1.0f,-1.0f,
-		1.0f,   0.0f,   0.0f,
-
-		-1.0f,-1.0f,+1.0f,
-		1.0f,   1.0f,   1.0f,
-
-		-1.0f,+1.0f,+1.0f,
-		1.0f,   0.0f,   0.0f,
-
-		+1.0f,+1.0f,+1.0f,
-		1.0f,   1.0f,   1.0f,
-
-		+1.0f,-1.0f,+1.0f,
-		1.0f,   0.0f,   0.0f,
-*/
 	
 
 	D3D11_BUFFER_DESC bufferdesc;
@@ -257,19 +215,19 @@ void createTriangle()
 	//UINT indices[] = {
 	//	0,1,2, // front face
 	//	0,2,3,
-
+	//
 	//	4,6,5, // back face
 	//	4,7,6,
-
+	//
 	//	4,5,1, // left
 	//	4,1,0,
-
+	//
 	//	3,2,6, // right
 	//	3,6,7,
-
+	//
 	//	1,5,6, // top face
 	//	1,6,2,
-
+	//
 	//	4,0,3, // bot face
 	//	4,3,7,
 	//};
@@ -535,7 +493,8 @@ void Render()
 	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShader, nullptr, 0);
 
-	UINT32 vertexSize = obj.vertices.size();
+	UINT32 vertexSize = sizeof(obj.finalVector[0]);
+	UINT32 vertexCount = obj.finalVector.size();
 	UINT32 indexSize = obj.index_counter;
 	UINT32 offset = 0;
 
@@ -545,7 +504,7 @@ void Render()
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	gDeviceContext->IASetInputLayout(gVertexLayout);
 
-	gDeviceContext->DrawIndexed(indexSize,0,0);
+	gDeviceContext->Draw(vertexCount,0);
 }
 
 // handle of instance                      commandline		 how the window is shown

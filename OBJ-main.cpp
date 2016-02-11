@@ -66,6 +66,8 @@ void Importer::read()
 			vertices.push_back(tmp_vtx);
 
 			
+
+			
 		}
 
 		else if (nextLine.substr(0, 3) == "vt ")
@@ -86,11 +88,11 @@ void Importer::read()
 		else if (nextLine.substr(0, 2) == "f ")
 		{
 			//Reading the first Face-Index (*i/j/k* i/j/k i/j/k)
-			inputString >> special >> tmp_idx.face_pos >> slashes >> tmp_idx.face_tex >> slashes >> tmp_idx.face_norm;
+			inputString >> special >> tmp_idx1.face_pos >> slashes >> tmp_idx1.face_tex >> slashes >> tmp_idx1.face_norm;
 			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex <<  "/" << idx.temp_face_norm << " ";
 
 			//Pushing the temporairy vectors to the final vector
-			face_idxs.push_back(tmp_idx);
+			//face_idxs.push_back(tmp_idx);
 
 			//How many indexes there are
 			index_counter++;
@@ -98,13 +100,13 @@ void Importer::read()
 
 
 			//Reading the second Face-Index (i/j/k *i/j/k* i/j/k)
-			inputString >> tmp_idx.face_pos >> slashes >> tmp_idx.face_tex >> slashes >> tmp_idx.face_norm;
+			inputString >> tmp_idx2.face_pos >> slashes >> tmp_idx2.face_tex >> slashes >> tmp_idx2.face_norm;
 			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex << "/" << idx.temp_face_norm << " ";
 
 
 	
 			//Pushing the temporairy vectors to the final vector
-			face_idxs.push_back(tmp_idx);
+			//face_idxs.push_back(tmp_idx);
 
 			//How many indexes there are
 			index_counter++;
@@ -112,14 +114,20 @@ void Importer::read()
 
 
 			//Reading the third Face-Index (i/j/k i/j/k *i/j/k*)
-			inputString >> tmp_idx.face_pos >> slashes >> tmp_idx.face_tex >> slashes >> tmp_idx.face_norm;
+			inputString >> tmp_idx3.face_pos >> slashes >> tmp_idx3.face_tex >> slashes >> tmp_idx3.face_norm;
 			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex << "/" << idx.temp_face_norm << "\n";
 
 			//Pushing the temporairy vectors to the final vector
-			face_idxs.push_back(tmp_idx);
+			//face_idxs.push_back(tmp_idx);
 
 			//How many indexes there are
 			index_counter++;
+
+			face_idxs.push_back(tmp_idx1);
+			face_idxs.push_back(tmp_idx3);
+			face_idxs.push_back(tmp_idx2);
+			
+			materialIndex++;
 
 
 		}
@@ -146,10 +154,12 @@ void Importer::read()
 		else if (nextLine.substr(0, 7) == "usemtl ")
 		{
 			//Reading shader group
-			inputString >> special >> tmp_shadeGroup;
+			inputString >> special >> tmp_materialInfo.shadingGroup;
+
+			tmp_materialInfo.materialOffset = materialIndex;
 
 			//pushing the found shader group to a Vector
-			shadingGroups.push_back(tmp_shadeGroup);
+			materialInfo.push_back(tmp_materialInfo);
 			//cout << tmp_shadeGroup;
 		}
 
@@ -221,21 +231,20 @@ void Importer::read()
 	file.close();
 	for (int i = 0; i < face_idxs.size(); i++)
 	{
-		
-		
 			tmp_fin.x = vertices[face_idxs[i].face_pos-1].x;
 			tmp_fin.y = vertices[face_idxs[i].face_pos-1].y;
-			tmp_fin.z = vertices[face_idxs[i].face_pos-1].z;
+			tmp_fin.z = vertices[face_idxs[i].face_pos-1].z * -1;
 			tmp_fin.u = uvs[face_idxs[i].face_tex-1].u;
-			tmp_fin.v = uvs[face_idxs[i].face_tex-1].v;
+			tmp_fin.v = 1 - uvs[face_idxs[i].face_tex-1].v;
 			tmp_fin.nx = normals[face_idxs[i].face_norm-1].x;
 			tmp_fin.ny = normals[face_idxs[i].face_norm-1].y;
-			tmp_fin.nz = normals[face_idxs[i].face_norm-1].z;
+			tmp_fin.nz = normals[face_idxs[i].face_norm-1].z * -1;
 
 			finalVector.push_back(tmp_fin);
 			//cout << import.face_idxs[i].face_pos[j] << ", " << import.face_idxs[i].face_tex[j] << ", " << import.face_idxs[i].face_norm[j] << ", ";
 		
 	}
+	//reverse(finalVector.begin(), finalVector.end());
 }
 
 	/*for (int i = 0; i < vertices.size(); i++)

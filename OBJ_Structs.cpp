@@ -11,9 +11,9 @@ using namespace std;
 
 struct Indexes
 {
-	float face_pos,
-		  face_tex,
-		  face_norm;
+	int face_pos,
+		face_tex,
+		face_norm;
 };
 
 struct AllInfo 
@@ -51,4 +51,10 @@ struct Specular
 struct Trans
 {
 	float x, y, z;
+};
+
+struct Material 
+{
+	string shadingGroup;
+	int materialOffset;
 };

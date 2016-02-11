@@ -23,7 +23,7 @@ VS_OUT VS_main(VS_IN input)
 	//output.Color = float3 (1.0f,1.0f,1.0f);
 
 	output.uvs = input.uvs;
-	output.norm = (input.norm,1);
+	output.norm = float4(input.norm,1);
 
 	return output;
 }
