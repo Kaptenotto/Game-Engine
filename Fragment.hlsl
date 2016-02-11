@@ -4,14 +4,14 @@ SamplerState sampAni;
 struct VS_OUT
 {
 	float4 pos : SV_POSITION;
-	float3 Color : COLOR;
-	float3 normal : NORMAL;
+	float2 uvs : TEXCOORD;
+	float4 normal : NORMAL;
 };
 
 float4 PS_main(VS_OUT input) : SV_Target
 {
 	
-	float3 s = txDiffuse.Sample(sampAni, input.Color).xyz;
+	float3 s = txDiffuse.Sample(sampAni, input.uvs).xyz;
 
-	return float4(input.Color, 1.0f);
+	return float4(input.uvs,1.0f, 1.0f);
 };

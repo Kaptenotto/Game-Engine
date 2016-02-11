@@ -45,7 +45,7 @@ public:
 	//Temporary variables
 private:
 	
-	float temp_face_pos, temp_face_tex, temp_face_norm;
+	Indexes tmp_idx;
 	VertexPos tmp_vtx;
 	UVCoord tmp_tex;
 	Normals tmp_norm;

@@ -11,7 +11,9 @@ using namespace std;
 
 struct Indexes
 {
-	vector<float> face_pos, face_tex, face_norm;
+	float face_pos,
+		  face_tex,
+		  face_norm;
 };
 
 struct AllInfo 

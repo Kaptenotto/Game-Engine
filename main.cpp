@@ -47,7 +47,7 @@ XMVECTOR camUp = { 0, 1, 0 };
 
 // INITIALIZE BUFFERS ***********************************************
 ID3D11Buffer* gVertexBuffer = nullptr;
-// ID3D11Buffer* gIndexBuffer = nullptr;
+ID3D11Buffer* gIndexBuffer = nullptr;
 
 ID3D11Buffer* gConstantBuffer = nullptr;
 
@@ -132,6 +132,8 @@ void CreateShaders()
 {
 	D3D11_INPUT_ELEMENT_DESC inputDesc[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 };
 	//Create the vertex shader
 
@@ -273,19 +275,18 @@ void createTriangle()
 	//};
 
 
-	//D3D11_BUFFER_DESC bufferDesc2;
-	//bufferDesc2.ByteWidth = sizeof(obj.face_idxs[0]) * obj.face_idxs.size();
-	//bufferDesc2.Usage = D3D11_USAGE_IMMUTABLE;
-	//bufferDesc2.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	//bufferDesc2.CPUAccessFlags = 0;
-	//bufferDesc2.MiscFlags = 0;
-	//bufferDesc2.StructureByteStride = 0;
+	D3D11_BUFFER_DESC bufferDesc2;
+	bufferDesc2.ByteWidth = sizeof(obj.face_idxs[0]) * obj.face_idxs.size();
+	bufferDesc2.Usage = D3D11_USAGE_IMMUTABLE;
+	bufferDesc2.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	bufferDesc2.CPUAccessFlags = 0;
+	bufferDesc2.MiscFlags = 0;
+	bufferDesc2.StructureByteStride = 0;
 
-	//D3D11_SUBRESOURCE_DATA initData;
-	////ZeroMemory(&initData, sizeof(D3D11_SUBRESOURCE_DATA));
-	//initData.pSysMem = &obj.face_idxs[0];
-
-	//hr = gDevice->CreateBuffer(&bufferDesc2, &initData, &gIndexBuffer);
+	D3D11_SUBRESOURCE_DATA initData;
+	//ZeroMemory(&initData, sizeof(D3D11_SUBRESOURCE_DATA));
+	initData.pSysMem = &obj.face_idxs[0];
+	hr = gDevice->CreateBuffer(&bufferDesc2, &initData, &gIndexBuffer);
 }
 
 void createDepthStencil()
@@ -535,16 +536,16 @@ void Render()
 	gDeviceContext->PSSetShader(gPixelShader, nullptr, 0);
 
 	UINT32 vertexSize = obj.vertices.size();
-	//UINT32 indexSize = obj.index_counter;
+	UINT32 indexSize = obj.index_counter;
 	UINT32 offset = 0;
 
 	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &vertexSize, &offset);
-	//gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT , 0); // sets the index buffer
+	gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT , 0); // sets the index buffer
 
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	gDeviceContext->IASetInputLayout(gVertexLayout);
 
-	gDeviceContext->Draw(vertexSize,0);
+	gDeviceContext->DrawIndexed(indexSize,0,0);
 }
 
 // handle of instance                      commandline		 how the window is shown
@@ -589,7 +590,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		}
 
 		gVertexBuffer->Release();
-		//gIndexBuffer->Release();
+		gIndexBuffer->Release();
 		gConstantBuffer->Release();
 		gPixelShader->Release();
 		gGeometryShader->Release();
