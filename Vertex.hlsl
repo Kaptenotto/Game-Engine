@@ -1,6 +1,12 @@
 
 matrix gLightWVP
 
+//shadowdepthmapstuff
+float4 VS(float3 posL : POSITION) : SV_POSITION
+{
+	return mul(float4(posLight, 1.0f), gLightWVP);
+}
+
 BlendState NoBlend
 {
 	BlendEnable[0] = FALSE;
@@ -30,6 +36,13 @@ technique10 RenderShadowMap
 	};
 };
 
+cbuffer MatrixBuffer : register (b0)
+{
+	matrix worldMatrix;
+	matrix camView;
+	matrix projectionMatrix;
+}
+
 struct VS_IN
 {
 	float4 pos : POSITION;
@@ -52,13 +65,12 @@ VS_OUT VS_main(VS_IN input)
 {
 	VS_OUT output = (VS_OUT)0;
 
-	output.pos = mul(input.pos, worldViewProjectionMatrix)
-	output.Color = input.Color;
+	matrix cMatrix = mul(mul(worldMatrix, ViewMatrix), projectionMatrix);
 
-	//shadowdepthmapstuff
-	float3 posLight;
-	float3 result = mul(float4(posLight, 1.0f), gLightWVP);
-
+	output.pos = mul(input.pos, cMatrix);
+	output.normal = mul(input.normal, WorldMatrix);
+	output.tex = input.tex;
+	output.posLightH = mul(input.pos, LightWVP);
 
 	return output;
 }
