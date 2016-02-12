@@ -9,6 +9,10 @@
 #include <dinput.h>
 #include <vector>
 
+#include <stdio.h>
+#include <io.h>
+#include <fcntl.h>
+
 #include "importer.h"
 #include "Wic.h"
 
@@ -247,12 +251,22 @@ void CreateShaders()
 	
 	ID3D11Resource* texResource;
 
+
+	
 	if (!obj.textureMap.empty())
 	{
+		wstring filePath;
+
+		
+		filePath.assign(obj.textureMap[0].begin(), obj.textureMap[0].end());
+
+		const wchar_t* wcharFilePath = filePath.c_str();
+
+
 		hr = CreateWICTextureFromFile(
 			gDevice,
 			gDeviceContext,
-			(LPWSTR)obj.textureMap[0].c_str(),
+			wcharFilePath,
 			&texResource, 
 			&textureResource,
 			0
@@ -260,7 +274,7 @@ void CreateShaders()
 	}
 
 
-	//texResource->Release();
+	texResource->Release();
 }
 
 
@@ -586,6 +600,26 @@ void Render()
 // handle of instance                      commandline		 how the window is shown
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) // wWinMain Predefined main for directx
 {
+	//adding a console
+	if (AllocConsole())
+	{
+		HANDLE handle_out = GetStdHandle(STD_OUTPUT_HANDLE);
+		int hCrt = _open_osfhandle((long)handle_out, _O_TEXT);
+		FILE* hf_out = _fdopen(hCrt, "w");
+		setvbuf(hf_out, NULL, _IONBF, 1);
+		*stdout = *hf_out;
+
+		HANDLE handle_in = GetStdHandle(STD_INPUT_HANDLE);
+		hCrt = _open_osfhandle((long)handle_in, _O_TEXT);
+		FILE* hf_in = _fdopen(hCrt, "r");
+		setvbuf(hf_in, NULL, _IONBF, 128);
+		*stdin = *hf_in;
+	}
+
+
+
+	// use the console just like a normal one - printf(), getchar(), ...
+
 	//Initialize window
 	MSG msg = { 0 };
 	HWND wndHandle = InitWindow(hInstance);						// Skapar fönstret

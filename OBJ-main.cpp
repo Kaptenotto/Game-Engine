@@ -64,9 +64,9 @@ void Importer::read()
 			// Adding the vertex positions to a vector
 			vertices.push_back(tmp_vtx);
 
-			
 
-			
+
+
 		}
 
 		else if (nextLine.substr(0, 3) == "vt ")
@@ -103,7 +103,7 @@ void Importer::read()
 			//cout << idx.temp_face_pos << "/" << idx.temp_face_tex << "/" << idx.temp_face_norm << " ";
 
 
-	
+
 			//Pushing the temporairy vectors to the final vector
 			//face_idxs.push_back(tmp_idx);
 
@@ -125,7 +125,7 @@ void Importer::read()
 			face_idxs.push_back(tmp_idx1);
 			face_idxs.push_back(tmp_idx3);
 			face_idxs.push_back(tmp_idx2);
-			
+
 			materialIndex++;
 
 
@@ -230,6 +230,24 @@ void Importer::read()
 		}
 
 	}
+
+	/*ifstream texFile("./objFiles/" + textureMap[0]);
+	if (texFile)
+	{
+		cout << "FÖR I HELVETE";
+	}
+	else
+	{
+		cout << "NEJ";
+	}
+
+	cin.ignore();*/
+
+
+
+
+
+
 	mtlFile.close();
 	file.close();
 	for (int i = 0; i < face_idxs.size(); i++)
