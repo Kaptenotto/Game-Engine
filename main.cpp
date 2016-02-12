@@ -597,8 +597,12 @@ void Render()
 	gDeviceContext->IASetInputLayout(gVertexLayout);
 
 	gDeviceContext->PSSetShaderResources(0, 1, &textureResource);
-	
-	// *************************DRAW*****************************
+
+
+
+	/************************************************************
+	 ****************************DRAW****************************
+     ************************************************************/
 
 	gDeviceContext->Draw(vertexCount,0);
 }
