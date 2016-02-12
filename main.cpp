@@ -14,6 +14,10 @@
 
 
 
+#include <Wincodec.h>
+
+
+
 using namespace DirectX;
 using namespace std;
 
@@ -62,8 +66,37 @@ ID3D11DepthStencilView* gDepthStencilView = nullptr;
 
 // INITIALIZE SHADER THINGS *****************************************
 
-ID3D11ShaderResourceView* texture;
+ID3D11ShaderResourceView* textureResource;
 ID3D11SamplerState* texSamplerState;
+
+//IWICImagingFactory* imgFac;
+
+static IWICImagingFactory * _GetWIC()
+{
+	static IWICImagingFactory* s_Factory = nullptr;
+
+	if (s_Factory)
+		return s_Factory;
+
+	HRESULT hr = CoCreateInstance(
+		CLSID_WICImagingFactory1,
+		nullptr,
+		CLSCTX_INPROC_SERVER,
+		__uuidof(IWICImagingFactory),
+		(LPVOID*)&s_Factory
+		);
+
+	if (FAILED(hr))
+	{
+		s_Factory = nullptr;
+		return nullptr;
+	}
+
+	return s_Factory;
+}
+
+//CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, __uuidof(IWICImagingFactory), (void**)&imgFac);
+
 
 // INITIALIZE OBJ-IMPORTER ******************************************
 Importer obj;
@@ -139,6 +172,8 @@ double frameTime;
 
 void CreateShaders()
 {
+	
+
 	D3D11_INPUT_ELEMENT_DESC inputDesc[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 3 , D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -205,8 +240,24 @@ void CreateShaders()
 	//Reads obj-File
 	obj.read();
 
+	HRESULT hr;
+	
+	ID3D11Resource* texResource;
+
+	if (obj.textureMap.size() > 0)
+	{
+		hr = CreateWICTextureFromFile(
+			gDevice,
+			gDeviceContext,
+			(LPWSTR)obj.textureMap[0].c_str(),
+			&texResource, 
+			&textureResource,
+			0
+			);
+	}
 
 
+	//texResource->Release();
 }
 
 

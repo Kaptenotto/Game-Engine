@@ -9,13 +9,12 @@ Importer::Importer()
 
 	index_counter = 0;
 	objCounter = 0;
+	
 	//string mtlFileName;
 	//string nextLine;
 	//char slashes;
 	//ifstream file(objFile);
 	//istringstream inputString;
-	
-
 	//vector<VertexPos> vertices;
 	//vector<TexCoord> uvs;
 	//vector<NormDir> normals;
@@ -31,7 +30,7 @@ Importer::Importer()
 	//vector<string> normalMap;
 	//
 	////Temporary variables
-
+	//
 	//VertexPos tmp_vtx;
 	//TexCoord tmp_tex;
 	//NormDir tmp_norm;
@@ -165,7 +164,7 @@ void Importer::read()
 
 	}
 
-	ifstream mtlFile(mtlFileName);
+	ifstream mtlFile(".\\objFiles\\" + mtlFileName);
 	while (std::getline(mtlFile, nextLine))
 	{
 		inputString.clear();
@@ -214,6 +213,8 @@ void Importer::read()
 		{
 			inputString >> special >> tmp_texMap;
 
+			tmp_texMap = ".\\objFiles\\" + tmp_texMap;
+
 			//cout << tmp_texMap << "\n";
 
 			textureMap.push_back(tmp_texMap);
@@ -222,7 +223,7 @@ void Importer::read()
 		{
 			inputString >> special >> tmp_normMap;
 
-			tmp_normMap = "./objFiles/" + tmp_normMap;
+			tmp_normMap = ".\\objFiles\\" + tmp_normMap;
 
 			//cout << tmp_normMap << "\n";
 			normalMap.push_back(tmp_normMap);

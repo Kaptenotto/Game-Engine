@@ -32,11 +32,14 @@ public:
 	vector<UVCoord> uvs;
 	vector<Normals> normals;
 	vector<Indexes> face_idxs;
+
 	vector<Diffuse> diffuses;
 	vector<Ambient> ambients;
 	vector<Specular> speculars;
 	vector<Trans> transes;
+
 	vector<string> groups;
+
 	vector<Material> materialInfo;
 	vector<string> mtlShadingGroups;
 	vector<string> textureMap;
