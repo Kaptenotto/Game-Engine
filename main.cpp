@@ -243,21 +243,24 @@ void CreateShaders()
 	pGS->Release();
 
 	//Reads obj-File
-	obj.read();
+	
 
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+}
 
+
+void createTextures()
+{
 	HRESULT hr;
-	
+
 	ID3D11Resource* texResource;
 
 
-	
+
 	if (!obj.textureMap.empty())
 	{
 		wstring filePath;
 
-		
 		filePath.assign(obj.textureMap[0].begin(), obj.textureMap[0].end());
 
 		const wchar_t* wcharFilePath = filePath.c_str();
@@ -267,13 +270,11 @@ void CreateShaders()
 			gDevice,
 			gDeviceContext,
 			wcharFilePath,
-			&texResource, 
+			&texResource,
 			&textureResource,
 			0
 			);
 	}
-
-
 	texResource->Release();
 }
 
@@ -429,7 +430,7 @@ void SetViewport()
 //		(void**)&directInput,
 //		NULL);
 //}
-
+//
 //void detectInput(double time) // checking keyboard and mouse input for movement in Engine
 //{
 //
@@ -483,7 +484,7 @@ void SetViewport()
 //
 //	return;
 //}
-
+//
 //void updateCamera()
 //{
 //	camRotationMatrix = XMMatrixRotationRollPitchYaw(camPitch, camYaw, 0); // Used to rotate around all the axis at the same time with the functoin XMMatixRotationpitchyaw
@@ -554,6 +555,9 @@ void SetViewport()
 //	return float(tickCount) / countsPerSecond;
 //}
 
+
+
+
 void Update()
 {
 	static float angle = 0.0f;
@@ -592,7 +596,9 @@ void Render()
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	gDeviceContext->IASetInputLayout(gVertexLayout);
 
+	gDeviceContext->PSSetShaderResources(0, 1, &textureResource);
 	
+	// *************************DRAW*****************************
 
 	gDeviceContext->Draw(vertexCount,0);
 }
@@ -626,6 +632,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 												//window is valid
 	if (wndHandle)
 	{
+		obj.read();
+
 		CreateDirect3DContext(wndHandle); //2. Skapa och koppla SwapChain, Device och Device Context
 
 		SetViewport();
@@ -636,6 +644,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		ConstantBuffer();
 
 		createTriangle();
+
+		createTextures();
 		
 		//Shows the window
 		ShowWindow(wndHandle, nCmdShow);

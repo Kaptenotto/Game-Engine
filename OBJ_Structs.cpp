@@ -53,6 +53,8 @@ struct Trans
 	float x, y, z;
 };
 
+
+
 struct Material 
 {
 	string shadingGroup;

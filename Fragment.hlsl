@@ -13,5 +13,10 @@ float4 PS_main(VS_OUT input) : SV_Target
 	
 	float3 s = txDiffuse.Sample(sampAni, input.uvs).xyz;
 
-	return float4(input.uvs,1.0f, 1.0f);
+
+	//Detta kan fucka up om det inte finns en textur. 
+	//"Vi bränner den bron när vi kommer till den" - Jesus, 2012
+	return float4(s, 1.0f);
+	
+	
 };
