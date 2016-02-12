@@ -56,6 +56,11 @@ ID3D11Texture2D* gBackBuffer = nullptr;
 ID3D11RenderTargetView* gBackBufferRTV = nullptr;
 ID3D11DepthStencilView* gDepthStencilView = nullptr;
 
+// INITIALIZE SHADER THINGS *****************************************
+
+ID3D11ShaderResourceView* texture;
+ID3D11SamplerState* texSamplerState;
+
 // INITIALIZE OBJ-IMPORTER ******************************************
 Importer obj;
 
