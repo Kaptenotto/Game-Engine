@@ -80,14 +80,13 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="OBJ-main.cpp" />
     <ClCompile Include="OBJ_Structs.cpp" />
-    <ClCompile Include="WICTextureLoader.cpp" />
+    <ClCompile Include="Wic.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Fragment.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">PS_main</EntryPointName>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="GeometryShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Geometry</ShaderType>
@@ -98,13 +97,12 @@
     <FxCompile Include="Vertex.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">VS_main</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Wic.h" />
     <ClInclude Include="importer.h" />
-    <ClInclude Include="pch.h" />
-    <ClInclude Include="PlatformHelpers.h" />
-    <ClInclude Include="WICTextureLoader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

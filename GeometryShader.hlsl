@@ -1,14 +1,16 @@
 struct GSOutput
 {
 	float4 pos : SV_POSITION;
-	float3 Color : COLOR;
+	float2 uvs : TEXCOORD;
 	float3 normal : NORMAL;
+	//float3 lightPos : LIGHTPOSITION;
 };
 
 struct GSINPUT
 {
 	float4 pos : SV_POSITION;
-	float3 Color : COLOR;
+	float2 uvs : TEXCOORD;
+	float4 norm : NORMAL;
 };
 
 cbuffer MatrixBuffer : register (b0)
@@ -40,10 +42,10 @@ void main(
 	{
 		output.pos = mul(input[i].pos, allMatrices);
 
-		output.Color = input[i].Color;
-		output.normal = mul(float4 (normal, 0), worldMatrix).xyz; // normal calculation
+		output.uvs = input[i].uvs;
+		output.normal = input[i].norm; //mul(float4 (normal, 0), worldMatrix).xyz; // normal calculation
 
-		worldPosition = mul(input[i].pos, worldMatrix); // calculating worldposition with multiplying pos with worldmatrix
+		//worldPosition = mul(input[i].pos, worldMatrix); // calculating worldposition with multiplying pos with worldmatrix
 															// a float3, minus the worldposition calculated previously
 		TriStream.Append(output);
 	}
