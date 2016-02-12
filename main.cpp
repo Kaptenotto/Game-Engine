@@ -52,9 +52,9 @@ ID3D11PixelShader* gPixelShader = nullptr;
 ID3D11GeometryShader* gGeometryShader = nullptr;
 //INITIALIZE VECTORS ***********************************************
 
-XMVECTOR camPosition = { 0, 0, -5};
-XMVECTOR camTarget = { 0, 0, 0 };
-XMVECTOR camUp = { 0, 1, 0 };
+XMVECTOR camPosition = XMVectorSet(0, 0, -5, 0);
+XMVECTOR camTarget = XMVectorSet(0, 0, 0, 0);
+XMVECTOR camUp = XMVectorSet(0, 1, 0, 0);
 
 
 // INITIALIZE BUFFERS ***********************************************
@@ -67,6 +67,9 @@ ID3D11Texture2D* gBackBuffer = nullptr;
 
 ID3D11RenderTargetView* gBackBufferRTV = nullptr;
 ID3D11DepthStencilView* gDepthStencilView = nullptr;
+
+ID3D11DepthStencilView* gShadowDepthStencilView = nullptr;
+ID3D11ShaderResourceView* ShadowDepthResource = nullptr;
 
 // INITIALIZE SHADER THINGS *****************************************
 
@@ -118,13 +121,14 @@ MatrixBuffer matrices;
 
 
 
-typedef struct DIMOUESTATE
+typedef struct DIMOUSESTATES
 {
 	LONG IX;
 	LONG IY;
 	LONG IZ;
 	BYTE rgbButtons[4];
-};DIMOUSESTATE *LPDIMOUSETATE;
+};
+
 
 // GLOBALS FOR FIRST PERSON CAMERA *********************************
 
@@ -144,10 +148,13 @@ float camPitch = 0.0f;
 
 //GLOBALS FOR INPUT ************************************************
 
-IDirectInputDevice8* diKeyboard;
-IDirectInputDevice8* diMouse;
+HWND wndHandle = NULL;
 
-DIMOUSESTATE mouseLastState;
+
+IDirectInputDevice8* DIKeyboard;
+IDirectInputDevice8* DIMouse;
+
+DIMOUSESTATES mouseLastState;
 LPDIRECTINPUT8 directInput;
 
 float rotx = 0;
@@ -157,8 +164,6 @@ float scaleY = 1.0f;
 
 XMMATRIX rotationX;
 XMMATRIX rotationY;
-
-
 
 // TIME GLOBALS ****************************************************
 
@@ -329,6 +334,46 @@ void createTriangle()
 	//ZeroMemory(&initData, sizeof(D3D11_SUBRESOURCE_DATA));
 	initData.pSysMem = &obj.face_idxs[0];
 	hr = gDevice->CreateBuffer(&bufferDesc2, &initData, &gIndexBuffer);
+}
+
+void createLightDepthStencil()
+{
+
+	ID3D11Texture2D* shadowDepthStencil = NULL;
+
+	D3D11_TEXTURE2D_DESC descDepth;
+	descDepth.Width = (float)640;
+	descDepth.Height = (float)480;
+	descDepth.MipLevels = 1;
+	descDepth.ArraySize = 1;
+	descDepth.Format = DXGI_FORMAT_R32_TYPELESS;
+	descDepth.SampleDesc.Count = 1;
+	descDepth.SampleDesc.Quality = 0;
+	descDepth.Usage = D3D11_USAGE_DEFAULT;
+	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+	descDepth.CPUAccessFlags = 0;
+	descDepth.MiscFlags = 0;
+
+	HRESULT hr = gDevice->CreateTexture2D(&descDepth, NULL, &shadowDepthStencil);
+
+	D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
+	ZeroMemory(&descDSV, sizeof(descDSV));
+	descDSV.Format = DXGI_FORMAT_D32_FLOAT;
+	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
+	descDSV.Texture2D.MipSlice = 0;
+
+	hr = gDevice->CreateDepthStencilView(shadowDepthStencil, &descDSV, &gShadowDepthStencilView);
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC ShadowRDesc;
+	ShadowRDesc.Format = DXGI_FORMAT_R32_FLOAT;
+	ShadowRDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	ShadowRDesc.Texture2D.MostDetailedMip = 0;
+	ShadowRDesc.Texture2D.MipLevels = 1;
+
+	hr = gDevice->CreateShaderResourceView(shadowDepthStencil, &ShadowRDesc, &ShadowDepthResource);
+
+	gDeviceContext->PSGetShaderResources(1, 1, &ShadowDepthResource);
+	//shadowDepthStencil->Release();
 }
 
 void createDepthStencil()
@@ -555,8 +600,146 @@ void SetViewport()
 //	return float(tickCount) / countsPerSecond;
 //}
 
+bool initDirectInput(HINSTANCE hIstancen)
+{
+	HRESULT hr = DirectInput8Create(
+		hIstancen,
+		DIRECTINPUT_VERSION,
+		IID_IDirectInput8,
+		(void**)&directInput,
+		NULL);
 
+	hr = directInput->CreateDevice(GUID_SysKeyboard,
+		&DIKeyboard,
+		NULL);
 
+	hr = directInput->CreateDevice(GUID_SysMouse,
+		&DIMouse,
+		NULL);
+
+	hr = DIKeyboard->SetDataFormat(&c_dfDIKeyboard);
+	hr = DIKeyboard->SetCooperativeLevel(wndHandle, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+
+	hr = DIMouse->SetDataFormat(&c_dfDIMouse);
+	hr = DIMouse->SetCooperativeLevel(wndHandle, DISCL_EXCLUSIVE | DISCL_NOWINKEY | DISCL_FOREGROUND);
+
+	return true;
+}
+
+void updateCamera()
+{
+	camRotationMatrix = XMMatrixRotationRollPitchYaw(camPitch, camYaw, 0); // Used to rotate around all the axis at the same time with the functoin XMMatixRotationpitchyaw
+	camTarget = XMVector3TransformCoord(defaultForward, camRotationMatrix); // sets the camera target vector by rotating the defaultforward vector with the
+																			// rotation matrix we created
+	camTarget = XMVector3Normalize(camTarget); // normalizing the camtarget vector
+
+	XMMATRIX RotateYTempMatrix;
+	RotateYTempMatrix = XMMatrixRotationY(camYaw); // Finding the new right and forward directions of the camera by  using a rotation matrix 
+												   //which will be rotated on the Y-axis, since its a first perosn camera we need to keep our cam forward and right pointing only in x and z axis
+
+												   // transforming the cameras right up and forwards vectors using the matrix just defined.
+												   // also rotating the default right up and default foward vectors and set the result in the right up and foward vectors.
+	/**/ camRight = XMVector3TransformCoord(defaultRight, RotateYTempMatrix);
+	/**/ camUp = XMVector3TransformCoord(camUp, RotateYTempMatrix);
+	/**/ camForward = XMVector3TransformCoord(defaultForward, RotateYTempMatrix);
+
+	camPosition += moveLeftRight* camRight;
+	camPosition += moveBackForward* camForward;
+
+	moveLeftRight = 0.0f;
+	moveBackForward = 0.0f;
+
+	camTarget = camPosition + camTarget;
+
+	matrices.camView = XMMatrixLookAtLH(camPosition, camTarget, camUp);
+	matrices.camView = XMMatrixTranspose(matrices.camView);
+}
+
+void detectInput(double time) // checking keyboard and mouse input for movement in Engine
+{
+
+	DIMOUSESTATES mouseCurrentState;
+
+	BYTE keyBoardState[256]; // the amount of buttons a char array of 256.
+
+	DIKeyboard->Acquire();
+	DIMouse->Acquire();
+
+	DIMouse->GetDeviceState(sizeof(DIMOUSESTATES), &mouseCurrentState);
+
+	DIKeyboard->GetDeviceState(sizeof(keyBoardState), (LPVOID)&keyBoardState);
+
+	float speed = 15.0f * time;
+
+	if (keyBoardState[DIK_ESCAPE] & 0x80)
+	{
+		PostMessage(wndHandle, WM_DESTROY, 0, 0);
+	}
+	if (keyBoardState[DIK_A] & 0x80)
+	{
+		moveLeftRight -= speed;
+	}
+	if (keyBoardState[DIK_D] & 0x80)
+	{
+		moveLeftRight += speed;
+	}
+	if (keyBoardState[DIK_W] & 0x80)
+	{
+		moveBackForward += speed;
+	}
+	if (keyBoardState[DIK_S] & 0x80)
+	{
+		moveBackForward -= speed;
+	}
+	if ((mouseCurrentState.IX != mouseLastState.IX) || (mouseCurrentState.IY != mouseLastState.IY))
+	{
+		camYaw += mouseLastState.IX * 0.001f;
+
+		camPitch += mouseCurrentState.IY * 0.001f;
+
+		mouseLastState = mouseCurrentState;
+	}
+	updateCamera();
+
+	return;
+}
+
+//TIME FUNCTIONS*********************************************************
+
+void startTimer()
+{
+	LARGE_INTEGER frequencycount;
+
+	QueryPerformanceFrequency(&frequencycount);
+	countsPerSecond = double(frequencycount.QuadPart);
+
+	QueryPerformanceCounter(&frequencycount);
+	counterStart = frequencycount.QuadPart;
+}
+
+double getTime()
+{
+	LARGE_INTEGER currentTime;
+	QueryPerformanceCounter(&currentTime);
+	return double(currentTime.QuadPart - counterStart) / countsPerSecond;
+}
+
+double getFrameTime()
+{
+	LARGE_INTEGER currentTime;
+	__int64 tickCount;
+	QueryPerformanceCounter(&currentTime);
+
+	tickCount = currentTime.QuadPart - frameTimeOld;
+	frameTimeOld = currentTime.QuadPart;
+
+	if (tickCount < 0.0f)
+	{
+		tickCount = 0.0f;
+	}
+
+	return float(tickCount) / countsPerSecond;
+}
 
 void Update()
 {
@@ -632,8 +815,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 	//Initialize window
 	MSG msg = { 0 };
-	HWND wndHandle = InitWindow(hInstance);						// Skapar fönstret
+	wndHandle = InitWindow(hInstance);						// Skapar fönstret
 												//window is valid
+	if (!initDirectInput(hInstance))
+	{
+		MessageBox(0, L"DIRECT INPUT INITILIZATION - FAILED",
+			L"ERROR", MB_OK);
+		return 0;
+	}
 	if (wndHandle)
 	{
 		obj.read();
@@ -668,6 +857,18 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 				Render(); // Rendera
 
+				frameCount++;
+				if (getTime() > 1.0f)
+				{
+					fps = frameCount;
+					frameCount = 0;
+					startTimer();
+				}
+
+				frameTime = getFrameTime();
+
+				detectInput(frameTime);
+
 				gSwapChain->Present(0, 0); // Växla front och back buffer
 			}
 		}
@@ -684,6 +885,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		gSwapChain->Release();
 		gBackBufferRTV->Release();
 		DestroyWindow(wndHandle);
+
+		DIKeyboard->Unacquire();
+		DIMouse->Unacquire();
+		directInput->Release();
 	}
 	return (int)msg.wParam;
 }
@@ -800,6 +1005,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 		gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&gBackBuffer);
 
 		createDepthStencil();
+
+		createLightDepthStencil();
 
 		//use the back buffer adress to create the render target
 		gDevice->CreateRenderTargetView(gBackBuffer, NULL, &gBackBufferRTV);
