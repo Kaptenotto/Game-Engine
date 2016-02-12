@@ -80,6 +80,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="OBJ-main.cpp" />
     <ClCompile Include="OBJ_Structs.cpp" />
+    <ClCompile Include="Wic.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Fragment.hlsl">
@@ -100,6 +101,7 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Wic.h" />
     <ClInclude Include="importer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

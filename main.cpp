@@ -10,6 +10,10 @@
 #include <vector>
 
 #include "importer.h"
+#include "Wic.h"
+
+
+
 using namespace DirectX;
 using namespace std;
 
@@ -200,6 +204,8 @@ void CreateShaders()
 
 	//Reads obj-File
 	obj.read();
+
+
 
 }
 

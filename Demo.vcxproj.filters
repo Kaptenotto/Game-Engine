@@ -24,6 +24,9 @@
     <ClCompile Include="OBJ-main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Wic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Fragment.hlsl">
@@ -38,6 +41,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="importer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Wic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
