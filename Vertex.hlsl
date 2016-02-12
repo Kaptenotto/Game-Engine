@@ -35,6 +35,14 @@ technique10 RenderShadowMap
 	}
 };
 
+cbuffer Lights : register (b1)
+{
+	float3 dir;
+	float3 position;
+	float4 ambient;
+	float4 diffuse;
+}
+
 struct VS_IN
 {
 	float3 pos : POSITION;
@@ -62,7 +70,7 @@ VS_OUT VS_main(VS_IN input)
 
 	output.uvs = input.uvs;
 	output.norm = float4(input.norm,1);
-	output.lightPos = mul(input.pos, gLightWVP); //COORDS FOR LIGHT IN WORLD SPACE HERE
+	output.lightPos = float4(position, 1.0f); //COORDS FOR LIGHT IN WORLD SPACE HERE
 
 	return output;
 }

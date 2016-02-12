@@ -8,8 +8,10 @@ SamplerState SampleTypeClamp : register(s1)
 	AddressV = Clamp;
 };
 
-cbuffer light : register (b0)
+cbuffer Lights : register (b1)
 {
+	float3 dir;
+	float3 position;
 	float4 ambient;
 	float4 diffuse;
 }
@@ -58,13 +60,13 @@ float4 PS_main(VS_OUT input) : SV_Target
 	textureColor = depthMapTexture.Sample(sampAni, input.uvs);
 	color = color * textureColor;
 
-	//return color;
+	return color;
 
 
 	//Detta kan fucka up om det inte finns en textur. 
 	//"Vi bränner den bron när vi kommer till den" - Jesus, 2012
-	float4 s = txDiffuse.Sample(sampAni, input.uvs);
-	return s;
+	//float4 s = txDiffuse.Sample(sampAni, input.uvs);
+	//return s;
 	
 	
 };

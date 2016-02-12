@@ -18,10 +18,8 @@
 
 #include <Wincodec.h>
 
-
-
-using namespace DirectX;
-using namespace std;
+using namespace DirectX; // EEEEEW
+using namespace std; // MORE EEEEW
 
 #pragma comment (lib, "d3d11.lib")
 #pragma comment (lib, "d3dcompiler.lib")
@@ -67,6 +65,7 @@ ID3D11Buffer* gVertexBuffer = nullptr;
 ID3D11Buffer* gIndexBuffer = nullptr;
 
 ID3D11Buffer* gConstantBuffer = nullptr;
+ID3D11Buffer* gConstantLightBuffer = nullptr;
 
 ID3D11Texture2D* gBackBuffer = nullptr;
 
@@ -124,6 +123,14 @@ struct MatrixBuffer {
 };
 MatrixBuffer matrices;
 
+struct LightBuffer
+{
+	XMFLOAT3 dir;
+	XMFLOAT3 position;
+	XMFLOAT4 ambient;
+	XMFLOAT4 diffuse;
+};
+LightBuffer Lights;
 
 
 typedef struct DIMOUSESTATES
@@ -448,10 +455,26 @@ void ConstantBuffer()
 
 	gDeviceContext->GSSetConstantBuffers(0, 1, &gConstantBuffer); //Setting the constant buffer to the geometry shader.
 
+	Lights.ambient = { 0.2f, 0.2f, 0.2f, 1.0f };
+	Lights.diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
+	Lights.position = { 4.0f, 4.0f, 4.0f };
+	Lights.dir = { 0.0f, 0.0f, 0.0f };
 
+	D3D11_BUFFER_DESC lightDesc;
+	memset(&lightDesc, 0, sizeof(D3D11_BUFFER_DESC));
+	lightDesc.ByteWidth = sizeof(LightBuffer);  // size of the buffer in bytes, here the size as the MatrixBuffer struct containing the matrices.
 
+	lightDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER; // Identifies how the buffer will be bound to the pipeline here as a constant buffer
+	lightDesc.Usage = D3D11_USAGE_DEFAULT; // how the buffer is be read and written to , here specified to default
+	lightDesc.MiscFlags = 0;               // miscellenous flags
+	lightDesc.StructureByteStride = 0;     // the size of each element in the buffer structure
 
+	D3D11_SUBRESOURCE_DATA lightData;  // specifices data for the initialization data
+	lightData.pSysMem = &Lights; // pSysMem is a pointer to the initialization data and sets the initialization data to be the matrices.
 
+	hr = gDevice->CreateBuffer(&lightDesc, &lightData, &gConstantLightBuffer); // Creating a buffer in this case constantbuffer.
+
+	gDeviceContext->GSSetConstantBuffers(1, 1, &gConstantLightBuffer); //Setting the constant buffer to the geometry shader.
 }
 
 void SetViewport()
