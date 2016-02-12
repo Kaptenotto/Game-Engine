@@ -58,6 +58,10 @@ XMVECTOR camPosition = XMVectorSet(0, 0, -5, 0);
 XMVECTOR camTarget = XMVectorSet(0, 0, 0, 0);
 XMVECTOR camUp = XMVectorSet(0, 1, 0, 0);
 
+XMVECTOR lightPosition = XMVectorSet(4, 4, 4, 1);
+XMVECTOR lightDir = XMVectorSet(0, 0, 0, 0);
+XMVECTOR lightUp = XMVectorSet(0, 1, 0, 0);
+
 
 // INITIALIZE BUFFERS ***********************************************
 
@@ -126,7 +130,8 @@ MatrixBuffer matrices;
 struct LightBuffer
 {
 	XMFLOAT3 dir;
-	XMFLOAT3 position;
+	XMMATRIX position;
+	XMMATRIX projection;
 	XMFLOAT4 ambient;
 	XMFLOAT4 diffuse;
 };
@@ -349,8 +354,8 @@ void createLightDepthStencil()
 	ID3D11Texture2D* shadowDepthStencil = NULL;
 
 	D3D11_TEXTURE2D_DESC descDepth;
-	descDepth.Width = (float)640;
-	descDepth.Height = (float)480;
+	descDepth.Width = (float)512;
+	descDepth.Height = (float)512;
 	descDepth.MipLevels = 1;
 	descDepth.ArraySize = 1;
 	descDepth.Format = DXGI_FORMAT_R32_TYPELESS;
@@ -379,7 +384,7 @@ void createLightDepthStencil()
 
 	hr = gDevice->CreateShaderResourceView(shadowDepthStencil, &ShadowRDesc, &ShadowDepthResource);
 
-	gDeviceContext->PSGetShaderResources(1, 1, &ShadowDepthResource);
+	gDeviceContext->PSSetShaderResources(1, 1, &ShadowDepthResource);
 	//shadowDepthStencil->Release();
 }
 
@@ -421,6 +426,12 @@ void ConstantBuffer()
 	float nearZ = 0.5;
 	float farZ = 20.0;
 
+	//LIGHT
+	float lightfovangleY = XM_PI * 0.90;
+	float lightaspectRatio = 512.0 / 512.0;
+	float lightnearZ = 0.5;
+	float lightfarZ = 6.0;
+
 	matrices.camView = XMMatrixLookAtLH(
 		(camPosition),
 		(camTarget),
@@ -457,8 +468,20 @@ void ConstantBuffer()
 
 	Lights.ambient = { 0.2f, 0.2f, 0.2f, 1.0f };
 	Lights.diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
-	Lights.position = { 4.0f, 4.0f, 4.0f };
-	Lights.dir = { 0.0f, 0.0f, 0.0f };
+
+	Lights.position = XMMatrixLookAtLH(
+		(lightPosition),
+		(lightDir),
+		(lightUp));
+	Lights.position = XMMatrixTranspose(Lights.position);
+
+	Lights.projection = XMMatrixPerspectiveFovLH(
+		(lightfovangleY),    //  The field of view in radians along the y-axis
+		(lightaspectRatio),  //  The aspect ratio, usually width/height
+		(lightnearZ),		//  A float describing the distance from the camera to the near z-plane
+		(lightfarZ)			//  A float describing the distance from the camera to the far plane
+		);
+	Lights.projection = XMMatrixTranspose(Lights.projection);
 
 	D3D11_BUFFER_DESC lightDesc;
 	memset(&lightDesc, 0, sizeof(D3D11_BUFFER_DESC));
@@ -643,12 +666,18 @@ void Update()
 	gDeviceContext->GSSetConstantBuffers(0, 1, &gConstantBuffer);
 }
 
+void RenderShadow()
+{
+
+}
+
 void Render()
 {
 
 	float clearColor[] = { 0, 0, 0, 1 };
 	gDeviceContext->ClearRenderTargetView(gBackBufferRTV, clearColor);
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
+	gDeviceContext->ClearDepthStencilView(gShadowDepthStencilView, D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 
 	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
@@ -743,7 +772,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 			else
 			{
 				Update();
-
+				RenderShadow(); // Rendera
 				Render(); // Rendera
 
 				frameCount++;

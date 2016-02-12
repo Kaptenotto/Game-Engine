@@ -1,44 +1,51 @@
-matrix gLightWVP;
-
-float4 VS(float3 posLight : POSITION) : SV_POSITION
+//matrix gLightWVP;
+//
+//float4 VS(float3 posLight : POSITION) : SV_POSITION
+//{
+//	return mul(float4(posLight, 1.0f), gLightWVP);
+//};
+//
+//BlendState NoBlend
+//{
+//	BlendEnable[0] = FALSE;
+//};
+//
+//RasterizerState rs
+//{
+//	FillMode = Solid;
+//	CullMode = Front;
+//};
+//
+//DepthStencilState EnableDepth
+//{
+//	DepthEnable = TRUE;
+//	DepthWriteMask = ALL;
+//	DepthFunc = LESS_EQUAL;
+//};
+//technique10 RenderShadowMap
+//{
+//	pass P0
+//	{
+//		SetVertexShader(CompileShader(vs_4_0, VS()));
+//		SetGeometryShader(NULL);
+//		SetPixelShader(NULL);
+//		SetDepthStencilState(EnableDepth, 0);
+//		SetBlendState(NoBlend, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
+//		SetRasterizerState(rs);
+//	}
+//};
+cbuffer MatrixBuffer : register (b0)
 {
-	return mul(float4(posLight, 1.0f), gLightWVP);
-};
-
-BlendState NoBlend
-{
-	BlendEnable[0] = FALSE;
-};
-
-RasterizerState rs
-{
-	FillMode = Solid;
-	CullMode = Front;
-};
-
-DepthStencilState EnableDepth
-{
-	DepthEnable = TRUE;
-	DepthWriteMask = ALL;
-	DepthFunc = LESS_EQUAL;
-};
-technique10 RenderShadowMap
-{
-	pass P0
-	{
-		SetVertexShader(CompileShader(vs_4_0, VS()));
-		SetGeometryShader(NULL);
-		SetPixelShader(NULL);
-		SetDepthStencilState(EnableDepth, 0);
-		SetBlendState(NoBlend, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
-		SetRasterizerState(rs);
-	}
-};
+	matrix worldMatrix;
+	matrix camView;
+	matrix projectionMatrix;
+}
 
 cbuffer Lights : register (b1)
 {
 	float3 dir;
-	float3 position;
+	matrix position;
+	matrix projection;
 	float4 ambient;
 	float4 diffuse;
 }
@@ -70,7 +77,7 @@ VS_OUT VS_main(VS_IN input)
 
 	output.uvs = input.uvs;
 	output.norm = float4(input.norm,1);
-	output.lightPos = float4(position, 1.0f); //COORDS FOR LIGHT IN WORLD SPACE HERE
+	output.lightPos = position; //COORDS FOR LIGHT IN WORLD SPACE HERE?
 
 	return output;
 }

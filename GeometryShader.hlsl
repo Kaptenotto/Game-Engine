@@ -3,7 +3,6 @@ struct GSOutput
 	float4 pos : SV_POSITION;
 	float2 uvs : TEXCOORD;
 	float3 normal : NORMAL;
-	//float3 lightPos : LIGHTPOSITION;
 };
 
 struct GSINPUT
