@@ -246,6 +246,8 @@ void CreateShaders()
 	
 
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+
+
 }
 
 
