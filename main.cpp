@@ -201,8 +201,9 @@ void CreateShaders()
 	//Reads obj-File
 	obj.read();
 
-
 }
+
+
 
 void createTriangle()
 {
