@@ -284,7 +284,7 @@ void createTextures()
 				gDeviceContext,
 				wcharFilePath,
 				&texResource,
-				&textureResource,
+				&textureResources[i],
 				0
 				);
 		}
@@ -620,9 +620,10 @@ void Render()
      ************************************************************/
 
 
-	for (int i = 0; i < (obj.drawOffset.size()-1 ); i++)
+	for (int i = 0; i < (obj.objCounter); i++)
 	{ 
 		gDeviceContext->PSSetShaderResources(0, 1, &textureResources[i]);
+
 		gDeviceContext->Draw((obj.drawOffset[(i+1)] - obj.drawOffset[i]), obj.drawOffset[i]);
 		
 	}
