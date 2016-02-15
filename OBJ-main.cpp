@@ -5,7 +5,7 @@
 using namespace std;
 Importer::Importer()
 {
-	objFile = ("./objFiles/multiple.obj");
+	objFile = ("./objFiles/solarSys.obj");
 
 	index_counter = 0;
 	objCounter = 0;
@@ -266,11 +266,32 @@ void Importer::read()
 			tmp_fin.nz = normals[face_idxs[i].face_norm-1].z * -1;
 
 			finalVector.push_back(tmp_fin);
-
-			drawOffset.push_back(materialIndex * 3);
 			//cout << import.face_idxs[i].face_pos[j] << ", " << import.face_idxs[i].face_tex[j] << ", " << import.face_idxs[i].face_norm[j] << ", ";
 		
 	}
+	drawOffset.push_back(materialIndex * 3);
+
+	vector<string> tmp_texFile;
+
+	tmp_texFile = textureMap;
+	textureMap.clear();
+
+
+
+
+	for (int i = 0; i < materialInfo.size(); i++)
+	{
+		for (int j = 0; j < mtlShadingGroups.size(); j++)
+		{
+			if (materialInfo[i].shadingGroup == mtlShadingGroups[j])
+			{
+				textureMap.push_back(tmp_texFile[j]);
+			}
+		}
+		
+	}
+
+
 	//reverse(finalVector.begin(), finalVector.end());
 }
 

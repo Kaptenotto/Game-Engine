@@ -618,10 +618,14 @@ void Render()
 	/************************************************************
 	 ****************************DRAW****************************
      ************************************************************/
-
+	int n = 0;
 
 	for (int i = 0; i < (obj.objCounter); i++)
 	{ 
+		/*if (n < textureResources.size())
+		{
+			n++;
+		}*/
 		gDeviceContext->PSSetShaderResources(0, 1, &textureResources[i]);
 
 		gDeviceContext->Draw((obj.drawOffset[(i+1)] - obj.drawOffset[i]), obj.drawOffset[i]);
