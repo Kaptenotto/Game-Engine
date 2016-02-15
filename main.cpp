@@ -287,7 +287,6 @@ void createTextures()
 				&textureResource,
 				0
 				);
-
 		}
 		
 	}
