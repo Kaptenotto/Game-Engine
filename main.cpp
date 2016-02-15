@@ -52,9 +52,9 @@ ID3D11PixelShader* gPixelShader = nullptr;
 ID3D11GeometryShader* gGeometryShader = nullptr;
 //INITIALIZE VECTORS ***********************************************
 
-XMVECTOR camPosition = { 0, 0, -5};
-XMVECTOR camTarget = { 0, 0, 0 };
-XMVECTOR camUp = { 0, 1, 0 };
+XMVECTOR camPosition = { 0, 0, -5 ,0 };
+XMVECTOR camTarget = { 0, 0, 0, 0 };
+XMVECTOR camUp = { 0, 1, 0, 0};
 
 
 // INITIALIZE BUFFERS ***********************************************
@@ -128,7 +128,7 @@ typedef struct DIMOUSESTATES
 	LONG IY;
 	LONG IZ;
 	BYTE rgbButtons[4];
-}; DIMOUSESTATES *LPDIMOUSETATE;
+};
 
 // GLOBALS FOR FIRST PERSON CAMERA *********************************
 
@@ -295,8 +295,6 @@ void createTextures()
 	}
 	texResource->Release();
 }
-
-
 
 void createTriangle()
 {
@@ -584,11 +582,11 @@ double getFrameTime()
 
 void Update()
 {
-	static float angle = 0.0f;
+	/*static float angle = 0.0f;
 
 	angle -= 0.0001f;
 
-	matrices.World = XMMatrixRotationY(angle);
+	matrices.World = XMMatrixRotationY(angle);*/
 
 	gDeviceContext->UpdateSubresource(gConstantBuffer, 0, 0, &matrices, 0, 0);
 
@@ -671,6 +669,13 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	MSG msg = { 0 };
 	hWnd = InitWindow(hInstance);						// Skapar fönstret
 												//window is valid
+	if (!initDirectInput(hInstance))
+	{
+		MessageBox(0, L"DIRECT INPUT INITILIZATION - FAILED",
+			L"ERROR", MB_OK);
+		return 0;
+	}
+
 	if (hWnd)
 	{
 		obj.read();
@@ -681,7 +686,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		//myWindow.SetViewport(gDevice, gDevContext);
 
 		CreateShaders();
-
+		
 		ConstantBuffer();
 
 		createTriangle();
