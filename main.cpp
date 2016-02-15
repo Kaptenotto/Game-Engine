@@ -705,7 +705,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 				Render(); // Rendera
 
-				/*frameCount++;
+				frameCount++;
 				if (getTime() > 1.0f)
 				{
 					fps = frameCount;
@@ -715,7 +715,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 				frameTime = getFrameTime();
 
-				detectInput(frameTime);*/
+				detectInput(frameTime);
 
 				gSwapChain->Present(0, 0); // Växla front och back buffer
 			}
