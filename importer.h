@@ -44,6 +44,7 @@ public:
 	vector<string> mtlShadingGroups;
 	vector<string> textureMap;
 	vector<string> normalMap;
+	vector<int> drawOffset;
 	
 
 	//Temporary variables

@@ -70,7 +70,11 @@ ID3D11DepthStencilView* gDepthStencilView = nullptr;
 
 // INITIALIZE SHADER THINGS *****************************************
 
-ID3D11ShaderResourceView* textureResource;
+//ID3D11ShaderResourceView* textureResource;
+//ID3D11ShaderResourceView* textureResource2;
+
+vector<ID3D11ShaderResourceView*> textureResources;
+
 ID3D11SamplerState* texSamplerState;
 
 //IWICImagingFactory* imgFac;
@@ -245,7 +249,7 @@ void CreateShaders()
 	//Reads obj-File
 	
 
-	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+	
 
 
 }
@@ -257,25 +261,35 @@ void createTextures()
 
 	ID3D11Resource* texResource;
 
+	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
-
+	
 	if (!obj.textureMap.empty())
 	{
-		wstring filePath;
+		for (int i = 0; i < obj.textureMap.size(); i++)
+		{
+			wstring filePath;
 
-		filePath.assign(obj.textureMap[0].begin(), obj.textureMap[0].end());
+			ID3D11ShaderResourceView* textureResource;
 
-		const wchar_t* wcharFilePath = filePath.c_str();
+			textureResources.push_back(textureResource);
+
+			filePath.assign(obj.textureMap[i].begin(), obj.textureMap[i].end());
+
+			const wchar_t* wcharFilePath = filePath.c_str();
 
 
-		hr = CreateWICTextureFromFile(
-			gDevice,
-			gDeviceContext,
-			wcharFilePath,
-			&texResource,
-			&textureResource,
-			0
-			);
+			hr = CreateWICTextureFromFile(
+				gDevice,
+				gDeviceContext,
+				wcharFilePath,
+				&texResource,
+				&textureResource,
+				0
+				);
+
+		}
+		
 	}
 	texResource->Release();
 }
@@ -598,7 +612,7 @@ void Render()
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	gDeviceContext->IASetInputLayout(gVertexLayout);
 
-	gDeviceContext->PSSetShaderResources(0, 1, &textureResource);
+	
 
 
 
@@ -606,7 +620,13 @@ void Render()
 	 ****************************DRAW****************************
      ************************************************************/
 
-	gDeviceContext->Draw(vertexCount,0);
+
+	for (int i = 0; i < (obj.drawOffset.size()-1 ); i++)
+	{ 
+		gDeviceContext->PSSetShaderResources(0, 1, &textureResources[i]);
+		gDeviceContext->Draw((obj.drawOffset[(i+1)] - obj.drawOffset[i]), obj.drawOffset[i]);
+		
+	}
 }
 
 // handle of instance                      commandline		 how the window is shown
