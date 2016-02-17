@@ -10,8 +10,8 @@ SamplerState SampleTypeClamp : register(s0)
 
 cbuffer Lights : register (b1)
 {
-	float3 dir;
-	matrix position;
+	float3 position;
+	matrix view;
 	matrix projection;
 	float4 ambient;
 	float4 diffuse;

@@ -135,7 +135,7 @@ MatrixBuffer matrices;
 
 struct LightBuffer
 {
-	XMFLOAT3 position;
+	XMVECTOR position = XMVectorSet(4, 4, 4, 1);
 	XMMATRIX view;
 	XMMATRIX projection;
 	XMFLOAT4 ambient;
@@ -524,7 +524,7 @@ void ConstantBuffer()
 
 	Lights.ambient = { 0.2f, 0.2f, 0.2f, 1.0f };
 	Lights.diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
-	Lights.position = { 4.0f, 4.0f, 4.0f };
+	//Lights.position = { 4.0f, 4.0f, 4.0f, 1.0f };
 
 	Lights.view = XMMatrixLookAtLH(
 		(lightPosition),
@@ -858,7 +858,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 			{
 				Update();
 				RenderShadow(); // Rendera
-				//Render(); // Rendera
+				Render(); // Rendera
 
 				frameCount++;
 				if (getTime() > 1.0f)

@@ -37,10 +37,21 @@ VS_OUT VS_main(VS_IN input)
 
 	matrix cMatrix = mul(mul(worldMatrix, view), projection);
 	output.pos = mul(input.pos, cMatrix);
-
-	output.uvs = input.uvs;
-	output.norm = float4(input.norm,1);
+	output.uvs.x = 1 - (output.pos.z / output.pos.w);
 	//output.lightPos = position; //COORDS FOR LIGHT IN WORLD SPACE HERE?
-
 	return output;
 }
+
+//VS_OUT VS_main(VS_IN input)
+//{
+//	VS_OUT output = (VS_OUT)0;
+//
+//	matrix cMatrix = mul(mul(worldMatrix, view), projection);
+//	output.pos = mul(input.pos, cMatrix);
+//
+//	output.uvs = input.uvs;
+//	output.norm = float4(input.norm, 1);
+//	//output.lightPos = position; //COORDS FOR LIGHT IN WORLD SPACE HERE?
+//
+//	return output;
+//}
