@@ -229,6 +229,8 @@ void Importer::read()
 
 			tmp_normMap = "./objFiles/" + tmp_normMap;
 
+			
+
 			//cout << tmp_normMap << "\n";
 			normalMap.push_back(tmp_normMap);
 		}
@@ -278,8 +280,17 @@ void Importer::read()
 
 
 		vector<string> tmp_texFile;
+		vector<string> tmp_normMap;
+
+		
 		tmp_texFile = textureMap;
-		textureMap.clear();
+		normalMap.clear();
+
+		if (!normalMap.empty())
+		{
+			tmp_normMap = normalMap;
+			textureMap.clear();
+		}
 		for (int i = 0; i < materialInfo.size(); i++)
 		{
 			for (int j = 0; j < mtlShadingGroups.size(); j++)
@@ -287,6 +298,10 @@ void Importer::read()
 				if (materialInfo[i].shadingGroup == mtlShadingGroups[j])
 				{
 					textureMap.push_back(tmp_texFile[j]);
+					if (!tmp_normMap.empty())
+					{
+						normalMap.push_back(tmp_normMap[j]);
+					}
 				}
 			}
 
