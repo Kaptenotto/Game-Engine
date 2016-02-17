@@ -737,7 +737,7 @@ void Render()
      ************************************************************/
 	int n = 0;
 
-	for (int i = 0; i < (obj.objCounter); i++)
+	for (int i = 0; i < (obj.drawOffset.size()); i++)
 	{ 
 		/*if (n < textureResources.size())
 		{
