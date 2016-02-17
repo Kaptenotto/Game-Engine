@@ -60,6 +60,8 @@ XMVECTOR camUp = { 0, 1, 0, 0};
 // INITIALIZE BUFFERS ***********************************************
 ID3D11Buffer* gVertexBuffer = nullptr;
 ID3D11Buffer* gIndexBuffer = nullptr;
+ID3D11Buffer* gGroundVertexBuffer = nullptr;
+ID3D11Buffer* gGroundIndexBuffer = nullptr;
 
 ID3D11Buffer* gConstantBuffer = nullptr;
 
@@ -112,6 +114,20 @@ Importer obj;
 
 
 // INITIALIZE STRUCTS ***********************************************
+
+struct Vertex    //Overloaded Vertex Structure
+{
+	Vertex() {}
+	Vertex(float x, float y, float z,
+		float u, float v,
+		float nx, float ny, float nz)
+		: pos(x, y, z), texCoord(u, v), normal(nx, ny, nz) {}
+
+	XMFLOAT3 pos;
+	XMFLOAT2 texCoord;
+	XMFLOAT3 normal;
+};
+
 struct MatrixBuffer {
 	XMMATRIX World;
 	XMMATRIX camView;
@@ -119,8 +135,6 @@ struct MatrixBuffer {
 	
 };
 MatrixBuffer matrices;
-
-
 
 typedef struct DIMOUSESTATES
 {
@@ -146,8 +160,11 @@ float moveBackForward = 0.0f;   // Used to move along the camFoward and camRight
 float camYaw = 0.0f;
 float camPitch = 0.0f;
 
-//GLOBALS FOR INPUT ************************************************
 
+XMMATRIX Translation;
+XMMATRIX Scale;
+
+//GLOBALS FOR INPUT ************************************************
 
 HWND hWnd = NULL;
 
@@ -165,8 +182,6 @@ float scaleY = 1.0f;
 XMMATRIX rotationX;
 XMMATRIX rotationY;
 
-
-
 // TIME GLOBALS ****************************************************
 
 double countsPerSecond = 0.0;
@@ -178,9 +193,82 @@ int fps = 0;
 __int64 frameTimeOld = 0;
 double frameTime;
 
+// LIGHT************************************************************
+//ID3D11Buffer* cbPerFrameBuffer;
+//
+//struct cbPerObject {
+//	XMMATRIX WVP;
+//	XMMATRIX World;
+//};
+//
+//struct Light
+//{
+//	Light()
+//	{
+//		ZeroMemory(this, sizeof(Light));
+//	}
+//	XMFLOAT3 dir;
+//	float pad;
+//	XMFLOAT4 ambient;
+//	XMFLOAT4 diffuse;
+//}light;
+//
+//struct cbPerFrame
+//{
+//	Light light;
+//};
+//
+//cbPerFrame constbuffPerFrame;
+
+
 // FUNCTIONS********************************************************
 
-//
+void createGround()
+{
+	//Create the vertex buffer
+	Vertex v[] =
+	{
+		// Bottom Face
+		Vertex(-1.0f, -1.0f, -1.0f, 100.0f, 100.0f, 0.0f, 1.0f, 0.0f),
+		Vertex(1.0f, -1.0f, -1.0f,   0.0f, 100.0f, 0.0f, 1.0f, 0.0f),
+		Vertex(1.0f, -1.0f,  1.0f,   0.0f,   0.0f, 0.0f, 1.0f, 0.0f),
+		Vertex(-1.0f, -1.0f,  1.0f, 100.0f,   0.0f, 0.0f, 1.0f, 0.0f),
+	};
+
+	DWORD indices[] = {
+		0,  1,  2,
+		0,  2,  3,
+	};
+
+	D3D11_BUFFER_DESC indexBufferDesc;
+	ZeroMemory(&indexBufferDesc, sizeof(indexBufferDesc));
+
+	indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	indexBufferDesc.ByteWidth = sizeof(DWORD) * 2 * 3;
+	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	indexBufferDesc.CPUAccessFlags = 0;
+	indexBufferDesc.MiscFlags = 0;
+
+	D3D11_SUBRESOURCE_DATA iinitData;
+
+	iinitData.pSysMem = indices;
+	gDevice->CreateBuffer(&indexBufferDesc, &iinitData, &gGroundIndexBuffer);
+
+	D3D11_BUFFER_DESC vertexBufferDesc;
+	ZeroMemory(&vertexBufferDesc, sizeof(vertexBufferDesc));
+
+	vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	vertexBufferDesc.ByteWidth = sizeof(Vertex) * 4;
+	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	vertexBufferDesc.CPUAccessFlags = 0;
+	vertexBufferDesc.MiscFlags = 0;
+
+	D3D11_SUBRESOURCE_DATA vertexBufferData;
+
+	ZeroMemory(&vertexBufferData, sizeof(vertexBufferData));
+	vertexBufferData.pSysMem = v;
+	HRESULT hr = gDevice->CreateBuffer(&vertexBufferDesc, &vertexBufferData, &gGroundVertexBuffer);
+}
 
 void CreateShaders()
 {
@@ -257,7 +345,6 @@ void CreateShaders()
 
 }
 
-
 void createTextures()
 {
 	HRESULT hr;
@@ -296,7 +383,7 @@ void createTextures()
 	texResource->Release();
 }
 
-void createTriangle()
+void objVertexBuffer()
 {
 	
 
@@ -383,7 +470,7 @@ void ConstantBuffer()
 	float fovangleY = XM_PI * 0.45;
 	float aspectRatio = 640.0 / 480.0;
 	float nearZ = 0.5;
-	float farZ = 20.0;
+	float farZ = 1000.0;
 
 	matrices.camView = XMMatrixLookAtLH(
 		(camPosition),
@@ -541,7 +628,6 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 	return;
 }
 
-
 //TIME FUNCTIONS*********************************************************
 
 void startTimer()
@@ -579,19 +665,46 @@ double getFrameTime()
 	return float(tickCount) / countsPerSecond;
 }
 
-
 void Update()
 {
-	/*static float angle = 0.0f;
-
-	angle -= 0.0001f;
-
-	matrices.World = XMMatrixRotationY(angle);*/
-
 	gDeviceContext->UpdateSubresource(gConstantBuffer, 0, 0, &matrices, 0, 0);
 
 	gDeviceContext->GSSetConstantBuffers(0, 1, &gConstantBuffer);
 }
+
+//void updateGround()
+//{
+//	groundWorld = XMMatrixIdentity();
+//
+//	Scale = XMMatrixScaling(500.0f, 10.0f, 500.0f);
+//	Translation = XMMatrixTranslation(0.0f, 10.0f, 0.0f);
+//
+//	groundWorld = Scale * Translation;
+//
+//	gDeviceContext->UpdateSubresource(gConstantBuffer, 0, 0, &matrices, 0, 0);
+//
+//	gDeviceContext->GSSetConstantBuffers(0, 1, &gConstantBuffer);
+//}
+
+//void RenderGround()
+//{
+//	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
+//	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
+//	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
+//	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
+//	gDeviceContext->PSSetShader(gPixelShader, nullptr, 0);
+//
+//	UINT32 vertexSize = sizeof(obj.finalVector[0]);
+//	UINT32 vertexCount = obj.finalVector.size();
+//	UINT32 indexSize = obj.index_counter;
+//	UINT32 offset = 0;
+//
+//	gDeviceContext->IASetVertexBuffers(0, 1, &gGroundVertexBuffer, &vertexSize, &offset);
+//	gDeviceContext->IASetIndexBuffer(gGroundIndexBuffer, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
+//
+//	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+//	gDeviceContext->IASetInputLayout(gVertexLayout);
+//}
 
 void Render()
 {
@@ -617,9 +730,6 @@ void Render()
 
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	gDeviceContext->IASetInputLayout(gVertexLayout);
-
-	
-
 
 
 	/************************************************************
@@ -689,7 +799,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		
 		ConstantBuffer();
 
-		createTriangle();
+	/*	createGround();*/
+
+		objVertexBuffer();
 
 		createTextures();
 		
@@ -707,6 +819,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 			else
 			{
 				Update();
+				
+				/*updateGround();
+
+				RenderGround();*/
 
 				Render(); // Rendera
 
@@ -745,8 +861,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	}
 	return (int)msg.wParam;
 }
-
-
 
 HWND InitWindow(HINSTANCE hInstance)
 {
@@ -812,9 +926,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 
 }
 
-
-
-	HRESULT CreateDirect3DContext(HWND windowHandle)
+HRESULT CreateDirect3DContext(HWND windowHandle)
 {
 	DXGI_SWAP_CHAIN_DESC SCD; //Create a struct to hold information about the swap chain
 
