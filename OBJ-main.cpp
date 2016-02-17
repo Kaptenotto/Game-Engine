@@ -5,7 +5,7 @@
 using namespace std;
 Importer::Importer()
 {
-	objFile = ("./objFiles/Solarsys.obj");
+	objFile = ("./objFiles/CloneArcTrooperYellow.obj");
 
 	index_counter = 0;
 	objCounter = 0;
