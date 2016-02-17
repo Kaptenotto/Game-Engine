@@ -147,15 +147,21 @@ typedef struct DIMOUSESTATES
 // GLOBALS FOR FIRST PERSON CAMERA *********************************
 
 XMVECTOR defaultForward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
-XMVECTOR defaultRight = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
 XMVECTOR camForward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
+
 XMVECTOR camRight = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
+XMVECTOR defaultRight = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
+
+XMVECTOR camUpDown = XMVectorSet(0.0f,1.0f,0.0f,0.0f);
+XMVECTOR defaultUpDown = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
 
 XMMATRIX camRotationMatrix;
 XMMATRIX groundWorld;
 
 float moveLeftRight = 0.0f;		// Used to move along the camFoward and camRight vectors
 float moveBackForward = 0.0f;   // Used to move along the camFoward and camRight vectors
+float moveUpDown = 0.0f;
 
 float camYaw = 0.0f;
 float camPitch = 0.0f;
@@ -469,7 +475,7 @@ void ConstantBuffer()
 {
 	float fovangleY = XM_PI * 0.45;
 	float aspectRatio = 640.0 / 480.0;
-	float nearZ = 0.5;
+	float nearZ = 0.2;
 	float farZ = 1000.0;
 
 	matrices.camView = XMMatrixLookAtLH(
@@ -560,16 +566,22 @@ void updateCamera()
 	XMMATRIX RotateYTempMatrix;
 	RotateYTempMatrix = XMMatrixRotationY(camYaw); // Finding the new right and forward directions of the camera by  using a rotation matrix 
 												   //which will be rotated on the Y-axis, since its a first perosn camera we need to keep our cam forward and right pointing only in x and z axis
-
+	/*XMMATRIX RotateZTempMatrix;
+	RotateZTempMatrix = XMMatrixRotationZ(camYaw);*/
 												   // transforming the cameras right up and forwards vectors using the matrix just defined.
 												   // also rotating the default right up and default foward vectors and set the result in the right up and foward vectors.
 	/**/ camRight = XMVector3TransformCoord(defaultRight, RotateYTempMatrix);
 	/**/ camUp = XMVector3TransformCoord(camUp, RotateYTempMatrix);
 	/**/ camForward = XMVector3TransformCoord(defaultForward, RotateYTempMatrix);
+	/**/ camUpDown = XMVector3TransformCoord(defaultUpDown,RotateYTempMatrix);
 
 	camPosition += moveLeftRight* camRight;
 	camPosition += moveBackForward* camForward;
+	camPosition += moveUpDown * camUpDown;
 
+
+
+	moveUpDown = 0.0f;
 	moveLeftRight = 0.0f;
 	moveBackForward = 0.0f;
 
@@ -593,7 +605,8 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 
 	DIKeyboard->GetDeviceState(sizeof(keyBoardState), (LPVOID)&keyBoardState);
 
-	float speed = 15.0f * time;
+	float speed = 10.0f * time;
+	float ySpeed = 0.0001f * time;
 
 	if (keyBoardState[DIK_ESCAPE] & 0x80)
 	{
@@ -614,6 +627,14 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 	if (keyBoardState[DIK_S] & 0x80)
 	{
 		moveBackForward -= speed;
+	}
+	if (keyBoardState[DIK_LSHIFT] & 0x80)
+	{
+		moveUpDown += speed;
+	}
+	if (keyBoardState[DIK_LCONTROL] & 0x80)
+	{
+		moveUpDown -= speed;
 	}
 	if ((mouseCurrentState.IX != mouseLastState.IX) || (mouseCurrentState.IY != mouseLastState.IY))
 	{
@@ -737,7 +758,7 @@ void Render()
      ************************************************************/
 	int n = 0;
 
-	for (int i = 0; i < (obj.drawOffset.size()); i++)
+	for (int i = 0; i < (obj.drawOffset.size()-1); i++)
 	{ 
 		/*if (n < textureResources.size())
 		{

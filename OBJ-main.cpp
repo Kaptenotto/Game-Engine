@@ -5,7 +5,7 @@
 using namespace std;
 Importer::Importer()
 {
-	objFile = ("./objFiles/CloneArcTrooperYellow.obj");
+	objFile = ("./objFiles/solarSys.obj");
 
 	index_counter = 0;
 	objCounter = 0;
@@ -271,27 +271,27 @@ void Importer::read()
 	}
 	drawOffset.push_back(materialIndex * 3);
 
-	vector<string> tmp_texFile;
+	
 
-	tmp_texFile = textureMap;
-	textureMap.clear();
-
+	
 
 
 
-	for (int i = 0; i < materialInfo.size(); i++)
-	{
-		for (int j = 0; j < mtlShadingGroups.size(); j++)
+		vector<string> tmp_texFile;
+		tmp_texFile = textureMap;
+		textureMap.clear();
+		for (int i = 0; i < materialInfo.size(); i++)
 		{
-			if (materialInfo[i].shadingGroup == mtlShadingGroups[j])
+			for (int j = 0; j < mtlShadingGroups.size(); j++)
 			{
-				textureMap.push_back(tmp_texFile[j]);
+				if (materialInfo[i].shadingGroup == mtlShadingGroups[j])
+				{
+					textureMap.push_back(tmp_texFile[j]);
+				}
 			}
+
 		}
-		
-	}
-
-
+	
 	//reverse(finalVector.begin(), finalVector.end());
 }
 

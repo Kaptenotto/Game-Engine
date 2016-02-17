@@ -1,35 +1,49 @@
-newmtl initialShadingGroup
+newmtl solarSys:initialShadingGroup
 illum 4
 Kd 0.00 0.00 0.00
 Ka 0.00 0.00 0.00
 Tf 1.00 1.00 1.00
 map_Kd earth.jpg
 Ni 1.00
-newmtl lambert2SG
+newmtl solarSys:lambert2SG
 illum 4
 Kd 0.00 0.00 0.00
 Ka 0.00 0.00 0.00
 Tf 1.00 1.00 1.00
 map_Kd sun.gif
 Ni 1.00
-newmtl lambert3SG
+newmtl solarSys:lambert3SG
 illum 4
 Kd 0.00 0.00 0.00
 Ka 0.00 0.00 0.00
 Tf 1.00 1.00 1.00
 map_Kd merk.jpeg
 Ni 1.00
-newmtl lambert4SG
+newmtl solarSys:lambert4SG
 illum 4
 Kd 0.00 0.00 0.00
 Ka 0.00 0.00 0.00
 Tf 1.00 1.00 1.00
 map_Kd merkurius.jpg
 Ni 1.00
-newmtl lambert5SG
+newmtl solarSys:lambert5SG
 illum 4
 Kd 0.00 0.00 0.00
 Ka 0.00 0.00 0.00
 Tf 1.00 1.00 1.00
 map_Kd moon.jpg
+Ni 1.00
+newmtl solarSys1:lambert5SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd gotWood.jpg
+Ni 1.00
+newmtl solarSys2:lambert2SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd sun.gif
 Ni 1.00
