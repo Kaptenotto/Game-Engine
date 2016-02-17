@@ -77,7 +77,7 @@ VS_OUT VS_main(VS_IN input)
 
 	output.uvs = input.uvs;
 	output.norm = float4(input.norm,1);
-	output.lightPos = position; //COORDS FOR LIGHT IN WORLD SPACE HERE?
+	//output.lightPos = position; //COORDS FOR LIGHT IN WORLD SPACE HERE?
 
 	return output;
 }

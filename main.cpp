@@ -52,6 +52,12 @@ ID3D11PixelShader* gPixelShader = nullptr;
 
 ID3D11GeometryShader* gGeometryShader = nullptr;
 
+ID3D11VertexShader* gVertexShaderShadow = nullptr;
+
+ID3D11PixelShader* gPixelShaderShadow = nullptr;
+
+ID3D11GeometryShader* gGeometryShaderShadow = nullptr;
+
 //INITIALIZE VECTORS ***********************************************
 
 XMVECTOR camPosition = XMVectorSet(0, 0, -5, 0);
@@ -129,8 +135,8 @@ MatrixBuffer matrices;
 
 struct LightBuffer
 {
-	XMFLOAT3 dir;
-	XMMATRIX position;
+	XMFLOAT3 position;
+	XMMATRIX view;
 	XMMATRIX projection;
 	XMFLOAT4 ambient;
 	XMFLOAT4 diffuse;
@@ -262,9 +268,59 @@ void CreateShaders()
 	gDevice->CreateGeometryShader(pGS->GetBufferPointer(), pGS->GetBufferSize(), nullptr, &gGeometryShader);
 	pGS->Release();
 
-	//Reads obj-File
-	
+	//CREATE SHADERS FOR SHADOWMAP
+	//Create the vertex shader shadow
+	ID3DBlob* pVSShadow = nullptr;
+	D3DCompileFromFile(
+		L"VertexShadow.hlsl",	
+		nullptr,
+		nullptr,
+		"VS_main",				
+		"vs_4_0",
+		0,
+		0,
+		&pVSShadow,
+		nullptr
+		);
+	Hr = gDevice->CreateVertexShader(pVSShadow->GetBufferPointer(), pVSShadow->GetBufferSize(), nullptr, &gVertexShaderShadow);
+	gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), pVSShadow->GetBufferPointer(), pVSShadow->GetBufferSize(), &gVertexLayout);
+	pVSShadow->Release();
 
+	//Create pixel shader shadow
+	ID3DBlob* pPSShadow = nullptr;
+	D3DCompileFromFile(
+		L"FragmentShadow.hlsl",
+		nullptr,			
+		nullptr,			
+		"PS_main",			
+		"ps_4_0",			
+		0,					
+		0,					
+		&pPSShadow,			
+		nullptr				
+		);
+	Hr = gDevice->CreatePixelShader(pPSShadow->GetBufferPointer(), pPSShadow->GetBufferSize(), nullptr, &gPixelShaderShadow);
+	pPSShadow->Release();
+
+	//Create geometry shader shadow
+	ID3DBlob* pGSShadow = nullptr;
+	D3DCompileFromFile(
+		L"GeometryShaderShadow.hlsl",
+		nullptr,
+		nullptr,
+		"GS_main",
+		"gs_4_0",
+		0,
+		0,
+		&pGSShadow,
+		nullptr
+		);
+	gDevice->CreateGeometryShader(pGSShadow->GetBufferPointer(), pGSShadow->GetBufferSize(), nullptr, &gGeometryShaderShadow);
+	pGSShadow->Release();
+	//CREATE SHADERS FOR SHADOWMAP DONE
+
+
+	//Reads obj-File
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 }
 
@@ -384,7 +440,7 @@ void createLightDepthStencil()
 
 	hr = gDevice->CreateShaderResourceView(shadowDepthStencil, &ShadowRDesc, &ShadowDepthResource);
 
-	gDeviceContext->PSSetShaderResources(1, 1, &ShadowDepthResource);
+	//gDeviceContext->PSSetShaderResources(1, 1, &ShadowDepthResource);
 	//shadowDepthStencil->Release();
 }
 
@@ -468,12 +524,13 @@ void ConstantBuffer()
 
 	Lights.ambient = { 0.2f, 0.2f, 0.2f, 1.0f };
 	Lights.diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
+	Lights.position = { 4.0f, 4.0f, 4.0f };
 
-	Lights.position = XMMatrixLookAtLH(
+	Lights.view = XMMatrixLookAtLH(
 		(lightPosition),
 		(lightDir),
 		(lightUp));
-	Lights.position = XMMatrixTranspose(Lights.position);
+	Lights.view = XMMatrixTranspose(Lights.view);
 
 	Lights.projection = XMMatrixPerspectiveFovLH(
 		(lightfovangleY),    //  The field of view in radians along the y-axis
@@ -668,7 +725,37 @@ void Update()
 
 void RenderShadow()
 {
+	gDeviceContext->ClearDepthStencilView(gShadowDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
+
+	gDeviceContext->VSSetShader(gVertexShaderShadow, nullptr, 0);
+	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->GSSetShader(gGeometryShaderShadow, nullptr, 0);
+	gDeviceContext->PSSetShader(gPixelShaderShadow, nullptr, 0);
+
+	UINT32 vertexSize = sizeof(obj.finalVector[0]);
+	UINT32 vertexCount = obj.finalVector.size();
+	UINT32 indexSize = obj.index_counter;
+	UINT32 offset = 0;
+
+	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &vertexSize, &offset);
+	//gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
+
+	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	gDeviceContext->IASetInputLayout(gVertexLayout);
+
+	//SÄTT NY RENDERTARGET SÅ VI KAN SKRIVA SHADOWMAPPEN TILL t1
+	gDeviceContext->OMSetRenderTargets(0, NULL, gShadowDepthStencilView);
+
+	/************************************************************
+	****************************DRAW****************************
+	************************************************************/
+
+	gDeviceContext->Draw(vertexCount, 0);
+
+	//SÄTTER TILLBAKA RENDERTARGET SÅ ALLT FUNKAR SOM VANLIGT ÄFTERÅT
+	gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
 }
 
 void Render()
@@ -677,7 +764,6 @@ void Render()
 	float clearColor[] = { 0, 0, 0, 1 };
 	gDeviceContext->ClearRenderTargetView(gBackBufferRTV, clearColor);
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
-	gDeviceContext->ClearDepthStencilView(gShadowDepthStencilView, D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 
 	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
@@ -698,8 +784,7 @@ void Render()
 	gDeviceContext->IASetInputLayout(gVertexLayout);
 
 	gDeviceContext->PSSetShaderResources(0, 1, &textureResource);
-
-
+	gDeviceContext->PSSetShaderResources(1, 1, &ShadowDepthResource);
 
 	/************************************************************
 	 ****************************DRAW****************************
@@ -773,7 +858,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 			{
 				Update();
 				RenderShadow(); // Rendera
-				Render(); // Rendera
+				//Render(); // Rendera
 
 				frameCount++;
 				if (getTime() > 1.0f)
@@ -797,6 +882,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		gPixelShader->Release();
 		gGeometryShader->Release();
 		gVertexShader->Release();
+
+		//shadowrenderpass
+		gPixelShaderShadow->Release();
+		gGeometryShaderShadow->Release();
+		gVertexShaderShadow->Release();
 
 		gDevice->Release();
 		gDeviceContext->Release();
