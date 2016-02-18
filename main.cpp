@@ -410,7 +410,6 @@ void createTriangle()
 
 void createLightDepthStencil()
 {
-
 	ID3D11Texture2D* shadowDepthStencil = NULL;
 
 	D3D11_TEXTURE2D_DESC descDepth;
@@ -443,14 +442,10 @@ void createLightDepthStencil()
 	ShadowRDesc.Texture2D.MipLevels = 1;
 
 	hr = gDevice->CreateShaderResourceView(shadowDepthStencil, &ShadowRDesc, &ShadowDepthResource);
-
-	//gDeviceContext->PSSetShaderResources(1, 1, &ShadowDepthResource);
-	//shadowDepthStencil->Release();
 }
 
 void createDepthStencil()
 {
-
 	ID3D11Texture2D* gDepthStencil = NULL;
 	D3D11_TEXTURE2D_DESC backBufferSurfaceDesc;
 
@@ -489,8 +484,8 @@ void ConstantBuffer()
 	//LIGHT
 	float lightfovangleY = XM_PI * 0.5;
 	float lightaspectRatio = 512.0 / 512.0;
-	float lightnearZ = 0.5;
-	float lightfarZ = 10.0;
+	float lightnearZ = 0.01;
+	float lightfarZ = 20.0;
 
 	matrices.camView = XMMatrixLookAtLH(
 		(camPosition),
@@ -527,7 +522,7 @@ void ConstantBuffer()
 	gDeviceContext->GSSetConstantBuffers(0, 1, &gConstantBuffer); //Setting the constant buffer to the geometry shader.
 	gDeviceContext->VSSetConstantBuffers(0, 1, &gConstantBuffer); //Setting the constant buffer to the Vertex shader.
 
-	Lights.ambient = { 0.2f, 0.2f, 0.2f, 1.0f };
+	Lights.ambient = { 0.2f, 0.2f, 0.2f, 0.0f };
 	Lights.diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
 	//Lights.position = { 4.0f, 4.0f, 4.0f, 1.0f };
 
@@ -745,10 +740,7 @@ void Update()
 void RenderShadow()
 {
 	SetViewportShadow();
-	//float clearColor[] = { 0, 0, 0, 1 };
-	//gDeviceContext->ClearRenderTargetView(gShadowRenderTarget, clearColor);
 	gDeviceContext->ClearDepthStencilView(gShadowDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
 
 	gDeviceContext->VSSetShader(gVertexShaderShadow, nullptr, 0);
 	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
@@ -762,21 +754,13 @@ void RenderShadow()
 	UINT32 offset = 0;
 
 	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &vertexSize, &offset);
-	//gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
-
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	gDeviceContext->IASetInputLayout(gVertexLayout);
 
-	//SÄTT NY RENDERTARGET SÅM VI KAN SKRIVA SHADOWMAPPEN TILL (t1 hlsl)
 	gDeviceContext->OMSetRenderTargets(0, NULL, gShadowDepthStencilView);
-
-	/************************************************************
-	****************************DRAW****************************
-	************************************************************/
 
 	gDeviceContext->Draw(vertexCount, 0);
 
-	//SÄTTER TILLBAKA RENDERTARGET SÅ ALLT FUNKAR SOM VANLIGT ÄFTERÅT
 	SetViewport();
 	gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
 }

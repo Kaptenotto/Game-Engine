@@ -57,7 +57,7 @@ float4 PS_main(VS_OUT input) : SV_Target
 			//}
 		}
 	}
-	color += float4(0.f, .2f, .2f, 0.f);
+	//color += float4(.1f, .1f, .1f, 0.f);
 
 	textureColor = txDiffuse.Sample(SampleTypeClamp, input.uvs);
 	color = color * textureColor;
