@@ -8,6 +8,4 @@ struct VS_OUT
 float4 PS_main(VS_OUT input) : SV_Target
 {
 	return float4(input.depth, 0, 1);
-	
-	
 };

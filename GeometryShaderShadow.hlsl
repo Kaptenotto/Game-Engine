@@ -51,10 +51,8 @@ void GS_main(
 		output.pos = mul(input[i].pos, allMatrices);
 
 		output.depth = input[i].depth;
-		output.normal = input[i].norm; //mul(float4 (normal, 0), worldMatrix).xyz; // normal calculation
+		output.normal = input[i].norm;
 
-		//worldPosition = mul(input[i].pos, worldMatrix); // calculating worldposition with multiplying pos with worldmatrix
-															// a float3, minus the worldposition calculated previously
 		TriStream.Append(output);
 	}
 

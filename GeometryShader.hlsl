@@ -2,7 +2,8 @@ struct GSOutput
 {
 	float4 pos : SV_POSITION;
 	float2 uvs : TEXCOORD;
-	float3 normal : NORMAL;
+	float4 norm : NORMAL;
+	float4 lightPos : POSITION;
 };
 
 struct GSINPUT
@@ -10,6 +11,7 @@ struct GSINPUT
 	float4 pos : SV_POSITION;
 	float2 uvs : TEXCOORD;
 	float4 norm : NORMAL;
+	float4 lightPos : POSITION;
 };
 
 cbuffer MatrixBuffer : register (b0)
@@ -42,7 +44,8 @@ void main(
 		output.pos = mul(input[i].pos, allMatrices);
 
 		output.uvs = input[i].uvs;
-		output.normal = input[i].norm; //mul(float4 (normal, 0), worldMatrix).xyz; // normal calculation
+		output.lightPos = input[i].lightPos;
+		output.norm = input[i].norm; //mul(float4 (normal, 0), worldMatrix).xyz; // normal calculation
 
 		//worldPosition = mul(input[i].pos, worldMatrix); // calculating worldposition with multiplying pos with worldmatrix
 															// a float3, minus the worldposition calculated previously

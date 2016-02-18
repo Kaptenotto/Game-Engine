@@ -27,46 +27,48 @@ struct VS_OUT
 
 float4 PS_main(VS_OUT input) : SV_Target
 {
-	//float bias;
-	//float4 color;
-	//float2 projectTexCoord;
-	//float depthValue;
-	//float lightDepthValue;
-	//float lightIntensity;
-	//float4 textureColor;
+	float bias;
+	float4 color;
+	float2 projectTexCoord;
+	float depthValue;
+	float lightDepthValue;
+	float lightIntensity;
+	float4 textureColor;
 
-	//bias = 0.001f;
-	//color = ambient;
-	//projectTexCoord.x = input.lightPos.x / input.lightPos.w / 2.0f + 0.5f;
-	//projectTexCoord.y = -input.lightPos.y / input.lightPos.w / 2.0f + 0.5f;
+	bias = 0.001f;
+	color = ambient;
+	projectTexCoord.x = input.lightPos.x / input.lightPos.w / 2.0f + 0.5f;
+	projectTexCoord.y = -input.lightPos.y / input.lightPos.w / 2.0f + 0.5f;
 
-	//if ((saturate(projectTexCoord.x) == projectTexCoord.x) && (saturate(projectTexCoord.y) == projectTexCoord.y))
-	//{
-	//	depthValue = depthMapTexture.Sample(SampleTypeClamp, projectTexCoord.r);
-	//	lightDepthValue = input.lightPos.z / input.lightPos.w;
-	//	lightDepthValue = lightDepthValue - bias;
+	if ((saturate(projectTexCoord.x) == projectTexCoord.x) && (saturate(projectTexCoord.y) == projectTexCoord.y))
+	{
+		depthValue = depthMapTexture.Sample(SampleTypeClamp, projectTexCoord.r);
+		lightDepthValue = input.lightPos.z / input.lightPos.w;
+		lightDepthValue = lightDepthValue - bias;
 
-	//	if (lightDepthValue < depthValue)
-	//	{
-	//		lightIntensity = saturate(dot(input.normal, input.lightPos)); //kan behöva ny tex (lightpos sepparat från lightpos
-	//		if (lightIntensity > 0.0f)
-	//		{
-	//			color += (diffuse * lightIntensity);
-	//			color = saturate(color);
-	//		}
-	//	}
-	//}
+		//if (lightDepthValue < depthValue)
+		{
+			color += float4(1.f, 0.f, 1.f, 0.f);
+			//lightIntensity = saturate(dot(input.normal, input.lightPos)); //kan behöva ny tex (lightpos sepparat från lightpos
+			//if (lightIntensity > 0.0f)
+			//{
+			//	color += (diffuse * lightIntensity);
+			//	color = saturate(color);
+			//}
+		}
+	}
+	color += float4(0.f, .2f, .2f, 0.f);
 
-	//textureColor = depthMapTexture.Sample(sampAni, input.uvs);
-	//color = color * textureColor;
+	textureColor = txDiffuse.Sample(SampleTypeClamp, input.uvs);
+	color = color * textureColor;
 
-	//return color;
+	return color;
 
 
 	//Detta kan fucka up om det inte finns en textur. 
 	//"Vi bränner den bron när vi kommer till den" - Jesus, 2012
-	float4 s = txDiffuse.Sample(sampAni, input.uvs);
-	return s;
+	//float4 s = txDiffuse.Sample(sampAni, input.uvs);
+	//return s;
 	
 	
 };
