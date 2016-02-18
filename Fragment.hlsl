@@ -65,7 +65,7 @@ float4 PS_main(VS_OUT input) : SV_Target
 
 	//Detta kan fucka up om det inte finns en textur. 
 	//"Vi bränner den bron när vi kommer till den" - Jesus, 2012
-	float4 s = depthMapTexture.Sample(sampAni, input.uvs);
+	float4 s = txDiffuse.Sample(sampAni, input.uvs);
 	return s;
 	
 	

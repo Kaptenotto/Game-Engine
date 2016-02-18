@@ -17,14 +17,14 @@ cbuffer Lights : register (b1)
 struct VS_IN
 {
 	float3 pos : POSITION;
-	float2 uvs : TEXCOORD;
+	float2 depth : TEXCOORD;
 	float3 norm : NORMAL;
 };
 
 struct VS_OUT
 {
 	float4 pos : SV_POSITION;
-	float2 uvs : TEXCOORD;
+	float2 depth: TEXCOORD;
 	float4 norm : NORMAL;
 };
 
@@ -35,10 +35,13 @@ VS_OUT VS_main(VS_IN input)
 {
 	VS_OUT output = (VS_OUT)0;
 
-	matrix cMatrix = mul(mul(worldMatrix, view), projection);
-	output.pos = mul(input.pos, cMatrix);
-	output.uvs.x = 1 - (output.pos.z / output.pos.w);
-	//output.lightPos = position; //COORDS FOR LIGHT IN WORLD SPACE HERE?
+	//matrix cMatrix = mul(worldMatrix, mul(view, projection));
+	//output.pos = mul(input.pos, cMatrix);
+	output.pos = float4(input.pos, 1);
+	output.depth = input.depth;
+	output.norm = float4(input.norm, 1.0f);
+	//output.depth.x = 1 - (output.pos.z / output.pos.w);
+
 	return output;
 }
 

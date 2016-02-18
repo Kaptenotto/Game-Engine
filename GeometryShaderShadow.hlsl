@@ -1,14 +1,14 @@
 struct GSOutput
 {
 	float4 pos : SV_POSITION;
-	float2 uvs : TEXCOORD;
+	float2 depth : TEXCOORD;
 	float3 normal : NORMAL;
 };
 
 struct GSINPUT
 {
 	float4 pos : SV_POSITION;
-	float2 uvs : TEXCOORD;
+	float2 depth : TEXCOORD;
 	float4 norm : NORMAL;
 };
 
@@ -50,7 +50,7 @@ void GS_main(
 	{
 		output.pos = mul(input[i].pos, allMatrices);
 
-		output.uvs = input[i].uvs;
+		output.depth = input[i].depth;
 		output.normal = input[i].norm; //mul(float4 (normal, 0), worldMatrix).xyz; // normal calculation
 
 		//worldPosition = mul(input[i].pos, worldMatrix); // calculating worldposition with multiplying pos with worldmatrix

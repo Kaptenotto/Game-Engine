@@ -78,8 +78,12 @@ ID3D11Buffer* gConstantBuffer = nullptr;
 ID3D11Buffer* gConstantLightBuffer = nullptr;
 
 ID3D11Texture2D* gBackBuffer = nullptr;
+ID3D11Texture2D* gShadowBackBuffer = nullptr;
 
 ID3D11RenderTargetView* gBackBufferRTV = nullptr;
+
+ID3D11RenderTargetView* gShadowRenderTarget = nullptr; //egen
+
 ID3D11DepthStencilView* gDepthStencilView = nullptr;
 
 ID3D11DepthStencilView* gShadowDepthStencilView = nullptr;
@@ -479,7 +483,7 @@ void ConstantBuffer()
 {
 	float fovangleY = XM_PI * 0.45;
 	float aspectRatio = 640.0 / 480.0;
-	float nearZ = 0.5;
+	float nearZ = 0.01;
 	float farZ = 20.0;
 
 	//LIGHT
@@ -562,6 +566,18 @@ void SetViewport()
 	D3D11_VIEWPORT vP;
 	vP.Width = (float)640;
 	vP.Height = (float)480;
+	vP.MinDepth = 0.0f;
+	vP.MaxDepth = 1.0f;
+	vP.TopLeftX = 0;
+	vP.TopLeftY = 0;
+	gDeviceContext->RSSetViewports(1, &vP);
+}
+
+void SetViewportShadow()
+{
+	D3D11_VIEWPORT vP;
+	vP.Width = (float)512;
+	vP.Height = (float)512;
 	vP.MinDepth = 0.0f;
 	vP.MaxDepth = 1.0f;
 	vP.TopLeftX = 0;
@@ -725,6 +741,9 @@ void Update()
 
 void RenderShadow()
 {
+	SetViewportShadow();
+	float clearColor[] = { 0, 0, 0, 1 };
+	gDeviceContext->ClearRenderTargetView(gShadowRenderTarget, clearColor);
 	gDeviceContext->ClearDepthStencilView(gShadowDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 
@@ -745,8 +764,8 @@ void RenderShadow()
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	gDeviceContext->IASetInputLayout(gVertexLayout);
 
-	//SÄTT NY RENDERTARGET SÅ VI KAN SKRIVA SHADOWMAPPEN TILL t1
-	gDeviceContext->OMSetRenderTargets(0, NULL, gShadowDepthStencilView);
+	//SÄTT NY RENDERTARGET SÅM VI KAN SKRIVA SHADOWMAPPEN TILL (t1 hlsl)
+	gDeviceContext->OMSetRenderTargets(1, &gShadowRenderTarget, gShadowDepthStencilView);
 
 	/************************************************************
 	****************************DRAW****************************
@@ -755,6 +774,7 @@ void RenderShadow()
 	gDeviceContext->Draw(vertexCount, 0);
 
 	//SÄTTER TILLBAKA RENDERTARGET SÅ ALLT FUNKAR SOM VANLIGT ÄFTERÅT
+	SetViewport();
 	gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
 }
 
@@ -892,6 +912,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		gDeviceContext->Release();
 		gSwapChain->Release();
 		gBackBufferRTV->Release();
+		gShadowBackBuffer->Release();
 		DestroyWindow(wndHandle);
 
 		DIKeyboard->Unacquire();
@@ -1012,6 +1033,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 		//Get the adress of the backbuffer
 		gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&gBackBuffer);
 
+		gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&gShadowBackBuffer);
+
 		createDepthStencil();
 
 		createLightDepthStencil();
@@ -1019,6 +1042,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 		//use the back buffer adress to create the render target
 		gDevice->CreateRenderTargetView(gBackBuffer, NULL, &gBackBufferRTV);
 		gBackBuffer->Release();
+
+		//TESTING SHADOWRENDEERTARGET
+		gDevice->CreateRenderTargetView(gBackBuffer, NULL, &gShadowRenderTarget);
+		gShadowBackBuffer->Release();
 
 		//Set the render target as the back buffer
 		gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
