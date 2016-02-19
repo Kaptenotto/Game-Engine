@@ -3,7 +3,7 @@ struct GSOutput
 	float4 pos : SV_POSITION;
 	float2 uvs : TEXCOORD;
 	float4 norm : NORMAL;
-	float4 lightPos : POSITION;
+	float4 wPos : WPOS;
 };
 
 struct GSINPUT
@@ -11,7 +11,7 @@ struct GSINPUT
 	float4 pos : SV_POSITION;
 	float2 uvs : TEXCOORD;
 	float4 norm : NORMAL;
-	float4 lightPos : POSITION;
+	float4 wPos : WPOS;
 };
 
 cbuffer MatrixBuffer : register (b0)
@@ -26,9 +26,6 @@ void main(
 	triangle GSINPUT input[3],
 	inout TriangleStream <GSOutput> TriStream)
 {
-
-	float4 worldPosition;
-
 	GSOutput output = (GSOutput)0;
 
 	matrix allMatrices = mul(mul(worldMatrix, camView), projectionMatrix);
@@ -44,10 +41,10 @@ void main(
 		output.pos = mul(input[i].pos, allMatrices);
 
 		output.uvs = input[i].uvs;
-		output.lightPos = input[i].lightPos;
+		//output.lightPos = input[i].lightPos;
 		output.norm = input[i].norm; //mul(float4 (normal, 0), worldMatrix).xyz; // normal calculation
 
-		//worldPosition = mul(input[i].pos, worldMatrix); // calculating worldposition with multiplying pos with worldmatrix
+		output.wPos = input[i].wPos;
 															// a float3, minus the worldposition calculated previously
 		TriStream.Append(output);
 	}

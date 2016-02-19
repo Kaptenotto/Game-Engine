@@ -33,13 +33,10 @@ void GS_main(
 	triangle GSINPUT input[3],
 	inout TriangleStream <GSOutput> TriStream)
 {
-
-	float4 worldPosition;
-
 	GSOutput output = (GSOutput)0;
 
 	matrix allMatrices = mul(mul(worldMatrix, view), projection);
-
+	//matrix allMatrices = mul(view, projection);
 
 	
 	float3 faceEdgeA = input[1].pos - input[0].pos;

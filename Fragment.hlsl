@@ -7,25 +7,30 @@ SamplerState SampleTypeClamp : register(s0)
 	AddressU = Clamp;
 	AddressV = Clamp;
 };
-
+cbuffer MatrixBuffer : register (b0)
+{
+	matrix worldMatrix;
+	matrix camView;
+	matrix projectionMatrix;
+}
 cbuffer Lights : register (b1)
 {
-	float3 position;
+	float4 position;
 	matrix view;
 	matrix projection;
 	float4 ambient;
 	float4 diffuse;
 }
 
-struct VS_OUT
+struct GS_OUT
 {
 	float4 pos : SV_POSITION;
 	float2 uvs : TEXCOORD;
-	float4 normal : NORMAL;
-	float4 lightPos : POSITION;
+	float4 norm : NORMAL;
+	float4 wPos : WPOS;
 };
 
-float4 PS_main(VS_OUT input) : SV_Target
+float4 PS_main(GS_OUT input) : SV_Target
 {
 	float bias;
 	float4 color;
@@ -34,32 +39,44 @@ float4 PS_main(VS_OUT input) : SV_Target
 	float lightDepthValue;
 	float lightIntensity;
 	float4 textureColor;
+	float4 lightPos;
 
-	bias = 0.001f;
+	bias = 0.00000000000000000000000000000000000001f;
 	color = ambient;
-	projectTexCoord.x = input.lightPos.x / input.lightPos.w / 2.0f + 0.5f;
-	projectTexCoord.y = -input.lightPos.y / input.lightPos.w / 2.0f + 0.5f;
 
-	if ((saturate(projectTexCoord.x) == projectTexCoord.x) && (saturate(projectTexCoord.y) == projectTexCoord.y))
-	{
-		depthValue = depthMapTexture.Sample(SampleTypeClamp, projectTexCoord.r);
-		lightDepthValue = input.lightPos.z / input.lightPos.w;
-		lightDepthValue = lightDepthValue - bias;
+	//matrix cMatrix = mul(view, projection);
+	lightPos = mul(input.wPos, view);
+	lightPos = mul(lightPos, projection);
 
-		//if (lightDepthValue < depthValue)
-		{
-			color += float4(1.f, 0.f, 1.f, 0.f);
-			//lightIntensity = saturate(dot(input.normal, input.lightPos)); //kan behöva ny tex (lightpos sepparat från lightpos
-			//if (lightIntensity > 0.0f)
-			//{
-			//	color += (diffuse * lightIntensity);
-			//	color = saturate(color);
-			//}
-		}
-	}
-	//color += float4(.1f, .1f, .1f, 0.f);
+	projectTexCoord.x = lightPos.x / lightPos.w;
+	projectTexCoord.y = lightPos.y / lightPos.w;
+	
+	lightDepthValue = lightPos.z / lightPos.w;
+	
+	projectTexCoord.x = projectTexCoord.x * 0.5f + 0.5f;
+	projectTexCoord.y = projectTexCoord.y * -0.5f + 0.5f;
 
-	textureColor = txDiffuse.Sample(SampleTypeClamp, input.uvs);
+	//depthValue = depthMapTexture.Sample(SampleTypeClamp, projectTexCoord.xy).r + bias;
+
+	//if(depthValue > lightDepthValue)
+
+	//{
+	//	return float4(1.0f, 0.0f, 0.0f, 1.0f);
+
+	//	//color += float4(1.f, 0.f, 0.f, 0.f);
+	//	//lightIntensity = saturate(dot(input.normal, input.lightPos)); //kan behöva ny tex (lightpos sepparat från lightpos
+	//	//if (lightIntensity > 0.0f)
+	//	//{
+	//	//	color += (diffuse * lightIntensity);
+	//	//	color = saturate(color);
+	//	//}
+	//}
+
+	//color += float4(.0f, .0f, 1.0f, 1.f);
+
+	return float4(pow(depthMapTexture.Sample(SampleTypeClamp, input.uvs).r,12), 0, 0, 1);
+
+	textureColor = depthMapTexture.Sample(SampleTypeClamp, input.uvs);
 	color = color * textureColor;
 
 	return color;

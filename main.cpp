@@ -64,7 +64,7 @@ XMVECTOR camPosition = XMVectorSet(0, 0, -5, 0);
 XMVECTOR camTarget = XMVectorSet(0, 0, 0, 0);
 XMVECTOR camUp = XMVectorSet(0, 1, 0, 0);
 
-XMVECTOR lightPosition = XMVectorSet(4, 4, 4, 1);
+XMVECTOR lightPosition = XMVectorSet(2, 2, 2, 1);
 XMVECTOR lightDir = XMVectorSet(0, 0, 0, 0);
 XMVECTOR lightUp = XMVectorSet(0, 1, 0, 0);
 
@@ -139,7 +139,7 @@ MatrixBuffer matrices;
 
 struct LightBuffer
 {
-	XMVECTOR position = XMVectorSet(4, 4, 4, 1);
+	XMVECTOR position = XMVectorSet(2, 2, 2, 1);
 	XMMATRIX view;
 	XMMATRIX projection;
 	XMFLOAT4 ambient;
@@ -430,7 +430,7 @@ void createLightDepthStencil()
 	D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
 	ZeroMemory(&descDSV, sizeof(descDSV));
 	descDSV.Format = DXGI_FORMAT_D32_FLOAT;
-	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
+	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	descDSV.Texture2D.MipSlice = 0;
 
 	hr = gDevice->CreateDepthStencilView(shadowDepthStencil, &descDSV, &gShadowDepthStencilView);
@@ -484,8 +484,8 @@ void ConstantBuffer()
 	//LIGHT
 	float lightfovangleY = XM_PI * 0.5;
 	float lightaspectRatio = 512.0 / 512.0;
-	float lightnearZ = 0.01;
-	float lightfarZ = 20.0;
+	float lightnearZ = 0.1;
+	float lightfarZ = 7.0;
 
 	matrices.camView = XMMatrixLookAtLH(
 		(camPosition),
@@ -521,10 +521,11 @@ void ConstantBuffer()
 
 	gDeviceContext->GSSetConstantBuffers(0, 1, &gConstantBuffer); //Setting the constant buffer to the geometry shader.
 	gDeviceContext->VSSetConstantBuffers(0, 1, &gConstantBuffer); //Setting the constant buffer to the Vertex shader.
+	gDeviceContext->PSSetConstantBuffers(0, 1, &gConstantBuffer); //Setting the constant buffer to the Vertex shader.
 
-	Lights.ambient = { 0.2f, 0.2f, 0.2f, 0.0f };
+	Lights.ambient = { 0.4f, 0.4f, 0.4f, 1.0f };
 	Lights.diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
-	//Lights.position = { 4.0f, 4.0f, 4.0f, 1.0f };
+	Lights.position = { 4.0f, 4.0f, 0.0f, 1.0f };
 
 	Lights.view = XMMatrixLookAtLH(
 		(lightPosition),
@@ -555,7 +556,8 @@ void ConstantBuffer()
 	hr = gDevice->CreateBuffer(&lightDesc, &lightData, &gConstantLightBuffer); // Creating a buffer in this case constantbuffer.
 
 	gDeviceContext->GSSetConstantBuffers(1, 1, &gConstantLightBuffer); //Setting the constant buffer to the geometry shader.
-	gDeviceContext->VSSetConstantBuffers(1, 1, &gConstantLightBuffer); //Setting the constant buffer to the geometry shader.
+	//gDeviceContext->VSSetConstantBuffers(1, 1, &gConstantLightBuffer); //Setting the constant buffer to the geometry shader.
+	gDeviceContext->PSSetConstantBuffers(1, 1, &gConstantLightBuffer); //Setting the constant buffer to the geometry shader.
 }
 
 void SetViewport()
@@ -735,6 +737,10 @@ void Update()
 
 	gDeviceContext->GSSetConstantBuffers(0, 1, &gConstantBuffer);
 	gDeviceContext->VSSetConstantBuffers(0, 1, &gConstantBuffer);
+	gDeviceContext->PSSetConstantBuffers(0, 1, &gConstantBuffer);
+	gDeviceContext->GSSetConstantBuffers(1, 1, &gConstantLightBuffer);
+	gDeviceContext->VSSetConstantBuffers(1, 1, &gConstantLightBuffer);
+	gDeviceContext->PSSetConstantBuffers(1, 1, &gConstantLightBuffer);
 }
 
 void RenderShadow()
@@ -746,7 +752,7 @@ void RenderShadow()
 	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->GSSetShader(gGeometryShaderShadow, nullptr, 0);
-	gDeviceContext->PSSetShader(gPixelShaderShadow, nullptr, 0);
+	gDeviceContext->PSSetShader(nullptr, nullptr, 0);
 
 	UINT32 vertexSize = sizeof(obj.finalVector[0]);
 	UINT32 vertexCount = obj.finalVector.size();
