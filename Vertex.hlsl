@@ -33,15 +33,14 @@ VS_OUT VS_main(VS_IN input)
 {
 	VS_OUT output = (VS_OUT)0;
 
-	//matrix lcMatrix = mul(mul(worldMatrix, view), projection);
-	//output.lightPos = mul(input.pos, lcMatrix);
-
 	output.uvs = input.uvs;
 	output.norm = float4(input.norm,1);
 	output.pos = float4(input.pos, 1);
-	output.wPos = float4(input.pos, 1);
-	//output.lightPos = float4(position, 1);
 
+	output.pos = mul(output.pos, worldMatrix);
+	output.wPos = output.pos;
+	output.pos = mul(output.pos, camView);
+	output.pos = mul(output.pos, projectionMatrix);
 
 
 	return output;

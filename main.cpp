@@ -60,11 +60,11 @@ ID3D11GeometryShader* gGeometryShaderShadow = nullptr;
 
 //INITIALIZE VECTORS ***********************************************
 
-XMVECTOR camPosition = XMVectorSet(0, 0, -5, 0);
+XMVECTOR camPosition = XMVectorSet(0, 1, -5, 0);
 XMVECTOR camTarget = XMVectorSet(0, 0, 0, 0);
 XMVECTOR camUp = XMVectorSet(0, 1, 0, 0);
 
-XMVECTOR lightPosition = XMVectorSet(2, 2, 2, 1);
+XMVECTOR lightPosition = XMVectorSet(3, 3, -3, 1);
 XMVECTOR lightDir = XMVectorSet(0, 0, 0, 0);
 XMVECTOR lightUp = XMVectorSet(0, 1, 0, 0);
 
@@ -139,7 +139,7 @@ MatrixBuffer matrices;
 
 struct LightBuffer
 {
-	XMVECTOR position = XMVectorSet(2, 2, 2, 1);
+	XMVECTOR position;
 	XMMATRIX view;
 	XMMATRIX projection;
 	XMFLOAT4 ambient;
@@ -485,7 +485,7 @@ void ConstantBuffer()
 	float lightfovangleY = XM_PI * 0.5;
 	float lightaspectRatio = 512.0 / 512.0;
 	float lightnearZ = 0.1;
-	float lightfarZ = 7.0;
+	float lightfarZ = 9.0;
 
 	matrices.camView = XMMatrixLookAtLH(
 		(camPosition),
@@ -523,9 +523,9 @@ void ConstantBuffer()
 	gDeviceContext->VSSetConstantBuffers(0, 1, &gConstantBuffer); //Setting the constant buffer to the Vertex shader.
 	gDeviceContext->PSSetConstantBuffers(0, 1, &gConstantBuffer); //Setting the constant buffer to the Vertex shader.
 
-	Lights.ambient = { 0.4f, 0.4f, 0.4f, 1.0f };
+	Lights.ambient = { 0.2f, 0.2f, 0.2f, 1.0f };
 	Lights.diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
-	Lights.position = { 4.0f, 4.0f, 0.0f, 1.0f };
+	Lights.position = lightPosition;
 
 	Lights.view = XMMatrixLookAtLH(
 		(lightPosition),
@@ -734,6 +734,7 @@ void Update()
 	matrices.World = XMMatrixRotationY(angle);
 
 	gDeviceContext->UpdateSubresource(gConstantBuffer, 0, 0, &matrices, 0, 0);
+	gDeviceContext->UpdateSubresource(gConstantLightBuffer, 0, 0, &Lights, 0, 0);
 
 	gDeviceContext->GSSetConstantBuffers(0, 1, &gConstantBuffer);
 	gDeviceContext->VSSetConstantBuffers(0, 1, &gConstantBuffer);
@@ -751,7 +752,7 @@ void RenderShadow()
 	gDeviceContext->VSSetShader(gVertexShaderShadow, nullptr, 0);
 	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
-	gDeviceContext->GSSetShader(gGeometryShaderShadow, nullptr, 0);
+	gDeviceContext->GSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->PSSetShader(nullptr, nullptr, 0);
 
 	UINT32 vertexSize = sizeof(obj.finalVector[0]);
@@ -782,7 +783,7 @@ void Render()
 	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
 	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
-	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
+	gDeviceContext->GSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShader, nullptr, 0);
 
 	UINT32 vertexSize = sizeof(obj.finalVector[0]);

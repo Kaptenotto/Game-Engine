@@ -22,7 +22,7 @@ cbuffer Lights : register (b1)
 	float4 diffuse;
 }
 
-struct GS_OUT
+struct VS_OUT
 {
 	float4 pos : SV_POSITION;
 	float2 uvs : TEXCOORD;
@@ -30,7 +30,7 @@ struct GS_OUT
 	float4 wPos : WPOS;
 };
 
-float4 PS_main(GS_OUT input) : SV_Target
+float4 PS_main(VS_OUT input) : SV_Target
 {
 	float bias;
 	float4 color;
@@ -41,7 +41,7 @@ float4 PS_main(GS_OUT input) : SV_Target
 	float4 textureColor;
 	float4 lightPos;
 
-	bias = 0.00000000000000000000000000000000000001f;
+	bias = 0.00001f;
 	color = ambient;
 
 	//matrix cMatrix = mul(view, projection);
@@ -56,27 +56,23 @@ float4 PS_main(GS_OUT input) : SV_Target
 	projectTexCoord.x = projectTexCoord.x * 0.5f + 0.5f;
 	projectTexCoord.y = projectTexCoord.y * -0.5f + 0.5f;
 
-	//depthValue = depthMapTexture.Sample(SampleTypeClamp, projectTexCoord.xy).r + bias;
+	depthValue = depthMapTexture.Sample(SampleTypeClamp, projectTexCoord.xy).r + bias;
 
-	//if(depthValue > lightDepthValue)
+	if(depthValue < lightDepthValue)
 
-	//{
-	//	return float4(1.0f, 0.0f, 0.0f, 1.0f);
-
-	//	//color += float4(1.f, 0.f, 0.f, 0.f);
-	//	//lightIntensity = saturate(dot(input.normal, input.lightPos)); //kan behöva ny tex (lightpos sepparat från lightpos
-	//	//if (lightIntensity > 0.0f)
-	//	//{
-	//	//	color += (diffuse * lightIntensity);
-	//	//	color = saturate(color);
-	//	//}
-	//}
+	{
+		lightIntensity = saturate(dot(input.norm, position)); //kan behöva ny tex (lightpos sepparat från lightpos
+		if (lightIntensity > 0.0f)
+		{
+			color += (diffuse * lightIntensity);
+			color = saturate(color);
+		}
+	}
 
 	//color += float4(.0f, .0f, 1.0f, 1.f);
 
-	return float4(pow(depthMapTexture.Sample(SampleTypeClamp, input.uvs).r,12), 0, 0, 1);
 
-	textureColor = depthMapTexture.Sample(SampleTypeClamp, input.uvs);
+	textureColor = txDiffuse.Sample(SampleTypeClamp, input.uvs);
 	color = color * textureColor;
 
 	return color;

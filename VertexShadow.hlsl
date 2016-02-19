@@ -24,8 +24,6 @@ struct VS_IN
 struct VS_OUT
 {
 	float4 pos : SV_POSITION;
-	float2 depth: TEXCOORD;
-	float4 norm : NORMAL;
 };
 
 VS_OUT VS_main(VS_IN input)
@@ -33,8 +31,10 @@ VS_OUT VS_main(VS_IN input)
 	VS_OUT output = (VS_OUT)0;
 
 	output.pos = float4(input.pos, 1);
-	output.depth = input.depth;
-	output.norm = float4(input.norm, 1.0f);
+
+	output.pos = mul(output.pos, worldMatrix);
+	output.pos = mul(output.pos, view);
+	output.pos = mul(output.pos, projection);
 
 	return output;
 }
