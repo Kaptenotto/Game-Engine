@@ -413,8 +413,8 @@ void createLightDepthStencil()
 	ID3D11Texture2D* shadowDepthStencil = NULL;
 
 	D3D11_TEXTURE2D_DESC descDepth;
-	descDepth.Width = (float)512;
-	descDepth.Height = (float)512;
+	descDepth.Width = (float)1024;
+	descDepth.Height = (float)1024;
 	descDepth.MipLevels = 1;
 	descDepth.ArraySize = 1;
 	descDepth.Format = DXGI_FORMAT_R32_TYPELESS;
@@ -575,8 +575,8 @@ void SetViewport()
 void SetViewportShadow()
 {
 	D3D11_VIEWPORT vP;
-	vP.Width = (float)512;
-	vP.Height = (float)512;
+	vP.Width = (float)1024;
+	vP.Height = (float)1024;
 	vP.MinDepth = 0.0f;
 	vP.MaxDepth = 1.0f;
 	vP.TopLeftX = 0;

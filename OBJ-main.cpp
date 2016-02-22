@@ -5,7 +5,7 @@
 using namespace std;
 Importer::Importer()
 {
-	objFile = ("./objFiles/normalCube.obj");
+	objFile = ("./objFiles/testf.obj");
 
 	index_counter = 0;
 	objCounter = 0;
