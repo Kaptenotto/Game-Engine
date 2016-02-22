@@ -44,11 +44,12 @@ public:
 	vector<string> mtlShadingGroups;
 	vector<string> textureMap;
 	vector<string> normalMap;
-	
+	vector<int> drawOffset;
+
 
 	//Temporary variables
 private:
-	
+
 	Indexes tmp_idx1;
 	Indexes tmp_idx2;
 	Indexes tmp_idx3;
@@ -71,4 +72,3 @@ private:
 
 
 #endif // IMPORTER_H
-
