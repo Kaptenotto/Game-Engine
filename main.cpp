@@ -494,7 +494,7 @@ void ConstantBuffer()
 	float lightfovangleY = XM_PI * 0.5;
 	float lightaspectRatio = 512.0 / 512.0;
 	float lightnearZ = 0.1;
-	float lightfarZ = 9.0;
+	float lightfarZ = 15.0;
 
 	matrices.camView = XMMatrixLookAtLH(
 		(camPosition),
@@ -792,7 +792,7 @@ void Render()
 	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
 	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
-	gDeviceContext->GSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShader, nullptr, 0);
 
 	UINT32 vertexSize = sizeof(obj.finalVector[0]);

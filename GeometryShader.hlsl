@@ -36,11 +36,11 @@ void main(
 
 	for (int i = 0; i < 3; i++)
 	{
-		output.pos = mul(input[i].pos, allMatrices);
+		output.pos = input[i].pos;
 
 		output.uvs = input[i].uvs;
-		output.norm = input[i].norm; //mul(float4 (normal, 0), worldMatrix).xyz; // normal calculation
-
+		//output.norm = float4(normal, 0); //mul(float4 (normal, 0), worldMatrix).xyz; // normal calculation
+		output.norm = input[i].norm;
 		output.wPos = input[i].wPos;
 
 		TriStream.Append(output);
