@@ -64,7 +64,7 @@ XMVECTOR camPosition = XMVectorSet(0, 1, -5, 0);
 XMVECTOR camTarget = XMVectorSet(0, 0, 0, 0);
 XMVECTOR camUp = XMVectorSet(0, 1, 0, 0);
 
-XMVECTOR lightPosition = XMVectorSet(3, 3, -3, 1);
+XMVECTOR lightPosition = XMVectorSet(10, 10, -5, 1);
 XMVECTOR lightDir = XMVectorSet(0, 0, 0, 0);
 XMVECTOR lightUp = XMVectorSet(0, 1, 0, 0);
 
@@ -422,8 +422,8 @@ void createLightDepthStencil()
 	ID3D11Texture2D* shadowDepthStencil = NULL;
 
 	D3D11_TEXTURE2D_DESC descDepth;
-	descDepth.Width = (float)1024;
-	descDepth.Height = (float)1024;
+	descDepth.Width = (float)2048;
+	descDepth.Height = (float)2048;
 	descDepth.MipLevels = 1;
 	descDepth.ArraySize = 1;
 	descDepth.Format = DXGI_FORMAT_R32_TYPELESS;
@@ -492,9 +492,9 @@ void ConstantBuffer()
 
 	//LIGHT
 	float lightfovangleY = XM_PI * 0.5;
-	float lightaspectRatio = 512.0 / 512.0;
-	float lightnearZ = 0.1;
-	float lightfarZ = 15.0;
+	float lightaspectRatio = 2048.0f / 2048.0f;
+	float lightnearZ = 5.0;
+	float lightfarZ = 30.0;
 
 	matrices.camView = XMMatrixLookAtLH(
 		(camPosition),
@@ -567,6 +567,20 @@ void ConstantBuffer()
 	gDeviceContext->GSSetConstantBuffers(1, 1, &gConstantLightBuffer); //Setting the constant buffer to the geometry shader.
 	//gDeviceContext->VSSetConstantBuffers(1, 1, &gConstantLightBuffer); //Setting the constant buffer to the geometry shader.
 	gDeviceContext->PSSetConstantBuffers(1, 1, &gConstantLightBuffer); //Setting the constant buffer to the geometry shader.
+
+	D3D11_SAMPLER_DESC sampDesc;
+	ZeroMemory(&sampDesc, sizeof(sampDesc));
+	sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+	sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+	sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+	sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+	sampDesc.MipLODBias = 0.0f;
+	sampDesc.MaxAnisotropy = 1;
+	sampDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+	sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+	gDevice->CreateSamplerState(&sampDesc, &texSamplerState);
+
 }
 
 void SetViewport()
@@ -584,8 +598,8 @@ void SetViewport()
 void SetViewportShadow()
 {
 	D3D11_VIEWPORT vP;
-	vP.Width = (float)1024;
-	vP.Height = (float)1024;
+	vP.Width = (float)2048;
+	vP.Height = (float)2048;
 	vP.MinDepth = 0.0f;
 	vP.MaxDepth = 1.0f;
 	vP.TopLeftX = 0;
@@ -807,6 +821,7 @@ void Render()
 	gDeviceContext->IASetInputLayout(gVertexLayout);
 
 	gDeviceContext->PSSetShaderResources(1, 1, &ShadowDepthResource);
+	gDeviceContext->PSSetSamplers(0, 1, &texSamplerState);
 
 	/************************************************************
 	 ****************************DRAW****************************
