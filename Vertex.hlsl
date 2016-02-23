@@ -12,6 +12,7 @@ cbuffer Lights : register (b1)
 	matrix projection;
 	float4 ambient;
 	float4 diffuse;
+	float3 lightDir;
 }
 
 struct VS_IN
@@ -41,7 +42,6 @@ VS_OUT VS_main(VS_IN input)
 	output.wPos = output.pos;
 	output.pos = mul(output.pos, camView);
 	output.pos = mul(output.pos, projectionMatrix);
-
 
 	return output;
 }

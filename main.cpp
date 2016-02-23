@@ -71,6 +71,7 @@ XMVECTOR lightUp = XMVectorSet(0, 1, 0, 0);
 // INITIALIZE SHADER THINGS *****************************************
 
 vector<ID3D11ShaderResourceView*> textureResources;
+vector<ID3D11ShaderResourceView*> normalResources;
 
 ID3D11SamplerState* texSamplerState;
 
@@ -144,6 +145,7 @@ struct LightBuffer
 	XMMATRIX projection;
 	XMFLOAT4 ambient;
 	XMFLOAT4 diffuse;
+	XMFLOAT3 lightDir;
 };
 LightBuffer Lights;
 
@@ -213,6 +215,8 @@ void CreateShaders()
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 3 , D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 5, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 8, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 11, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 	//Create the vertex shader
 
@@ -301,9 +305,11 @@ void createTextures()
 	HRESULT hr;
 
 	ID3D11Resource* texResource;
+	ID3D11Resource* norResource;
 
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
+	
 
 	if (!obj.textureMap.empty())
 	{
@@ -330,6 +336,32 @@ void createTextures()
 				);
 		}
 		texResource->Release();
+	}
+
+	if (!obj.normalMap.empty())
+	{
+		for (int i = 0; i < obj.normalMap.size(); i++)
+		{
+			wstring filePath;
+			ID3D11ShaderResourceView* normalResource;
+
+			normalResources.push_back(normalResource);
+
+			filePath.assign(obj.normalMap[i].begin(), obj.normalMap[i].end());
+
+			const wchar_t* wcharFilePath = filePath.c_str();
+
+			hr = CreateWICTextureFromFile(
+				gDevice,
+				gDeviceContext,
+				wcharFilePath,
+				&norResource,
+				&normalResources[i],
+				0
+				);
+		}
+
+		norResource->Release();
 	}
 	
 }
@@ -479,6 +511,7 @@ void ConstantBuffer()
 	Lights.ambient = { 0.2f, 0.2f, 0.2f, 1.0f };
 	Lights.diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
 	Lights.position = lightPosition;
+	Lights.lightDir = { 1.0f, 1.0f, 1.0f };
 
 	Lights.view = XMMatrixLookAtLH(
 		(lightPosition),
@@ -698,7 +731,7 @@ void Update()
 
 	angle -= 0.0001f;
 
-	matrices.World = XMMatrixRotationY(angle);
+	//matrices.World = XMMatrixRotationY(angle);
 
 	gDeviceContext->UpdateSubresource(gConstantBuffer, 0, 0, &matrices, 0, 0);
 	gDeviceContext->UpdateSubresource(gConstantLightBuffer, 0, 0, &Lights, 0, 0);
@@ -767,10 +800,11 @@ void Render()
 	gDeviceContext->PSSetShaderResources(1, 1, &ShadowDepthResource);
 	gDeviceContext->PSSetSamplers(0, 1, &texSamplerState);
 
+
 	/************************************************************
 	 ****************************DRAW****************************
      ************************************************************/
-
+	
 	for (int i = 0; i < (obj.drawOffset.size() - 1); i++)
 	{
 		/*if (n < textureResources.size())
@@ -780,6 +814,7 @@ void Render()
 		if (i < textureResources.size())
 		{
 			gDeviceContext->PSSetShaderResources(0, 1, &textureResources[i]);
+			gDeviceContext->PSSetShaderResources(2, 1, &normalResources[i]);
 		}
 		gDeviceContext->Draw((obj.drawOffset[(i + 1)] - obj.drawOffset[i]), obj.drawOffset[i]);
 		
@@ -877,8 +912,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		gVertexShader->Release();
 
 		//shadowrenderpass
-		gPixelShaderShadow->Release();
-		gGeometryShaderShadow->Release();
 		gVertexShaderShadow->Release();
 
 		gDevice->Release();

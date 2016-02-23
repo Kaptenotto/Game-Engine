@@ -1,6 +1,8 @@
 Texture2D txDiffuse : register (t0);
 Texture2D depthMapTexture : register(t1);
+Texture2D shaderTexture : register(t2);
 SamplerState SampleTypeClamp : register(s0);
+
 cbuffer MatrixBuffer : register (b0)
 {
 	matrix worldMatrix;
@@ -14,6 +16,7 @@ cbuffer Lights : register (b1)
 	matrix projection;
 	float4 ambient;
 	float4 diffuse;
+	float3 lightDir;
 }
 
 struct VS_OUT
@@ -22,10 +25,19 @@ struct VS_OUT
 	float2 uvs : TEXCOORD;
 	float4 norm : NORMAL;
 	float4 wPos : WPOS;
+	float3 tangent : TANGENT;
+	float3 binormal : BINORMAL;
 };
 
 float4 PS_main(VS_OUT input) : SV_Target
 {
+	//Normal stuff
+	float4 texColor;
+	float4 norMap;
+	float3 Normal;
+	float3 lightDirection;
+	float4 norColor;
+
 	float bias;
 	float4 color;
 	float2 projectTexCoord;
@@ -35,6 +47,22 @@ float4 PS_main(VS_OUT input) : SV_Target
 	float4 textureColor;
 	float4 lightPos;
 	float SMAP_SIZE = 2048.0f;
+
+
+	textureColor = txDiffuse.Sample(SampleTypeClamp, input.uvs);
+	norMap = shaderTexture.Sample(SampleTypeClamp, input.uvs);
+
+	norMap = (norMap*2.0f) - 1.0f;
+
+	Normal = (norMap.x * input.tangent) + (norMap.y * input.binormal) + (norMap.z * input.norm);
+	Normal = normalize(Normal);
+
+	lightDirection = -lightDir;
+
+	lightIntensity  = saturate(dot(Normal, lightDirection));
+
+	//norColor = saturate(diffuse * lightIntensity);
+	//norColor = norColor * texureColor;
 
 	//return float4(input.norm.xyz, 1.0f);
 
@@ -54,7 +82,7 @@ float4 PS_main(VS_OUT input) : SV_Target
 
 	depthValue = depthMapTexture.Sample(SampleTypeClamp, projectTexCoord.xy).r + bias;
 
-	textureColor = txDiffuse.Sample(SampleTypeClamp, input.uvs);
+	
 
 	float dx = 1.0f / SMAP_SIZE;
 	float s0 = (depthMapTexture.Sample(SampleTypeClamp, projectTexCoord).r + bias < lightDepthValue) ? 0.0f : 1.0f;
@@ -67,6 +95,10 @@ float4 PS_main(VS_OUT input) : SV_Target
 	float shadowcooef = lerp(lerp(s0, s1, lerps.x), lerp(s2, s3, lerps.x), lerps.y);
 
 	textureColor = textureColor * shadowcooef + textureColor * color;
+
+	textureColor = textureColor;
+	//norColor = norColor * textureColor;
+	//textureColor = saturate(textureColor + norColor);
 	return textureColor;
 };
 
