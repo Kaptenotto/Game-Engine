@@ -38,9 +38,6 @@
     <FxCompile Include="GeometryShader.hlsl">
       <Filter>Source Files</Filter>
     </FxCompile>
-    <FxCompile Include="GeometryShaderShadow.hlsl">
-      <Filter>Source Files</Filter>
-    </FxCompile>
     <FxCompile Include="VertexShadow.hlsl">
       <Filter>Source Files</Filter>
     </FxCompile>

@@ -290,39 +290,7 @@ void CreateShaders()
 	gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), pVSShadow->GetBufferPointer(), pVSShadow->GetBufferSize(), &gVertexLayout);
 	pVSShadow->Release();
 
-	//Create pixel shader shadow
-	ID3DBlob* pPSShadow = nullptr;
-	D3DCompileFromFile(
-		L"FragmentShadow.hlsl",
-		nullptr,			
-		nullptr,			
-		"PS_main",			
-		"ps_4_0",			
-		0,					
-		0,					
-		&pPSShadow,			
-		nullptr				
-		);
-	Hr = gDevice->CreatePixelShader(pPSShadow->GetBufferPointer(), pPSShadow->GetBufferSize(), nullptr, &gPixelShaderShadow);
-	pPSShadow->Release();
-
-	//Create geometry shader shadow
-	ID3DBlob* pGSShadow = nullptr;
-	D3DCompileFromFile(
-		L"GeometryShaderShadow.hlsl",
-		nullptr,
-		nullptr,
-		"GS_main",
-		"gs_4_0",
-		0,
-		0,
-		&pGSShadow,
-		nullptr
-		);
-	gDevice->CreateGeometryShader(pGSShadow->GetBufferPointer(), pGSShadow->GetBufferSize(), nullptr, &gGeometryShaderShadow);
-	pGSShadow->Release();
 	//CREATE SHADERS FOR SHADOWMAP DONE
-
 
 	//Reads obj-File
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -368,8 +336,6 @@ void createTextures()
 
 void createTriangle()
 {
-	
-
 	D3D11_BUFFER_DESC bufferdesc;
 	std::memset(&bufferdesc, 0, sizeof(bufferdesc));
 	bufferdesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
@@ -382,27 +348,6 @@ void createTriangle()
 	data.pSysMem = &obj.finalVector[0];
 	HRESULT hr = gDevice->CreateBuffer(&bufferdesc, &data, &gVertexBuffer);
 
-	//UINT indices[] = {
-	//	0,1,2, // front face
-	//	0,2,3,
-	//
-	//	4,6,5, // back face
-	//	4,7,6,
-	//
-	//	4,5,1, // left
-	//	4,1,0,
-	//
-	//	3,2,6, // right
-	//	3,6,7,
-	//
-	//	1,5,6, // top face
-	//	1,6,2,
-	//
-	//	4,0,3, // bot face
-	//	4,3,7,
-	//};
-
-
 	D3D11_BUFFER_DESC bufferDesc2;
 	bufferDesc2.ByteWidth = sizeof(obj.face_idxs[0]) * obj.face_idxs.size();
 	bufferDesc2.Usage = D3D11_USAGE_IMMUTABLE;
@@ -412,7 +357,6 @@ void createTriangle()
 	bufferDesc2.StructureByteStride = 0;
 
 	D3D11_SUBRESOURCE_DATA initData;
-	//ZeroMemory(&initData, sizeof(D3D11_SUBRESOURCE_DATA));
 	initData.pSysMem = &obj.face_idxs[0];
 	hr = gDevice->CreateBuffer(&bufferDesc2, &initData, &gIndexBuffer);
 }
