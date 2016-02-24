@@ -217,6 +217,8 @@ void CreateShaders()
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 5, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 8, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 11, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD1", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 13 , D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD2", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 15 , D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 	//Create the vertex shader
 
@@ -298,6 +300,47 @@ void CreateShaders()
 
 	//Reads obj-File
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+
+	////////WATER STUFF DOWN BELOW!!!!!
+
+	ID3DBlob* waterpVS = nullptr;
+	D3DCompileFromFile(
+		L"VertexShader.hlsl",	//Name of file
+		nullptr,
+		nullptr,
+		"VS_main",				// Name of main in file
+		"vs_4_0",
+		0,
+		0,
+		&waterpVS,
+		nullptr
+		);
+
+	HRESULT Hr = gDevice->CreateVertexShader(waterpVS->GetBufferPointer(), waterpVS->GetBufferSize(), nullptr, &gVertexShader);
+
+	//Create an input-layout to describe the input buffer data for the input-assembler stage
+	gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), waterpVS->GetBufferPointer(), waterpVS->GetBufferSize(), &gVertexLayout);
+
+	//Do not need the com object anymore therefor releasing it
+	waterpVS->Release();
+
+	//Create pixel shader
+
+	ID3DBlob* waterpPS = nullptr;
+	D3DCompileFromFile(
+		L"PixelShader.hlsl",	//name of file
+		nullptr,			//optional macros
+		nullptr,			// optional include files
+		"PS_main",			// Entry point
+		"ps_4_0",			// Shader model target
+		0,					//shader compile options
+		0,					// Effect compile options
+		&waterpPS,				//double pointer to ID3DBlob
+		nullptr				// point for error blob messages
+		);
+	Hr = gDevice->CreatePixelShader(waterpPS->GetBufferPointer(), waterpPS->GetBufferSize(), nullptr, &gPixelShader);
+
+	waterpPS->Release();
 }
 
 void createTextures()
