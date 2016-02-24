@@ -2,10 +2,18 @@
 #include "importer.h"
 
 
-using namespace std;
-Importer::Importer()
+
+
+
+
+
+
+Importer::Importer(string fileName)
 {
-	objFile = ("./objFiles/solarSys.obj");
+
+	using namespace std;
+
+	objFile = ("./objFiles/" + fileName) ;
 
 	index_counter = 0;
 	objCounter = 0;
@@ -310,55 +318,3 @@ void Importer::read()
 	//reverse(finalVector.begin(), finalVector.end());
 }
 
-	/*for (int i = 0; i < vertices.size(); i++)
-	{
-		cout << "x: " << vertices[i].x << " ";
-		cout << "y: " << vertices[i].y << " ";
-		cout << "z: " << vertices[i].z << "\n";
-	}
-
-	for (int i = 0; i < uvs.size(); i++)
-	{
-		cout << "u: " << uvs[i].u << " ";
-		cout << "v: " << uvs[i].v << "\n";
-	}
-
-	for (int i = 0; i < normals.size(); i++)
-	{
-		cout << "nX: " << normals[i].nx << " ";
-		cout << "nY: " << normals[i].ny << " ";
-		cout << "nZ: " << normals[i].nz << "\n";
-	}
-	*/
-
-//int main()
-//{
-//	Importer import;
-//	import.read();
-//
-//	int counter = 0;
-//	for (int i = 0; i < import.face_idxs.size(); i++)
-//	{
-//		for (int j = 0; j < import.face_idxs[i].face_pos.size(); j++)
-//		{
-//			import.finalVector[i].x = import.vertices[import.face_idxs[i].face_pos[j]].x;
-//			import.finalVector[i].y = import.vertices[import.face_idxs[i].face_pos[j]].y;
-//			import.finalVector[i].z = import.vertices[import.face_idxs[i].face_pos[j]].z;
-//			import.finalVector[i].u = import.uvs[import.face_idxs[i].face_tex[j]].u;
-//			import.finalVector[i].v = import.uvs[import.face_idxs[i].face_tex[j]].v;
-//			import.finalVector[i].nx = import.normals[import.face_idxs[i].face_norm[j]].x;
-//			import.finalVector[i].ny = import.normals[import.face_idxs[i].face_norm[j]].y;
-//			import.finalVector[i].nz = import.normals[import.face_idxs[i].face_norm[j]].z;
-//			//cout << import.face_idxs[i].face_pos[j] << ", " << import.face_idxs[i].face_tex[j] << ", " << import.face_idxs[i].face_norm[j] << ", ";
-//			counter++;
-//			if (counter == 3)
-//			{
-//				//cout << "\n";
-//				counter = 0;
-//			}
-//		}
-//	}
-//
-//
-//	//cin.ignore();
-//}
