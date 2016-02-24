@@ -798,7 +798,7 @@ void Render()
 	gDeviceContext->IASetInputLayout(gVertexLayout);
 
 	gDeviceContext->PSSetShaderResources(1, 1, &ShadowDepthResource);
-	gDeviceContext->PSSetSamplers(0, 1, &texSamplerState);
+	//gDeviceContext->PSSetSamplers(0, 1, &texSamplerState);
 
 
 	/************************************************************
@@ -814,6 +814,11 @@ void Render()
 		if (i < textureResources.size())
 		{
 			gDeviceContext->PSSetShaderResources(0, 1, &textureResources[i]);
+			
+		}
+
+		if (i < normalResources.size())
+		{
 			gDeviceContext->PSSetShaderResources(2, 1, &normalResources[i]);
 		}
 		gDeviceContext->Draw((obj.drawOffset[(i + 1)] - obj.drawOffset[i]), obj.drawOffset[i]);

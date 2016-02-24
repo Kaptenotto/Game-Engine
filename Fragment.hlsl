@@ -54,6 +54,8 @@ float4 PS_main(VS_OUT input) : SV_Target
 
 	norMap = (norMap*2.0f) - 1.0f;
 
+	norMap.z = (norMap.z * -1);
+
 	Normal = (norMap.x * input.tangent) + (norMap.y * input.binormal) + (norMap.z * input.norm);
 	Normal = normalize(Normal);
 
@@ -61,7 +63,7 @@ float4 PS_main(VS_OUT input) : SV_Target
 
 	lightIntensity  = saturate(dot(Normal, lightDirection));
 
-	//norColor = saturate(diffuse * lightIntensity);
+	norColor = saturate(diffuse * lightIntensity);
 	//norColor = norColor * texureColor;
 
 	//return float4(input.norm.xyz, 1.0f);
@@ -96,7 +98,7 @@ float4 PS_main(VS_OUT input) : SV_Target
 
 	textureColor = textureColor * shadowcooef + textureColor * color;
 
-	textureColor = textureColor;
+	textureColor = textureColor * norColor;
 	//norColor = norColor * textureColor;
 	//textureColor = saturate(textureColor + norColor);
 	return textureColor;
