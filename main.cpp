@@ -217,8 +217,8 @@ void CreateShaders()
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 5, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 8, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 11, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD1", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 13 , D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD2", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 15 , D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		//{ "TEXCOORD1", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 13 , D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		//{ "TEXCOORD2", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 15 , D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 	//Create the vertex shader
 
@@ -299,48 +299,48 @@ void CreateShaders()
 	//CREATE SHADERS FOR SHADOWMAP DONE
 
 	//Reads obj-File
-	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+	/*CoInitializeEx(nullptr, COINIT_MULTITHREADED);*/
 
 	////////WATER STUFF DOWN BELOW!!!!!
 
-	ID3DBlob* waterpVS = nullptr;
-	D3DCompileFromFile(
-		L"VertexShader.hlsl",	//Name of file
-		nullptr,
-		nullptr,
-		"VS_main",				// Name of main in file
-		"vs_4_0",
-		0,
-		0,
-		&waterpVS,
-		nullptr
-		);
+	//ID3DBlob* waterpVS = nullptr;
+	//D3DCompileFromFile(
+	//	L"VertexShader.hlsl",	//Name of file
+	//	nullptr,
+	//	nullptr,
+	//	"VS_main",				// Name of main in file
+	//	"vs_4_0",
+	//	0,
+	//	0,
+	//	&waterpVS,
+	//	nullptr
+	//	);
 
-	HRESULT Hr = gDevice->CreateVertexShader(waterpVS->GetBufferPointer(), waterpVS->GetBufferSize(), nullptr, &gVertexShader);
+	//HRESULT Hr = gDevice->CreateVertexShader(waterpVS->GetBufferPointer(), waterpVS->GetBufferSize(), nullptr, &gVertexShader);
 
-	//Create an input-layout to describe the input buffer data for the input-assembler stage
-	gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), waterpVS->GetBufferPointer(), waterpVS->GetBufferSize(), &gVertexLayout);
+	////Create an input-layout to describe the input buffer data for the input-assembler stage
+	//gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), waterpVS->GetBufferPointer(), waterpVS->GetBufferSize(), &gVertexLayout);
 
-	//Do not need the com object anymore therefor releasing it
-	waterpVS->Release();
+	////Do not need the com object anymore therefor releasing it
+	//waterpVS->Release();
 
-	//Create pixel shader
+	////Create pixel shader
 
-	ID3DBlob* waterpPS = nullptr;
-	D3DCompileFromFile(
-		L"PixelShader.hlsl",	//name of file
-		nullptr,			//optional macros
-		nullptr,			// optional include files
-		"PS_main",			// Entry point
-		"ps_4_0",			// Shader model target
-		0,					//shader compile options
-		0,					// Effect compile options
-		&waterpPS,				//double pointer to ID3DBlob
-		nullptr				// point for error blob messages
-		);
-	Hr = gDevice->CreatePixelShader(waterpPS->GetBufferPointer(), waterpPS->GetBufferSize(), nullptr, &gPixelShader);
+	//ID3DBlob* waterpPS = nullptr;
+	//D3DCompileFromFile(
+	//	L"PixelShader.hlsl",	//name of file
+	//	nullptr,			//optional macros
+	//	nullptr,			// optional include files
+	//	"PS_main",			// Entry point
+	//	"ps_4_0",			// Shader model target
+	//	0,					//shader compile options
+	//	0,					// Effect compile options
+	//	&waterpPS,				//double pointer to ID3DBlob
+	//	nullptr				// point for error blob messages
+	//	);
+	//Hr = gDevice->CreatePixelShader(waterpPS->GetBufferPointer(), waterpPS->GetBufferSize(), nullptr, &gPixelShader);
 
-	waterpPS->Release();
+	//waterpPS->Release();
 }
 
 void createTextures()
@@ -551,7 +551,7 @@ void ConstantBuffer()
 	gDeviceContext->VSSetConstantBuffers(0, 1, &gConstantBuffer); //Setting the constant buffer to the Vertex shader.
 	gDeviceContext->PSSetConstantBuffers(0, 1, &gConstantBuffer); //Setting the constant buffer to the Vertex shader.
 
-	Lights.ambient = { 0.2f, 0.2f, 0.2f, 1.0f };
+	Lights.ambient = { 0.5f, 0.5f, 0.5f, 1.0f };
 	Lights.diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
 	Lights.position = lightPosition;
 	Lights.lightDir = { 1.0f, 1.0f, 1.0f };
@@ -774,7 +774,7 @@ void Update()
 
 	angle -= 0.0001f;
 
-	//matrices.World = XMMatrixRotationY(angle);
+	matrices.World = XMMatrixRotationY(angle);
 
 	gDeviceContext->UpdateSubresource(gConstantBuffer, 0, 0, &matrices, 0, 0);
 	gDeviceContext->UpdateSubresource(gConstantLightBuffer, 0, 0, &Lights, 0, 0);

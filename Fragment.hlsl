@@ -47,7 +47,7 @@ float4 PS_main(VS_OUT input) : SV_Target
 	float4 textureColor;
 	float4 lightPos;
 	float SMAP_SIZE = 2048.0f;
-
+	color = ambient;
 
 	textureColor = txDiffuse.Sample(SampleTypeClamp, input.uvs);
 	norMap = shaderTexture.Sample(SampleTypeClamp, input.uvs);
@@ -62,14 +62,14 @@ float4 PS_main(VS_OUT input) : SV_Target
 	lightDirection = -lightDir;
 
 	lightIntensity  = saturate(dot(Normal, lightDirection));
-
 	norColor = saturate(diffuse * lightIntensity);
+
+	norColor = norColor * color;
 	//norColor = norColor * texureColor;
 
 	//return float4(input.norm.xyz, 1.0f);
 
-	bias = 0.004f;
-	color = ambient;
+	bias = 0.001f;
 
 	lightPos = mul(input.wPos, view);
 	lightPos = mul(lightPos, projection);

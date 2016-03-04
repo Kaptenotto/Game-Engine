@@ -4,7 +4,7 @@
 using namespace std;
 Importer::Importer()
 {
-	objFile = ("./objFiles/testB.obj");
+	objFile = ("./objFiles/testa.obj");
 
 	index_counter = 0;
 	objCounter = 0;
