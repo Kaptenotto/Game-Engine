@@ -391,7 +391,7 @@ void createTextures(Importer obj)
 	texResource->Release();
 }
 
-void cloneVertexBuffer(Importer obj)
+void vertexBuffer(Importer obj)
 {
 	
 	D3D11_BUFFER_DESC bufferdesc;
@@ -765,9 +765,7 @@ void Render()
 // handle of instance                      commandline		 how the window is shown
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) // wWinMain Predefined main for directx
 {
-	Importer clone("Clone.obj");
-
-	objs.push_back(clone);
+	
 
 	//adding a console
 	/*if (AllocConsole())
@@ -802,12 +800,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 	if (hWnd)
 	{
-		
-
-		for (int i = 0; i < objs.size(); i++)
-		{
-			objs[i].read();
-		}
+		Importer clone("Clone.obj");
+		Importer temp = clone.read;
+		objs.push_back(temp);
 
 		CreateShaders();
 
@@ -818,19 +813,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		
 		ConstantBuffer();
 
-	/*	createGround();*/
-		for (int i = 0; i < objs.size(); i++)
-		{
-			cloneVertexBuffer(objs[i]);
-		}
+		Importer test = objs[0];
+		vertexBuffer(test);
 		
-
-		for (int i = 0; i < objs.size(); i++)
-		{
-			createTextures(objs[i]);
-		}
-
-		
+		createTextures(test);
 		
 		//Shows the window
 		ShowWindow(hWnd, nCmdShow);
