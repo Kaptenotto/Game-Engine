@@ -69,7 +69,7 @@ float4 PS_main(VS_OUT input) : SV_Target
 
 	//return float4(input.norm.xyz, 1.0f);
 
-	bias = 0.001f;
+	bias = 0.004f;
 
 	lightPos = mul(input.wPos, view);
 	lightPos = mul(lightPos, projection);

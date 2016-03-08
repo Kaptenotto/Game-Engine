@@ -507,13 +507,13 @@ void ConstantBuffer()
 	float fovangleY = XM_PI * 0.45;
 	float aspectRatio = 640.0 / 480.0;
 	float nearZ = 0.01;
-	float farZ = 20.0;
+	float farZ = 50.0;
 
 	//LIGHT
 	float lightfovangleY = XM_PI * 0.5;
 	float lightaspectRatio = 2048.0f / 2048.0f;
 	float lightnearZ = 5.0;
-	float lightfarZ = 30.0;
+	float lightfarZ = 40.0;
 
 	matrices.camView = XMMatrixLookAtLH(
 		(camPosition),
@@ -774,7 +774,7 @@ void Update()
 
 	angle -= 0.0001f;
 
-	matrices.World = XMMatrixRotationY(angle);
+	//matrices.World = XMMatrixRotationY(angle);
 
 	gDeviceContext->UpdateSubresource(gConstantBuffer, 0, 0, &matrices, 0, 0);
 	gDeviceContext->UpdateSubresource(gConstantLightBuffer, 0, 0, &Lights, 0, 0);
