@@ -5,13 +5,13 @@
 #include <DirectXMath.h>
 #include "OBJ_Structs.cpp"
 
+using namespace DirectX;
+using namespace std;
+
 class Importer
 {
 public:
-	
-	
-
-	Importer(string fileName);
+	Importer();
 	void read();
 
 	string objFile, special;
@@ -50,7 +50,6 @@ public:
 	//Temporary variables
 private:
 	
-
 	Indexes tmp_idx1;
 	Indexes tmp_idx2;
 	Indexes tmp_idx3;

@@ -16,6 +16,8 @@
 #include "importer.h"
 #include "Wic.h"
 
+
+
 #include <Wincodec.h>
 
 
@@ -108,13 +110,7 @@ ID3D11SamplerState* texSamplerState;
 
 
 // INITIALIZE OBJ-IMPORTER ******************************************
-
-
-vector<Importer> objs;
-
-
-
-
+Importer obj;
 
 
 // INITIALIZE STRUCTS ***********************************************
@@ -349,12 +345,13 @@ void CreateShaders()
 
 	//Reads obj-File
 	
-	
 
 	
+
+
 }
 
-void createTextures(Importer obj)
+void createTextures()
 {
 	HRESULT hr;
 
@@ -387,13 +384,15 @@ void createTextures(Importer obj)
 				0
 				);
 		}
+		
 	}
 	texResource->Release();
 }
 
-void cloneVertexBuffer(Importer obj)
+void objVertexBuffer()
 {
 	
+
 	D3D11_BUFFER_DESC bufferdesc;
 	std::memset(&bufferdesc, 0, sizeof(bufferdesc));
 	bufferdesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
@@ -405,6 +404,26 @@ void cloneVertexBuffer(Importer obj)
 	D3D11_SUBRESOURCE_DATA data;
 	data.pSysMem = &obj.finalVector[0];
 	HRESULT hr = gDevice->CreateBuffer(&bufferdesc, &data, &gVertexBuffer);
+
+	//UINT indices[] = {
+	//	0,1,2, // front face
+	//	0,2,3,
+	//
+	//	4,6,5, // back face
+	//	4,7,6,
+	//
+	//	4,5,1, // left
+	//	4,1,0,
+	//
+	//	3,2,6, // right
+	//	3,6,7,
+	//
+	//	1,5,6, // top face
+	//	1,6,2,
+	//
+	//	4,0,3, // bot face
+	//	4,3,7,
+	//};
 
 
 	D3D11_BUFFER_DESC bufferDesc2;
@@ -419,7 +438,6 @@ void cloneVertexBuffer(Importer obj)
 	//ZeroMemory(&initData, sizeof(D3D11_SUBRESOURCE_DATA));
 	initData.pSysMem = &obj.face_idxs[0];
 	hr = gDevice->CreateBuffer(&bufferDesc2, &initData, &gIndexBuffer);
-	
 }
 
 void createDepthStencil()
@@ -714,7 +732,7 @@ void Render()
 
 	float clearColor[] = { 0, 0, 0, 1 };
 	gDeviceContext->ClearRenderTargetView(gBackBufferRTV, clearColor);
-	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 
 	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
@@ -723,51 +741,40 @@ void Render()
 	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShader, nullptr, 0);
 
-	for (int i = 0; i < objs.size(); i++)
-	{
+	UINT32 vertexSize = sizeof(obj.finalVector[0]);
+	UINT32 vertexCount = obj.finalVector.size();
+	UINT32 indexSize = obj.index_counter;
+	UINT32 offset = 0;
 
-		UINT32 vertexSize = sizeof(objs[i].finalVector[0]);
-		UINT32 vertexCount = objs[i].finalVector.size();
-		UINT32 indexSize = objs[i].index_counter;
-		UINT32 offset = 0;
+	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &vertexSize, &offset);
+	gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT , 0); // sets the index buffer
 
-		gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &vertexSize, &offset);
-		gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT , 0); // sets the index buffer
-
-		gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		gDeviceContext->IASetInputLayout(gVertexLayout);
+	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	gDeviceContext->IASetInputLayout(gVertexLayout);
 
 
-		/************************************************************
-		 ****************************DRAW****************************
-		 ************************************************************/
-		int n = 0;
+	/************************************************************
+	 ****************************DRAW****************************
+     ************************************************************/
+	int n = 0;
 
-		for (int i = 0; i < (objs[i].drawOffset.size() - 1); i++)
+	for (int i = 0; i < (obj.drawOffset.size()-1); i++)
+	{ 
+		/*if (n < textureResources.size())
 		{
-			/*if (n < textureResources.size())
-			{
-				n++;
-			}*/
-			if (i < textureResources.size())
-			{
-				gDeviceContext->PSSetShaderResources(0, 1, &textureResources[i]);
-			}
-			
+			n++;
+		}*/
+		gDeviceContext->PSSetShaderResources(0, 1, &textureResources[i]);
 
-			gDeviceContext->Draw((objs[i].drawOffset[(i+1)] - objs[i].drawOffset[i]), objs[i].drawOffset[i]);
+		gDeviceContext->Draw((obj.drawOffset[(i+1)] - obj.drawOffset[i]), obj.drawOffset[i]);
 		
-		}
 	}
-
 }
 
 // handle of instance                      commandline		 how the window is shown
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) // wWinMain Predefined main for directx
 {
-	Importer clone("Clone.obj");
 
-	objs.push_back(clone);
 
 	//adding a console
 	/*if (AllocConsole())
@@ -802,35 +809,22 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 	if (hWnd)
 	{
-		
-
-		for (int i = 0; i < objs.size(); i++)
-		{
-			objs[i].read();
-		}
-
-		CreateShaders();
+		obj.read();
 
 		CreateDirect3DContext(hWnd); //2. Skapa och koppla SwapChain, Device och Device Context
 
 		SetViewport();
 		//myWindow.SetViewport(gDevice, gDevContext);
+
+		CreateShaders();
 		
 		ConstantBuffer();
 
 	/*	createGround();*/
-		for (int i = 0; i < objs.size(); i++)
-		{
-			cloneVertexBuffer(objs[i]);
-		}
-		
 
-		for (int i = 0; i < objs.size(); i++)
-		{
-			createTextures(objs[i]);
-		}
+		objVertexBuffer();
 
-		
+		createTextures();
 		
 		//Shows the window
 		ShowWindow(hWnd, nCmdShow);
