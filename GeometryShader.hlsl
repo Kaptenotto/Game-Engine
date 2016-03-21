@@ -33,9 +33,6 @@ void main(
 	float4 temp = 0.0f;
 
 
-	matrix allMatrices = mul(mul(worldMatrix, camView), projectionMatrix);
-	
-
 	float3 faceEdgeA = input[1].pos - input[0].pos;
 	float3 faceEdgeB = input[2].pos - input[0].pos;
 	//float tcV1 = input[1].uvs - input[0].uvs; //tcV1
