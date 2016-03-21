@@ -60,3 +60,4 @@ struct Material
 	string shadingGroup;
 	int materialOffset;
 };
+
