@@ -225,7 +225,7 @@ void Importer::read()
 		}
 		else if (nextLine.substr(0, 5) == "bump ")
 		{
-			inputString >> special >> tmp_normMap >> tmp_normMap;
+			inputString >> special >> tmp_normMap;
 
 			tmp_normMap = "./objFiles/" + tmp_normMap;
 
@@ -236,23 +236,6 @@ void Importer::read()
 		}
 
 	}
-
-	/*ifstream texFile("./objFiles/" + textureMap[0]);
-	if (texFile)
-	{
-		cout << "FÖR I HELVETE";
-	}
-	else
-	{
-		cout << "NEJ";
-	}
-
-	cin.ignore();*/
-
-
-
-
-
 
 	mtlFile.close();
 	file.close();
@@ -265,7 +248,7 @@ void Importer::read()
 		tmp_fin.v = 1 - uvs[face_idxs[i].face_tex-1].v;
 		tmp_fin.nx = normals[face_idxs[i].face_norm-1].x;
 		tmp_fin.ny = normals[face_idxs[i].face_norm-1].y;
-		tmp_fin.nz = normals[face_idxs[i].face_norm-1].z -1;
+		tmp_fin.nz = normals[face_idxs[i].face_norm-1].z * -1;
 
 		finalVector.push_back(tmp_fin);
 		//cout << import.face_idxs[i].face_pos[j] << ", " << import.face_idxs[i].face_tex[j] << ", " << import.face_idxs[i].face_norm[j] << ", ";
@@ -273,23 +256,18 @@ void Importer::read()
 	}
 	drawOffset.push_back(materialIndex * 3);
 
-	
-
-	
-
-
 
 		vector<string> tmp_texFile;
 		vector<string> tmp_normMap;
 
 		
 		tmp_texFile = textureMap;
-		normalMap.clear();
-
+		textureMap.clear();
+		
 		if (!normalMap.empty())
 		{
 			tmp_normMap = normalMap;
-			textureMap.clear();
+			normalMap.clear();
 		}
 		for (int i = 0; i < materialInfo.size(); i++)
 		{
