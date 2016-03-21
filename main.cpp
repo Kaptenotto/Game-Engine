@@ -18,8 +18,8 @@
 
 #include <Wincodec.h>
 
-using namespace DirectX; // EEEEEW
-using namespace std; // MORE EEEEW
+using namespace DirectX; 
+using namespace std; 
 
 #pragma comment (lib, "d3d11.lib")
 #pragma comment (lib, "d3dcompiler.lib")
@@ -166,11 +166,15 @@ XMVECTOR defaultRight = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
 XMVECTOR camForward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
 XMVECTOR camRight = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
 
+XMVECTOR defaultUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+XMVECTOR camUpDown = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
 XMMATRIX camRotationMatrix;
 XMMATRIX groundWorld;
 
 float moveLeftRight = 0.0f;		// Used to move along the camFoward and camRight vectors
 float moveBackForward = 0.0f;   // Used to move along the camFoward and camRight vectors
+float moveupDown = 0.0f;
 
 float camYaw = 0.0f;
 float camPitch = 0.0f;
@@ -625,14 +629,16 @@ void updateCamera()
 												   // transforming the cameras right up and forwards vectors using the matrix just defined.
 												   // also rotating the default right up and default foward vectors and set the result in the right up and foward vectors.
 	/**/ camRight = XMVector3TransformCoord(defaultRight, RotateYTempMatrix);
-	/**/ camUp = XMVector3TransformCoord(camUp, RotateYTempMatrix);
+	/**/ camUpDown = XMVector3TransformCoord(defaultUp, RotateYTempMatrix);
 	/**/ camForward = XMVector3TransformCoord(defaultForward, RotateYTempMatrix);
 
 	camPosition += moveLeftRight* camRight;
 	camPosition += moveBackForward* camForward;
+	camPosition += moveupDown * camUpDown;
 
 	moveLeftRight = 0.0f;
 	moveBackForward = 0.0f;
+	moveupDown = 0.0f;
 
 	camTarget = camPosition + camTarget;
 
@@ -675,6 +681,14 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 	if (keyBoardState[DIK_S] & 0x80)
 	{
 		moveBackForward -= speed;
+	}
+	if (keyBoardState[DIK_LSHIFT] & 0x80)
+	{
+		moveupDown -= speed;
+	}
+	if (keyBoardState[DIK_SPACE] & 0x80)
+	{
+		moveupDown += speed;
 	}
 	if ((mouseCurrentState.IX != mouseLastState.IX) || (mouseCurrentState.IY != mouseLastState.IY))
 	{
