@@ -505,7 +505,7 @@ void createDepthStencil()
 void ConstantBuffer()
 {
 	float fovangleY = XM_PI * 0.45;
-	float aspectRatio = 640.0 / 480.0;
+	float aspectRatio = 1280.0 / 720.0;
 	float nearZ = 0.01;
 	float farZ = 50.0;
 
@@ -513,7 +513,7 @@ void ConstantBuffer()
 	float lightfovangleY = XM_PI * 0.5;
 	float lightaspectRatio = 2048.0f / 2048.0f;
 	float lightnearZ = 5.0;
-	float lightfarZ = 40.0;
+	float lightfarZ = 60.0;
 
 	matrices.camView = XMMatrixLookAtLH(
 		(camPosition),
@@ -551,7 +551,7 @@ void ConstantBuffer()
 	gDeviceContext->VSSetConstantBuffers(0, 1, &gConstantBuffer); //Setting the constant buffer to the Vertex shader.
 	gDeviceContext->PSSetConstantBuffers(0, 1, &gConstantBuffer); //Setting the constant buffer to the Vertex shader.
 
-	Lights.ambient = { 0.5f, 0.5f, 0.5f, 1.0f };
+	Lights.ambient = { 0.4f, 0.4f, 0.4f, 1.0f };
 	Lights.diffuse = { 1.0f, 1.0f, 1.0f, 1.0f };
 	Lights.position = lightPosition;
 	Lights.lightDir = { 1.0f, 1.0f, 1.0f };
@@ -606,8 +606,8 @@ void ConstantBuffer()
 void SetViewport()
 {
 	D3D11_VIEWPORT vP;
-	vP.Width = (float)640;
-	vP.Height = (float)480;
+	vP.Width = (float)1280;
+	vP.Height = (float)720;
 	vP.MinDepth = 0.0f;
 	vP.MaxDepth = 1.0f;
 	vP.TopLeftX = 0;
@@ -995,7 +995,7 @@ HWND InitWindow(HINSTANCE hInstance)
 	if (!RegisterClassEx(&wcex))
 		return false;
 
-	RECT rc = { 0, 0, 640, 480 };
+	RECT rc = { 0, 0,1280, 720 };
 	AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
 
 	HWND handle = CreateWindow(

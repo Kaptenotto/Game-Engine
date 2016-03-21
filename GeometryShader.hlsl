@@ -46,12 +46,12 @@ void main(
 	float2 uvEdge1 = input[1].uvs - input[0].uvs;
 	float2 uvEdge2 = input[2].uvs - input[0].uvs;
 
-	float3 normal = normalize(-cross(faceEdgeA, faceEdgeB));
+	float3 normal = normalize(cross(faceEdgeA, faceEdgeB));
 	float3 tangent = (uvEdge2[1] * faceEdgeA - uvEdge1[1] * faceEdgeB)*(1 / (uvEdge1[0] * uvEdge2[1] - uvEdge2[0] * uvEdge1[1]));
 	//float tangent = (tcV1[0] * faceEdgeA - tcV2[0] * faceEdgeB) * 1.0f / (tcU1[1] * tcV2[0] - tcU2[1] * tcV1[0]);
 	tangent = normalize(tangent);
 
-	float3 binormal = normalize(-cross(normal, tangent));
+	float3 binormal = normalize(cross(normal, tangent));
 
 	tangent = mul(float4(tangent, 1), worldMatrix).xyz;
 	binormal = mul(float4(binormal, 1), worldMatrix).xyz;
@@ -63,8 +63,8 @@ void main(
 
 		output.uvs = input[i].uvs;
 		//output.norm = float4(normal, 0); //mul(float4 (normal, 0), worldMatrix).xyz; // normal calculation
-		output.norm = input[i].norm;
-		//output.norm = mul(input[i].norm, worldMatrix);
+		//output.norm = input[i].norm;
+		output.norm = mul(input[i].norm, worldMatrix);
 
 		output.tangent = tangent;
 

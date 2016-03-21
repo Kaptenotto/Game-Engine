@@ -59,17 +59,17 @@ float4 PS_main(VS_OUT input) : SV_Target
 	Normal = (norMap.x * input.tangent) + (norMap.y * input.binormal) + (norMap.z * input.norm);
 	Normal = normalize(Normal);
 
-	lightDirection = -lightDir;
+	lightDirection = (float4(-lightDir, 1) - input.wPos);
 
 	lightIntensity  = saturate(dot(Normal, lightDirection));
 	norColor = saturate(diffuse * lightIntensity);
 
-	norColor = norColor * color;
+	//norColor = norColor * color;
 	//norColor = norColor * texureColor;
 
 	//return float4(input.norm.xyz, 1.0f);
 
-	bias = 0.004f;
+	bias = 0.00175f;
 
 	lightPos = mul(input.wPos, view);
 	lightPos = mul(lightPos, projection);
@@ -96,9 +96,9 @@ float4 PS_main(VS_OUT input) : SV_Target
 	float2 lerps = frac(texelpos);
 	float shadowcooef = lerp(lerp(s0, s1, lerps.x), lerp(s2, s3, lerps.x), lerps.y);
 
-	textureColor = textureColor * shadowcooef + textureColor * color;
+	textureColor = textureColor * shadowcooef + textureColor * norColor;
 
-	textureColor = textureColor * norColor;
+	textureColor = textureColor * color;
 	//norColor = norColor * textureColor;
 	//textureColor = saturate(textureColor + norColor);
 	return textureColor;
