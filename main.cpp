@@ -64,7 +64,7 @@ XMVECTOR camPosition = XMVectorSet(0, 1, -5, 0);
 XMVECTOR camTarget = XMVectorSet(0, 0, 0, 0);
 XMVECTOR camUp = XMVectorSet(0, 1, 0, 0);
 
-XMVECTOR lightPosition = XMVectorSet(10, 10, -5, 1);
+XMVECTOR lightPosition = XMVectorSet(10, 5, -5, 1);
 XMVECTOR lightDir = XMVectorSet(0, 0, 0, 0);
 XMVECTOR lightUp = XMVectorSet(0, 1, 0, 0);
 
