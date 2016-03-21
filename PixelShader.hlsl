@@ -34,7 +34,23 @@ float4 PS_main(PS_IN input) : SV_TARGET
 
 	input.tex.y += waterTranslation;
 
-	reflectTexCoord.x = input.reflectPosition.x / input.reflectionPosition.w / 2.0f + 0.5f
+	reflectTexCoord.x = input.reflectionPosition.x / input.reflectionPosition.w / 2.0f + 0.5f;
+	reflectTexCoord.y = -input.reflectionPosition.y / input.reflectPosition.w / 2.0f + 0.5f;
 
-	return float4(1.0f, 1.0f, 1.0f, 1.0f);
+	refractTexCoord.x = input.refractionPosition.x / input.refractionPosition.w / 2.0f + 0.5f;
+	refractTexCoord.y = -input.refractionPosition.y / input.refractionPosition.w / 2.0f + 0.5f;
+
+	normalMap = normalTexture.Sample(SampleType, input.tex);
+
+	normal = (normalMap.xyz * 2.0f) - 1.0f;
+
+	reflectTexCoord = reflectTexCoord + (normal.xy * reflectRefractScale);
+	refractTexCoord = refractTexCoord + (normal.xy * reflectRefractScale);
+
+	reflectionColor = reflectionTexture.Sample(SampleType, reflectTexCoord);
+	refractoinColor = refractionTexture.Sample(SampleType, refractTexCoord);
+
+	color = lerp(reflectionColor, refractionColor, 0.6f);
+
+	return color;
 }
