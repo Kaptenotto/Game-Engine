@@ -1,5 +1,4 @@
-Texture2D txDiffuse : register (t0);
-Texture2D depthMapTexture : register(t1);
+Texture2D depthMapTexture : register(t0);
 SamplerState SampleTypeClamp : register(s0);
 
 cbuffer MatrixBuffer : register (b0)
@@ -40,8 +39,6 @@ float4 PS_main(VS_OUT input) : SV_Target
 	float SMAP_SIZE = 2048.0f;
 	color = ambient;
 
-	textureColor = txDiffuse.Sample(SampleTypeClamp, input.uvs);
-
 	bias = 0.00175f;
 
 	lightPos = mul(input.wPos, view);
@@ -67,9 +64,7 @@ float4 PS_main(VS_OUT input) : SV_Target
 	float2 lerps = frac(texelpos);
 	float shadowcooef = lerp(lerp(s0, s1, lerps.x), lerp(s2, s3, lerps.x), lerps.y);
 
-	textureColor = textureColor * shadowcooef;
+	color =  color * shadowcooef;
 
-	textureColor = textureColor * color;
-
-	return textureColor;
+	return color;
 };

@@ -1,5 +1,4 @@
-Texture2D txDiffuse : register (t0);
-Texture2D shaderTexture : register(t1);
+Texture2D shaderTexture : register(t0);
 SamplerState SampleTypeClamp : register(s0);
 
 cbuffer MatrixBuffer : register (b0)
@@ -40,7 +39,6 @@ float4 PS_main(VS_OUT input) : SV_Target
 	float4 textureColor;
 	color = ambient;
 
-	textureColor = txDiffuse.Sample(SampleTypeClamp, input.uvs);
 	norMap = shaderTexture.Sample(SampleTypeClamp, input.uvs);
 
 	norMap = (norMap*2.0f) - 1.0f;
@@ -55,8 +53,5 @@ float4 PS_main(VS_OUT input) : SV_Target
 	lightIntensity  = saturate(dot(Normal, lightDirection));
 	norColor = saturate(diffuse * lightIntensity);
 
-	textureColor = textureColor * norColor;
-
-	textureColor = textureColor * color;
-	return textureColor;
+	return norColor;
 };

@@ -846,7 +846,7 @@ void RenderShadow()
 
 void Render()
 {
-
+	SetViewport();
 	float clearColor[] = { 0, 0, 0, 1 };
 	gDeviceContext->ClearRenderTargetView(gBackBufferRTV, clearColor);
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
@@ -891,7 +891,7 @@ void Render()
 
 void RenderDefShadow()
 {
-
+	SetViewport();
 	float clearColor[] = { 0, 0, 0, 1 };
 	gDeviceContext->ClearRenderTargetView(gBackBufferRTV, clearColor);
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
@@ -914,7 +914,7 @@ void RenderDefShadow()
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	gDeviceContext->IASetInputLayout(gVertexLayout);
 
-	gDeviceContext->PSSetShaderResources(1, 1, &ShadowDepthResource);
+	gDeviceContext->PSSetShaderResources(0, 1, &ShadowDepthResource);
 	gDeviceContext->OMSetRenderTargets(1, &gBackBufferDefShadowRTV, gDepthStencilView);
 	
 	/***********************************************************
@@ -927,11 +927,6 @@ void RenderDefShadow()
 		{
 		n++;
 		}*/
-		if (i < textureResources.size())
-		{
-			gDeviceContext->PSSetShaderResources(0, 1, &textureResources[i]);
-
-		}
 		gDeviceContext->Draw((obj.drawOffset[(i + 1)] - obj.drawOffset[i]), obj.drawOffset[i]);
 
 	}
@@ -939,7 +934,7 @@ void RenderDefShadow()
 }
 void RenderDefNormal()
 {
-
+	SetViewport();
 	float clearColor[] = { 0, 0, 0, 1 };
 	gDeviceContext->ClearRenderTargetView(gBackBufferRTV, clearColor);
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
@@ -973,15 +968,9 @@ void RenderDefNormal()
 		{
 		n++;
 		}*/
-		if (i < textureResources.size())
-		{
-			gDeviceContext->PSSetShaderResources(0, 1, &textureResources[i]);
-
-		}
-
 		if (i < normalResources.size())
 		{
-			gDeviceContext->PSSetShaderResources(1, 1, &normalResources[i]);
+			gDeviceContext->PSSetShaderResources(0, 1, &normalResources[i]);
 		}
 		gDeviceContext->Draw((obj.drawOffset[(i + 1)] - obj.drawOffset[i]), obj.drawOffset[i]);
 
@@ -990,7 +979,7 @@ void RenderDefNormal()
 }
 void RenderDefTexture()
 {
-
+	SetViewport();
 	float clearColor[] = { 0, 0, 0, 1 };
 	gDeviceContext->ClearRenderTargetView(gBackBufferRTV, clearColor);
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
@@ -1028,11 +1017,6 @@ void RenderDefTexture()
 		{
 			gDeviceContext->PSSetShaderResources(0, 1, &textureResources[i]);
 
-		}
-
-		if (i < normalResources.size())
-		{
-			gDeviceContext->PSSetShaderResources(1, 1, &normalResources[i]);
 		}
 		gDeviceContext->Draw((obj.drawOffset[(i + 1)] - obj.drawOffset[i]), obj.drawOffset[i]);
 
@@ -1109,6 +1093,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 				RenderDefShadow();
 				RenderDefNormal();
 				Render(); // Rendera
+
 
 				frameCount++;
 				if (getTime() > 1.0f)
@@ -1235,7 +1220,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 
 													// Fill the swap chain description struct
 
-	SCD.BufferCount = 1;								// One back buffer
+	SCD.BufferCount = 4;								// One back buffer
 	SCD.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // Use 32 bit color
 	SCD.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;  // How swap chain is to be used
 	SCD.OutputWindow = windowHandle;						// The window to be used
@@ -1277,10 +1262,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 		gDevice->CreateRenderTargetView(gBackBufferDefShadow, NULL, &gBackBufferDefShadowRTV);
 		gDevice->CreateRenderTargetView(gBackBufferDefNormal, NULL, &gBackBufferDefNormalRTV);
 		gBackBuffer->Release();
+		gBackBufferDefTexture->Release();
+		gBackBufferDefShadow->Release();
+		gBackBufferDefNormal->Release();
 
-		//TESTING SHADOWRENDEERTARGET
-		//gDevice->CreateRenderTargetView(gBackBuffer, NULL, &gShadowRenderTarget);
-		//gShadowBackBuffer->Release();
+
 
 		//Set the render target as the back buffer
 		gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);

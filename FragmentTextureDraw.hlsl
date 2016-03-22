@@ -33,7 +33,7 @@ float4 PS_main(VS_OUT input) : SV_Target
 {
 	float4 textureColor;
 	float4 color;
-	color = ambient;
+	color = float4(1,1,1,1);
 	textureColor = txDiffuse.Sample(SampleTypeClamp, input.uvs);
 	textureColor = textureColor * color;
 	return textureColor;
