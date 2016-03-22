@@ -18,8 +18,8 @@
 
 #include <Wincodec.h>
 
-using namespace DirectX; // EEEEEW
-using namespace std; // MORE EEEEW
+using namespace DirectX; 
+using namespace std; 
 
 #pragma comment (lib, "d3d11.lib")
 #pragma comment (lib, "d3dcompiler.lib")
@@ -166,11 +166,15 @@ XMVECTOR defaultRight = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
 XMVECTOR camForward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
 XMVECTOR camRight = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
 
+XMVECTOR defaultUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+XMVECTOR camUpDown = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
 XMMATRIX camRotationMatrix;
 XMMATRIX groundWorld;
 
 float moveLeftRight = 0.0f;		// Used to move along the camFoward and camRight vectors
 float moveBackForward = 0.0f;   // Used to move along the camFoward and camRight vectors
+float moveupDown = 0.0f;
 
 float camYaw = 0.0f;
 float camPitch = 0.0f;
@@ -298,49 +302,7 @@ void CreateShaders()
 
 	//CREATE SHADERS FOR SHADOWMAP DONE
 
-	//Reads obj-File
-	/*CoInitializeEx(nullptr, COINIT_MULTITHREADED);*/
-
-	////////WATER STUFF DOWN BELOW!!!!!
-
-	//ID3DBlob* waterpVS = nullptr;
-	//D3DCompileFromFile(
-	//	L"VertexShader.hlsl",	//Name of file
-	//	nullptr,
-	//	nullptr,
-	//	"VS_main",				// Name of main in file
-	//	"vs_4_0",
-	//	0,
-	//	0,
-	//	&waterpVS,
-	//	nullptr
-	//	);
-
-	//HRESULT Hr = gDevice->CreateVertexShader(waterpVS->GetBufferPointer(), waterpVS->GetBufferSize(), nullptr, &gVertexShader);
-
-	////Create an input-layout to describe the input buffer data for the input-assembler stage
-	//gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), waterpVS->GetBufferPointer(), waterpVS->GetBufferSize(), &gVertexLayout);
-
-	////Do not need the com object anymore therefor releasing it
-	//waterpVS->Release();
-
-	////Create pixel shader
-
-	//ID3DBlob* waterpPS = nullptr;
-	//D3DCompileFromFile(
-	//	L"PixelShader.hlsl",	//name of file
-	//	nullptr,			//optional macros
-	//	nullptr,			// optional include files
-	//	"PS_main",			// Entry point
-	//	"ps_4_0",			// Shader model target
-	//	0,					//shader compile options
-	//	0,					// Effect compile options
-	//	&waterpPS,				//double pointer to ID3DBlob
-	//	nullptr				// point for error blob messages
-	//	);
-	//Hr = gDevice->CreatePixelShader(waterpPS->GetBufferPointer(), waterpPS->GetBufferSize(), nullptr, &gPixelShader);
-
-	//waterpPS->Release();
+	
 }
 
 void createTextures()
@@ -667,14 +629,16 @@ void updateCamera()
 												   // transforming the cameras right up and forwards vectors using the matrix just defined.
 												   // also rotating the default right up and default foward vectors and set the result in the right up and foward vectors.
 	/**/ camRight = XMVector3TransformCoord(defaultRight, RotateYTempMatrix);
-	/**/ camUp = XMVector3TransformCoord(camUp, RotateYTempMatrix);
+	/**/ camUpDown = XMVector3TransformCoord(defaultUp, RotateYTempMatrix);
 	/**/ camForward = XMVector3TransformCoord(defaultForward, RotateYTempMatrix);
 
 	camPosition += moveLeftRight* camRight;
 	camPosition += moveBackForward* camForward;
+	camPosition += moveupDown * camUpDown;
 
 	moveLeftRight = 0.0f;
 	moveBackForward = 0.0f;
+	moveupDown = 0.0f;
 
 	camTarget = camPosition + camTarget;
 
@@ -717,6 +681,14 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 	if (keyBoardState[DIK_S] & 0x80)
 	{
 		moveBackForward -= speed;
+	}
+	if (keyBoardState[DIK_LSHIFT] & 0x80)
+	{
+		moveupDown -= speed;
+	}
+	if (keyBoardState[DIK_SPACE] & 0x80)
+	{
+		moveupDown += speed;
 	}
 	if ((mouseCurrentState.IX != mouseLastState.IX) || (mouseCurrentState.IY != mouseLastState.IY))
 	{

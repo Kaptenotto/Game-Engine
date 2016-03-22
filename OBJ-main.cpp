@@ -237,46 +237,24 @@ void Importer::read()
 
 	}
 
-	/*ifstream texFile("./objFiles/" + textureMap[0]);
-	if (texFile)
-	{
-		cout << "FÖR I HELVETE";
-	}
-	else
-	{
-		cout << "NEJ";
-	}
-
-	cin.ignore();*/
-
-
-
-
-
-
 	mtlFile.close();
 	file.close();
 	for (int i = 0; i < face_idxs.size(); i++)
 	{
-			tmp_fin.x = vertices[face_idxs[i].face_pos-1].x;
-			tmp_fin.y = vertices[face_idxs[i].face_pos-1].y;
-			tmp_fin.z = vertices[face_idxs[i].face_pos-1].z * -1;
-			tmp_fin.u = uvs[face_idxs[i].face_tex-1].u;
-			tmp_fin.v = 1 - uvs[face_idxs[i].face_tex-1].v;
-			tmp_fin.nx = normals[face_idxs[i].face_norm-1].x;
-			tmp_fin.ny = normals[face_idxs[i].face_norm-1].y;
-			tmp_fin.nz = normals[face_idxs[i].face_norm-1].z * -1;
+		tmp_fin.x = vertices[face_idxs[i].face_pos-1].x;
+		tmp_fin.y = vertices[face_idxs[i].face_pos-1].y;
+		tmp_fin.z = vertices[face_idxs[i].face_pos-1].z * -1;
+		tmp_fin.u = uvs[face_idxs[i].face_tex-1].u;
+		tmp_fin.v = 1 - uvs[face_idxs[i].face_tex-1].v;
+		tmp_fin.nx = normals[face_idxs[i].face_norm-1].x;
+		tmp_fin.ny = normals[face_idxs[i].face_norm-1].y;
+		tmp_fin.nz = normals[face_idxs[i].face_norm-1].z * -1;
 
-			finalVector.push_back(tmp_fin);
-			//cout << import.face_idxs[i].face_pos[j] << ", " << import.face_idxs[i].face_tex[j] << ", " << import.face_idxs[i].face_norm[j] << ", ";
+		finalVector.push_back(tmp_fin);
+		//cout << import.face_idxs[i].face_pos[j] << ", " << import.face_idxs[i].face_tex[j] << ", " << import.face_idxs[i].face_norm[j] << ", ";
 		
 	}
 	drawOffset.push_back(materialIndex * 3);
-
-	
-
-	
-
 
 
 		vector<string> tmp_texFile;
@@ -284,12 +262,12 @@ void Importer::read()
 
 		
 		tmp_texFile = textureMap;
-		normalMap.clear();
-
+		textureMap.clear();
+		
 		if (!normalMap.empty())
 		{
 			tmp_normMap = normalMap;
-			textureMap.clear();
+			normalMap.clear();
 		}
 		for (int i = 0; i < materialInfo.size(); i++)
 		{
