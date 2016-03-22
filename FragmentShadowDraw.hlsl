@@ -37,7 +37,7 @@ float4 PS_main(VS_OUT input) : SV_Target
 	float4 textureColor;
 	float4 lightPos;
 	float SMAP_SIZE = 2048.0f;
-	color = ambient;
+	color = float4(1, 1, 1, 1);
 
 	bias = 0.00175f;
 

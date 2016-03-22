@@ -37,7 +37,7 @@ float4 PS_main(VS_OUT input) : SV_Target
 	float lightIntensity;
 	float4 color;
 	float4 textureColor;
-	color = ambient;
+	color = float4(1, 1, 1, 1);
 
 	norMap = shaderTexture.Sample(SampleTypeClamp, input.uvs);
 

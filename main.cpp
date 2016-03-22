@@ -54,6 +54,7 @@ ID3D11PixelShader* gPixelShaderDefNormal = nullptr; // ---II---- normal
 ID3D11PixelShader* gPixelShaderDefTexture = nullptr; // ---II---- texture
 
 ID3D11GeometryShader* gGeometryShader = nullptr;
+ID3D11GeometryShader* gGeometryFinalPass = nullptr;
 
 ID3D11VertexShader* gVertexShaderShadow = nullptr;
 
@@ -90,19 +91,20 @@ ID3D11Texture2D* gBackBuffer = nullptr;
 ID3D11Texture2D* gBackBufferDefTexture = nullptr;
 ID3D11Texture2D* gBackBufferDefShadow = nullptr;
 ID3D11Texture2D* gBackBufferDefNormal = nullptr;
-//ID3D11Texture2D* gShadowBackBuffer = nullptr;
 
 ID3D11RenderTargetView* gBackBufferRTV = nullptr;
 ID3D11RenderTargetView* gBackBufferDefTextureRTV = nullptr;
 ID3D11RenderTargetView* gBackBufferDefShadowRTV = nullptr;
 ID3D11RenderTargetView* gBackBufferDefNormalRTV = nullptr;
 
-//ID3D11RenderTargetView* gShadowRenderTarget = nullptr; //egen
-
 ID3D11DepthStencilView* gDepthStencilView = nullptr;
 
 ID3D11DepthStencilView* gShadowDepthStencilView = nullptr;
 ID3D11ShaderResourceView* ShadowDepthResource = nullptr;
+
+ID3D11ShaderResourceView* DefTextureResource = nullptr;
+ID3D11ShaderResourceView* DefShadowResource = nullptr;
+ID3D11ShaderResourceView* DefNormalResource = nullptr;
 
 //IWICImagingFactory* imgFac;
 
@@ -291,6 +293,21 @@ void CreateShaders()
 	gDevice->CreateGeometryShader(pGS->GetBufferPointer(), pGS->GetBufferSize(), nullptr, &gGeometryShader);
 	pGS->Release();
 
+	ID3DBlob* pGSFinalPass = nullptr;
+	D3DCompileFromFile(
+		L"GeometryFinalPass.hlsl",
+		nullptr,
+		nullptr,
+		"main",
+		"gs_4_0",
+		0,
+		0,
+		&pGSFinalPass,
+		nullptr
+		);
+	gDevice->CreateGeometryShader(pGSFinalPass->GetBufferPointer(), pGSFinalPass->GetBufferSize(), nullptr, &gGeometryFinalPass);
+	pGSFinalPass->Release();
+
 	//CREATE SHADERS FOR SHADOWMAP
 	//Create the vertex shader shadow
 	ID3DBlob* pVSShadow = nullptr;
@@ -359,6 +376,7 @@ void CreateShaders()
 	Hr = gDevice->CreatePixelShader(pPSDefTexture->GetBufferPointer(), pPSDefTexture->GetBufferSize(), nullptr, &gPixelShaderDefTexture);
 
 	pPSDefTexture->Release();
+
 
 	
 }
@@ -852,10 +870,10 @@ void Render()
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 
-	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
+	gDeviceContext->VSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
-	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
+	gDeviceContext->GSSetShader(gGeometryFinalPass, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShader, nullptr, 0);
 
 	UINT32 vertexSize = sizeof(obj.finalVector[0]);
@@ -869,24 +887,13 @@ void Render()
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	gDeviceContext->IASetInputLayout(gVertexLayout);
 
-
+	gDeviceContext->PSSetShaderResources(0, 1, &gBackBufferDefTexture); //tex
+	gDeviceContext->PSSetShaderResources(1, 1, &gBackBufferDefShadow); //shadow
+	gDeviceContext->PSSetShaderResources(2, 1, &gBackBufferDefNormal); //normal
 	/************************************************************
 	 ****************************DRAW****************************
      ************************************************************/
-	
-	for (int i = 0; i < (obj.drawOffset.size() - 1); i++)
-	{
-		/*if (n < textureResources.size())
-		{
-		n++;
-		}*/
-		if (i < textureResources.size())
-		{
-			gDeviceContext->PSSetShaderResources(0, 1, &textureResources[i]);
-		}
-		gDeviceContext->Draw((obj.drawOffset[(i + 1)] - obj.drawOffset[i]), obj.drawOffset[i]);
-		
-	}
+	gDeviceContext->Draw(0,0);
 }
 
 void RenderDefShadow()
@@ -1092,7 +1099,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 				RenderDefTexture();
 				RenderDefShadow();
 				RenderDefNormal();
-				Render(); // Rendera
+				//Render(); // Rendera
 
 
 				frameCount++;
