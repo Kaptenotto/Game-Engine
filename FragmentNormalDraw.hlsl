@@ -1,6 +1,5 @@
 Texture2D txDiffuse : register (t0);
-Texture2D depthMapTexture : register(t1);
-Texture2D shaderTexture : register(t2);
+Texture2D shaderTexture : register(t1);
 SamplerState SampleTypeClamp : register(s0);
 
 cbuffer MatrixBuffer : register (b0)
@@ -28,13 +27,36 @@ struct VS_OUT
 	float3 tangent : TANGENT;
 	float3 binormal : BINORMAL;
 };
-
 float4 PS_main(VS_OUT input) : SV_Target
 {
-	float4 textureColor;
+	//Normal stuff
+	float4 texColor;
+	float4 norMap;
+	float3 Normal;
+	float3 lightDirection;
+	float4 norColor;
+	float lightIntensity;
 	float4 color;
+	float4 textureColor;
 	color = ambient;
+
 	textureColor = txDiffuse.Sample(SampleTypeClamp, input.uvs);
+	norMap = shaderTexture.Sample(SampleTypeClamp, input.uvs);
+
+	norMap = (norMap*2.0f) - 1.0f;
+
+	norMap.z = (norMap.z * -1);
+
+	Normal = (norMap.x * input.tangent) + (norMap.y * input.binormal) + (norMap.z * input.norm);
+	Normal = normalize(Normal);
+
+	lightDirection = (float4(-lightDir, 1) - input.wPos);
+
+	lightIntensity  = saturate(dot(Normal, lightDirection));
+	norColor = saturate(diffuse * lightIntensity);
+
+	textureColor = textureColor * norColor;
+
 	textureColor = textureColor * color;
 	return textureColor;
 };
