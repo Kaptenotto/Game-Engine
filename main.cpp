@@ -55,7 +55,7 @@ ID3D11PixelShader* gPixelShaderDefNormal = nullptr;
 
 
 ID3D11GeometryShader* gGeometryShader = nullptr;
-ID3D11GeometryShader* gGeometryShaderFinalPass = nullptr;
+ID3D11GeometryShader* gGeometryFinalPass = nullptr;
 
 
 ID3D11VertexShader* gVertexShaderShadow = nullptr;
@@ -355,6 +355,21 @@ void CreateShaders()
 	Hr = gDevice->CreatePixelShader(pPSDefNormal->GetBufferPointer(), pPSDefNormal->GetBufferSize(), nullptr, &gPixelShaderDefNormal);
 
 	pPSDefNormal->Release();
+
+	ID3DBlob* pGSFinalPass = nullptr;
+	D3DCompileFromFile(
+		L"GeometryFinalPass.hlsl",
+		nullptr,
+		nullptr,
+		"main",
+		"gs_4_0",
+		0,
+		0,
+		&pGSFinalPass,
+		nullptr
+		);
+	gDevice->CreateGeometryShader(pGSFinalPass->GetBufferPointer(), pGSFinalPass->GetBufferSize(), nullptr, &gGeometryFinalPass);
+	pGSFinalPass->Release();
 
 	
 }
@@ -842,7 +857,7 @@ void RenderFinalPass()
 	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
 	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
-	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
+	gDeviceContext->GSSetShader(gGeometryFinalPass, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShader, nullptr, 0);
 
 	UINT32 vertexSize = sizeof(obj.finalVector[0]);
@@ -878,6 +893,129 @@ void RenderFinalPass()
 		}
 		gDeviceContext->Draw((obj.drawOffset[(i + 1)] - obj.drawOffset[i]), obj.drawOffset[i]);
 		
+	}
+}
+void RenderDefTexture()
+{
+
+	float clearColor[] = { 0, 0, 0, 1 };
+	gDeviceContext->ClearRenderTargetView(gBackBufferDefTextureRTV, clearColor);
+	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+
+	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
+	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
+	gDeviceContext->PSSetShader(gPixelShaderDefTexture, nullptr, 0);
+
+	UINT32 vertexSize = sizeof(obj.finalVector[0]);
+	UINT32 vertexCount = obj.finalVector.size();
+	UINT32 indexSize = obj.index_counter;
+	UINT32 offset = 0;
+
+	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &vertexSize, &offset);
+	gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
+
+	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	gDeviceContext->IASetInputLayout(gVertexLayout);
+
+	gDeviceContext->PSSetSamplers(0, 1, &texSamplerState);
+
+
+	/************************************************************
+	****************************DRAW****************************
+	************************************************************/
+
+	for (int i = 0; i < (obj.drawOffset.size() - 1); i++)
+	{
+		if (i < textureResources.size())
+		{
+			gDeviceContext->PSSetShaderResources(0, 1, &textureResources[i]);
+
+		}
+		gDeviceContext->Draw((obj.drawOffset[(i + 1)] - obj.drawOffset[i]), obj.drawOffset[i]);
+
+	}
+}
+void RenderDefShadow()
+{
+
+	float clearColor[] = { 0, 0, 0, 1 };
+	gDeviceContext->ClearRenderTargetView(gBackBufferDefShadowRTV, clearColor);
+	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+
+	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
+	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
+	gDeviceContext->PSSetShader(gPixelShaderDefShadow, nullptr, 0);
+
+	UINT32 vertexSize = sizeof(obj.finalVector[0]);
+	UINT32 vertexCount = obj.finalVector.size();
+	UINT32 indexSize = obj.index_counter;
+	UINT32 offset = 0;
+
+	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &vertexSize, &offset);
+	gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
+
+	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	gDeviceContext->IASetInputLayout(gVertexLayout);
+
+	gDeviceContext->PSSetShaderResources(1, 1, &ShadowDepthResource);
+	gDeviceContext->PSSetSamplers(0, 1, &texSamplerState);
+
+
+	/************************************************************
+	****************************DRAW****************************
+	************************************************************/
+
+	for (int i = 0; i < (obj.drawOffset.size() - 1); i++)
+	{
+		gDeviceContext->Draw((obj.drawOffset[(i + 1)] - obj.drawOffset[i]), obj.drawOffset[i]);
+	}
+}
+void RenderDefNormal()
+{
+
+	float clearColor[] = { 0, 0, 0, 1 };
+	gDeviceContext->ClearRenderTargetView(gBackBufferDefNormalRTV, clearColor);
+	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+
+	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
+	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
+	gDeviceContext->PSSetShader(gPixelShaderDefNormal, nullptr, 0);
+
+	UINT32 vertexSize = sizeof(obj.finalVector[0]);
+	UINT32 vertexCount = obj.finalVector.size();
+	UINT32 indexSize = obj.index_counter;
+	UINT32 offset = 0;
+
+	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &vertexSize, &offset);
+	gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
+
+	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	gDeviceContext->IASetInputLayout(gVertexLayout);
+
+	gDeviceContext->PSSetSamplers(0, 1, &texSamplerState);
+
+
+	/************************************************************
+	****************************DRAW****************************
+	************************************************************/
+
+	for (int i = 0; i < (obj.drawOffset.size() - 1); i++)
+	{
+		if (i < normalResources.size())
+		{
+			gDeviceContext->PSSetShaderResources(2, 1, &normalResources[i]);
+		}
+		gDeviceContext->Draw((obj.drawOffset[(i + 1)] - obj.drawOffset[i]), obj.drawOffset[i]);
+
 	}
 }
 
@@ -946,6 +1084,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 			{
 				Update();
 				RenderShadow(); // Rendera shadowdepthmap
+				RenderDefTexture();
+				RenderDefShadow();
+				RenderDefNormal();
 				RenderFinalPass(); // Rendera finalpass
 
 				frameCount++;
@@ -968,17 +1109,22 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		gIndexBuffer->Release();
 		gConstantBuffer->Release();
 		gPixelShader->Release();
+		gPixelShaderDefTexture->Release();
+		gPixelShaderDefShadow->Release();
+		gPixelShaderDefNormal->Release();
 		gGeometryShader->Release();
+		gGeometryFinalPass->Release();
 		gVertexShader->Release();
 
-		//shadowrenderpass
 		gVertexShaderShadow->Release();
 
 		gDevice->Release();
 		gDeviceContext->Release();
 		gSwapChain->Release();
 		gBackBufferRTV->Release();
-		//gShadowBackBuffer->Release();
+		gBackBufferDefTextureRTV->Release();
+		gBackBufferDefShadowRTV->Release();
+		gBackBufferDefNormalRTV->Release();
 		DestroyWindow(wndHandle);
 
 		DIKeyboard->Unacquire();
