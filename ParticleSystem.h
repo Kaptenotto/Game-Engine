@@ -28,9 +28,10 @@ private:
 	};
 public:
 	ParticleSystem();
+	~ParticleSystem();
 	ParticleSystem(const ParticleSystem&);
 
-	bool initialuze(ID3D11Device*, WCHAR*);
+	bool initialize(ID3D11Device*, WCHAR*);
 	void Shutdown();
 	bool Frame(float, ID3D11DeviceContext*);
 	void Render(ID3D11DeviceContext*);
@@ -66,6 +67,10 @@ private:
 	XMFLOAT4 particleColor{ 0.5,0.5,0.5,0.5 };
 
 	ParticleType* m_particleList;
+
+	int m_vertexCount, m_indexCount;
+	VertexType* m_vertices;
+	ID3D11Buffer *m_vertexBuffer, *m_indexBuffer;
 
 };
 

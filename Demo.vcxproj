@@ -80,6 +80,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="OBJ-main.cpp" />
     <ClCompile Include="OBJ_Structs.cpp" />
+    <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="Wic.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -107,6 +108,7 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="Wic.h" />
     <ClInclude Include="importer.h" />
   </ItemGroup>

@@ -159,6 +159,8 @@ typedef struct DIMOUSESTATES
 };
 
 
+
+
 // GLOBALS FOR FIRST PERSON CAMERA *********************************
 
 XMVECTOR defaultForward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
