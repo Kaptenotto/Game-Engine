@@ -18,8 +18,8 @@
 
 #include <Wincodec.h>
 
-using namespace DirectX; // EEEEEW
-using namespace std; // MORE EEEEW
+using namespace DirectX;
+using namespace std;
 
 #pragma comment (lib, "d3d11.lib")
 #pragma comment (lib, "d3dcompiler.lib")
@@ -49,13 +49,18 @@ ID3D11InputLayout* gVertexLayout = nullptr;
 ID3D11VertexShader* gVertexShader = nullptr;
 
 ID3D11PixelShader* gPixelShader = nullptr;
+ID3D11PixelShader* gPixelShaderDefTexture = nullptr;
+ID3D11PixelShader* gPixelShaderDefShadow = nullptr;
+ID3D11PixelShader* gPixelShaderDefNormal = nullptr;
+
 
 ID3D11GeometryShader* gGeometryShader = nullptr;
+ID3D11GeometryShader* gGeometryShaderFinalPass = nullptr;
+
 
 ID3D11VertexShader* gVertexShaderShadow = nullptr;
 
 ID3D11PixelShader* gPixelShaderShadow = nullptr;
-
 ID3D11GeometryShader* gGeometryShaderShadow = nullptr;
 
 //INITIALIZE VECTORS ***********************************************
@@ -84,11 +89,15 @@ ID3D11Buffer* gConstantBuffer = nullptr;
 ID3D11Buffer* gConstantLightBuffer = nullptr;
 
 ID3D11Texture2D* gBackBuffer = nullptr;
-//ID3D11Texture2D* gShadowBackBuffer = nullptr;
+ID3D11Texture2D* gBackBufferDefTexture = nullptr;
+ID3D11Texture2D* gBackBufferDefShadow = nullptr;
+ID3D11Texture2D* gBackBufferDefNormal = nullptr;
 
 ID3D11RenderTargetView* gBackBufferRTV = nullptr;
+ID3D11RenderTargetView* gBackBufferDefTextureRTV = nullptr;
+ID3D11RenderTargetView* gBackBufferDefShadowRTV = nullptr;
+ID3D11RenderTargetView* gBackBufferDefNormalRTV = nullptr;
 
-//ID3D11RenderTargetView* gShadowRenderTarget = nullptr; //egen
 
 ID3D11DepthStencilView* gDepthStencilView = nullptr;
 
@@ -297,6 +306,55 @@ void CreateShaders()
 	pVSShadow->Release();
 
 	//CREATE SHADERS FOR SHADOWMAP DONE
+
+	//DEFFERD RENDERING STUFF
+	ID3DBlob* pPSDefTexture = nullptr;
+	D3DCompileFromFile(
+		L"FragmentTextureDraw.hlsl",	//name of file
+		nullptr,			//optional macros
+		nullptr,			// optional include files
+		"PS_main",			// Entry point
+		"ps_4_0",			// Shader model target
+		0,					//shader compile options
+		0,					// Effect compile options
+		&pPSDefTexture,				//double pointer to ID3DBlob
+		nullptr				// point for error blob messages
+		);
+	Hr = gDevice->CreatePixelShader(pPSDefTexture->GetBufferPointer(), pPSDefTexture->GetBufferSize(), nullptr, &gPixelShaderDefTexture);
+
+	pPSDefTexture->Release();
+
+	ID3DBlob* pPSDefShadow = nullptr;
+	D3DCompileFromFile(
+		L"FragmentShadowDraw.hlsl",	//name of file
+		nullptr,			//optional macros
+		nullptr,			// optional include files
+		"PS_main",			// Entry point
+		"ps_4_0",			// Shader model target
+		0,					//shader compile options
+		0,					// Effect compile options
+		&pPSDefShadow,				//double pointer to ID3DBlob
+		nullptr				// point for error blob messages
+		);
+	Hr = gDevice->CreatePixelShader(pPSDefShadow->GetBufferPointer(), pPSDefShadow->GetBufferSize(), nullptr, &gPixelShaderDefShadow);
+
+	pPSDefShadow->Release();
+
+	ID3DBlob* pPSDefNormal = nullptr;
+	D3DCompileFromFile(
+		L"FragmentNormalDraw.hlsl",	//name of file
+		nullptr,			//optional macros
+		nullptr,			// optional include files
+		"PS_main",			// Entry point
+		"ps_4_0",			// Shader model target
+		0,					//shader compile options
+		0,					// Effect compile options
+		&pPSDefNormal,				//double pointer to ID3DBlob
+		nullptr				// point for error blob messages
+		);
+	Hr = gDevice->CreatePixelShader(pPSDefNormal->GetBufferPointer(), pPSDefNormal->GetBufferSize(), nullptr, &gPixelShaderDefNormal);
+
+	pPSDefNormal->Release();
 
 	
 }
@@ -773,7 +831,7 @@ void RenderShadow()
 	gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
 }
 
-void Render()
+void RenderFinalPass()
 {
 
 	float clearColor[] = { 0, 0, 0, 1 };
@@ -799,19 +857,15 @@ void Render()
 	gDeviceContext->IASetInputLayout(gVertexLayout);
 
 	gDeviceContext->PSSetShaderResources(1, 1, &ShadowDepthResource);
-	//gDeviceContext->PSSetSamplers(0, 1, &texSamplerState);
+	gDeviceContext->PSSetSamplers(0, 1, &texSamplerState);
 
 
 	/************************************************************
 	 ****************************DRAW****************************
-     ************************************************************/
+	 ************************************************************/
 	
 	for (int i = 0; i < (obj.drawOffset.size() - 1); i++)
 	{
-		/*if (n < textureResources.size())
-		{
-		n++;
-		}*/
 		if (i < textureResources.size())
 		{
 			gDeviceContext->PSSetShaderResources(0, 1, &textureResources[i]);
@@ -891,8 +945,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 			else
 			{
 				Update();
-				RenderShadow(); // Rendera
-				Render(); // Rendera
+				RenderShadow(); // Rendera shadowdepthmap
+				RenderFinalPass(); // Rendera finalpass
 
 				frameCount++;
 				if (getTime() > 1.0f)
@@ -1016,7 +1070,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 
 													// Fill the swap chain description struct
 
-	SCD.BufferCount = 1;								// One back buffer
+	SCD.BufferCount = 4;								// One back buffer
 	SCD.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // Use 32 bit color
 	SCD.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;  // How swap chain is to be used
 	SCD.OutputWindow = windowHandle;						// The window to be used
@@ -1044,8 +1098,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 	{
 		//Get the adress of the backbuffer
 		gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&gBackBuffer);
-
-		//gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&gShadowBackBuffer);
+		gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&gBackBufferDefTexture);
+		gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&gBackBufferDefShadow);
+		gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&gBackBufferDefNormal);
 
 		createDepthStencil();
 
@@ -1053,11 +1108,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 
 		//use the back buffer adress to create the render target
 		gDevice->CreateRenderTargetView(gBackBuffer, NULL, &gBackBufferRTV);
+		gDevice->CreateRenderTargetView(gBackBufferDefTexture, NULL, &gBackBufferDefTextureRTV);
+		gDevice->CreateRenderTargetView(gBackBufferDefShadow, NULL, &gBackBufferDefShadowRTV);
+		gDevice->CreateRenderTargetView(gBackBufferDefNormal, NULL, &gBackBufferDefNormalRTV);
 		gBackBuffer->Release();
-
-		//TESTING SHADOWRENDEERTARGET
-		//gDevice->CreateRenderTargetView(gBackBuffer, NULL, &gShadowRenderTarget);
-		//gShadowBackBuffer->Release();
 
 		//Set the render target as the back buffer
 		gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);

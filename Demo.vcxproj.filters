@@ -41,6 +41,18 @@
     <FxCompile Include="VertexShadow.hlsl">
       <Filter>Source Files</Filter>
     </FxCompile>
+    <FxCompile Include="FragmentNormalDraw.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
+    <FxCompile Include="FragmentShadowDraw.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
+    <FxCompile Include="FragmentTextureDraw.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
+    <FxCompile Include="GeometryFinalPass.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="importer.h">
