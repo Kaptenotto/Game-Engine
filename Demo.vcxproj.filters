@@ -44,6 +44,15 @@
     <FxCompile Include="VertexShadow.hlsl">
       <Filter>Source Files</Filter>
     </FxCompile>
+    <FxCompile Include="VertexShaderParticle.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
+    <FxCompile Include="GeometryShaderParticle.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
+    <FxCompile Include="PixelShaderParticle.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="importer.h">

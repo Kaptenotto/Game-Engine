@@ -23,7 +23,6 @@ private:
 	struct VertexType
 	{
 		XMFLOAT3 position;
-		XMFLOAT2 texture;
 		XMFLOAT4 color;
 	};
 public:
@@ -35,13 +34,10 @@ public:
 	void Shutdown();
 	bool Frame(float, ID3D11DeviceContext*);
 	void Render(ID3D11DeviceContext*);
-	ID3D11ShaderResourceView* GetTexture();
 	int GetIndexCount();
 
 private:
-	bool LoadTexture(ID3D11Device*, WCHAR*);
-	void ReleaseTexture();
-
+	XMFLOAT4 particleColor{ 0.5f,0.5f,0.5f,0.5f };
 	bool InitializeParticleSystem();
 	void ShutdownParticleSystem();
 
@@ -64,7 +60,7 @@ private:
 	int m_currentParticleCount;
 	float m_accumulatedTime;
 
-	XMFLOAT4 particleColor{ 0.5,0.5,0.5,0.5 };
+	
 
 	ParticleType* m_particleList;
 

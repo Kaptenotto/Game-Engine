@@ -15,6 +15,8 @@
 
 #include "importer.h"
 #include "Wic.h"
+//#include "ParticleSystem.h"
+
 
 #include <Wincodec.h>
 
@@ -57,6 +59,12 @@ ID3D11VertexShader* gVertexShaderShadow = nullptr;
 ID3D11PixelShader* gPixelShaderShadow = nullptr;
 
 ID3D11GeometryShader* gGeometryShaderShadow = nullptr;
+
+ID3D11VertexShader* gVertexShaderParticle = nullptr;
+
+ID3D11PixelShader* gPixelShaderParticle = nullptr;
+
+ID3D11GeometryShader* gGeometryShaderParticle = nullptr;
 
 //INITIALIZE VECTORS ***********************************************
 
@@ -127,6 +135,7 @@ ID3D11ShaderResourceView* ShadowDepthResource = nullptr;
 
 // INITIALIZE OBJ-IMPORTER ******************************************
 Importer obj;
+//ParticleSystem particles;
 
 
 // INITIALIZE STRUCTS ***********************************************
@@ -159,7 +168,11 @@ typedef struct DIMOUSESTATES
 };
 
 
-
+struct VertexType
+{
+	XMFLOAT3 position;
+	XMFLOAT4 color;
+};
 
 // GLOBALS FOR FIRST PERSON CAMERA *********************************
 
@@ -304,7 +317,59 @@ void CreateShaders()
 
 	//CREATE SHADERS FOR SHADOWMAP DONE
 
+
+	D3D11_INPUT_ELEMENT_DESC inputDesc2[] = {
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 3, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		
+	};
+
+	ID3DBlob* pVSParticle = nullptr;
+	D3DCompileFromFile(
+		L"VertexShaderParticle.hlsl",
+		nullptr,
+		nullptr,
+		"main",
+		"vs_4_0",
+		0,
+		0,
+		&pVSParticle,
+		nullptr
+		);
+	Hr = gDevice->CreateVertexShader(pVSParticle->GetBufferPointer(), pVSParticle->GetBufferSize(), nullptr, &gVertexShaderParticle);
+	gDevice->CreateInputLayout(inputDesc2, ARRAYSIZE(inputDesc2), pVSParticle->GetBufferPointer(), pVSParticle->GetBufferSize(), &gVertexLayout);
+	pVSParticle->Release();
+
+	ID3DBlob* pGSParticle = nullptr;
+	D3DCompileFromFile(
+		L"GeometryShaderParticle.hlsl",
+		nullptr,
+		nullptr,
+		"main",
+		"gs_4_0",
+		0,
+		0,
+		&pGSParticle,
+		nullptr
+		);
+	gDevice->CreateGeometryShader(pGSParticle->GetBufferPointer(), pGSParticle->GetBufferSize(), nullptr, &gGeometryShaderParticle);
+	pGSParticle->Release();
 	
+	ID3DBlob* pPSParticles = nullptr;
+	D3DCompileFromFile(
+		L"PixelShaderParticle.hlsl",	//name of file
+		nullptr,			//optional macros
+		nullptr,			// optional include files
+		"main",			// Entry point
+		"ps_4_0",			// Shader model target
+		0,					//shader compile options
+		0,					// Effect compile options
+		&pPSParticles,				//double pointer to ID3DBlob
+		nullptr				// point for error blob messages
+		);
+	Hr = gDevice->CreatePixelShader(pPSParticles->GetBufferPointer(), pPSParticles->GetBufferSize(), nullptr, &gPixelShaderParticle);
+
+	pPSParticles->Release();
 }
 
 void createTextures()
@@ -787,6 +852,19 @@ void RenderShadow()
 
 	SetViewport();
 	gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
+}
+
+void RenderParticles()
+{
+	gDeviceContext->ClearDepthStencilView(gShadowDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+	gDeviceContext->VSSetShader(gVertexShaderParticle, nullptr, 0);
+	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->GSSetShader(gGeometryShaderParticle, nullptr, 0);
+	gDeviceContext->PSSetShader(gPixelShaderParticle, nullptr, 0);
+
+	
 }
 
 void Render()
