@@ -19,12 +19,6 @@ private:
 		float velocity;
 		bool active;
 	};
-
-	struct VertexType
-	{
-		XMFLOAT3 position;
-		XMFLOAT4 color;
-	};
 public:
 	ParticleSystem();
 	~ParticleSystem();
