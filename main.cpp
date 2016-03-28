@@ -104,39 +104,12 @@ ID3D11DepthStencilView* gDepthStencilView = nullptr;
 ID3D11DepthStencilView* gShadowDepthStencilView = nullptr;
 ID3D11ShaderResourceView* ShadowDepthResource = nullptr;
 
-//IWICImagingFactory* imgFac;
-
-
-//static IWICImagingFactory * _GetWIC()
-//{
-//	static IWICImagingFactory* s_Factory = nullptr;
-//
-//	if (s_Factory)
-//		return s_Factory;
-//
-//	HRESULT hr = CoCreateInstance(
-//		CLSID_WICImagingFactory1,
-//		nullptr,
-//		CLSCTX_INPROC_SERVER,
-//		__uuidof(IWICImagingFactory),
-//		(LPVOID*)&s_Factory
-//		);
-//
-//	if (FAILED(hr))
-//	{
-//		s_Factory = nullptr;
-//		return nullptr;
-//	}
-//
-//	return s_Factory;
-//}
-
-//CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, __uuidof(IWICImagingFactory), (void**)&imgFac);
-
 
 // INITIALIZE OBJ-IMPORTER ******************************************
 Importer obj;
 //ParticleSystem particles;
+
+
 
 
 // INITIALIZE STRUCTS ***********************************************
@@ -196,6 +169,17 @@ float moveupDown = 0.0f;
 float camYaw = 0.0f;
 float camPitch = 0.0f;
 
+int maxParticles = 2000;
+vector<VertexType> particleList;
+
+float particlesPerSecond = 250.0f;
+double accumulatedTime = 0;
+int currentParticleCount = 0;
+
+float particleVelocity, particleVelocityVariation;
+
+float particleDeviationX, particleDeviationY, particleDeviationZ;
+
 //GLOBALS FOR INPUT ************************************************
 
 HWND wndHandle = NULL;
@@ -211,6 +195,7 @@ float rotx = 0;
 float rotz = 0;
 float scaleX = 1.0f;
 float scaleY = 1.0f;
+
 
 XMMATRIX rotationX;
 XMMATRIX rotationY;
@@ -448,15 +433,93 @@ void initParticle()
 	std::memset(&bufferdesc, 0, sizeof(bufferdesc));
 	bufferdesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bufferdesc.Usage = D3D11_USAGE_IMMUTABLE;
-	bufferdesc.ByteWidth = sizeof(VertexType);
+	bufferdesc.ByteWidth = sizeof(VertexType) * 2000;
 	bufferdesc.MiscFlags = 0;
 	bufferdesc.StructureByteStride = 0;
 
 	D3D11_SUBRESOURCE_DATA data;
-	data.pSysMem = &test[0];
+	data.pSysMem = &particleList.at(0);
 	HRESULT hr = gDevice->CreateBuffer(&bufferdesc, &data, &gVertexBufferParticle);
 
 }
+void EmitParticles(float frameTime)
+{
+	bool emitParticle, found;
+	float positionX, positionY, positionZ, velocity, red, green, blue;
+	int index, i, j;
+
+	accumulatedTime += frameTime;
+
+	emitParticle = false;
+
+	if (accumulatedTime > (1000.0f / particlesPerSecond))
+	{
+		accumulatedTime = 0.0f;
+		emitParticle = true;
+	}
+
+	if ((emitParticle == true) && (currentParticleCount < (maxParticles - 1)))
+	{
+		currentParticleCount++;
+
+		//generate randomized particle properties.
+		positionX = (((float)rand() - (float)rand()) / RAND_MAX) * particleDeviationX;
+		positionY = (((float)rand() - (float)rand()) / RAND_MAX) * particleDeviationY;
+		positionZ = (((float)rand() - (float)rand()) / RAND_MAX) * particleDeviationZ;
+
+		velocity = particleVelocity + (((float)rand() - (float)rand()) / RAND_MAX) * particleVelocityVariation;
+
+		red = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
+		green = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
+		blue = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
+
+
+		index = 0;
+		found = false;
+		while (!found)
+		{
+			if (particleList[index].active == false || (m_particleList[index].positionZ < positionZ))
+			{
+				found = true;
+			}
+			else
+			{
+				index++;
+			}
+		}
+
+
+		// Now that we know the location to insert into we need to copy the array over by one position from the index to make room for the new particle.
+		i = m_currentParticleCount;
+		j = i - 1;
+
+		while (i != index)
+		{
+			particleList.at(i).x = particleList.at(j).x;
+			particleList.at(i).y = particleList.at(j).y;
+			particleList.at(i).z = particleList.at(j).z;
+			particleList.at(i).r = particleList.at(j).r;
+			particleList.at(i).g = particleList.at(j).g;
+			particleList.at(i).b = particleList.at(j).b;
+			//particleList.at(i).velocity = particleList[j].velocity;
+			//particleList.at(i).active = particleList[j].active;
+			i--;
+			j--;
+		}
+
+		particleList.at(index).x = positionX;
+		particleList.at(index).y = positionY;
+		particleList.at(index).z = positionZ;
+		particleList.at(index).r = red;
+		particleList.at(index).g = green;
+		particleList.at(index).b = blue;
+		//particleList.at(index).velocity = velocity;
+		//particleList.at(index).active = true;
+	}
+
+	return;
+}
+
 
 void createTriangle()
 {
