@@ -8,21 +8,24 @@ cbuffer MatrixBuffer : register (b0)
 struct Input
 {
 	float3 position : POSITION;
+	float2 size: SIZE;
 	float3 color : COLOR;
 };
 
 struct Output
 {
 	float4 position : SV_POSITION;
+	float2 size: SIZE;
 	float3 color : COLOR;
 };
 
 
-float4 main(Input input)
+Output main(Input input)
 {
 	Output output = (Output)0;
 	
-	output.position = input.position;
+	output.position = float4(input.position,1.0);
+	output.size = input.size;
 	output.color = input.color;
 
 	return output;

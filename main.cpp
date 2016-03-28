@@ -86,6 +86,7 @@ ID3D11SamplerState* texSamplerState;
 // INITIALIZE BUFFERS ***********************************************
 
 ID3D11Buffer* gVertexBuffer = nullptr;
+ID3D11Buffer* gVertexBufferParticle = nullptr;
 ID3D11Buffer* gIndexBuffer = nullptr;
 
 ID3D11Buffer* gConstantBuffer = nullptr;
@@ -170,10 +171,11 @@ typedef struct DIMOUSESTATES
 
 struct VertexType
 {
-	XMFLOAT3 position;
-	XMFLOAT4 color;
+	float x,y,z;
+	float h,w;
+	float r, g, b;
 };
-
+VertexType test[1] = { 0, 1, -4,3.0f,3.0f,0.5f,0.5f,0.5f };
 // GLOBALS FOR FIRST PERSON CAMERA *********************************
 
 XMVECTOR defaultForward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
@@ -320,7 +322,8 @@ void CreateShaders()
 
 	D3D11_INPUT_ELEMENT_DESC inputDesc2[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 3, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "SIZE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 3, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 5, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		
 	};
 
@@ -436,6 +439,23 @@ void createTextures()
 		norResource->Release();
 	}
 	
+}
+
+void initParticle()
+{
+	
+	D3D11_BUFFER_DESC bufferdesc;
+	std::memset(&bufferdesc, 0, sizeof(bufferdesc));
+	bufferdesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	bufferdesc.Usage = D3D11_USAGE_IMMUTABLE;
+	bufferdesc.ByteWidth = sizeof(VertexType);
+	bufferdesc.MiscFlags = 0;
+	bufferdesc.StructureByteStride = 0;
+
+	D3D11_SUBRESOURCE_DATA data;
+	data.pSysMem = &test[0];
+	HRESULT hr = gDevice->CreateBuffer(&bufferdesc, &data, &gVertexBufferParticle);
+
 }
 
 void createTriangle()
@@ -856,13 +876,19 @@ void RenderShadow()
 
 void RenderParticles()
 {
-	gDeviceContext->ClearDepthStencilView(gShadowDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
+	//gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	
 	gDeviceContext->VSSetShader(gVertexShaderParticle, nullptr, 0);
-	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
-	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->GSSetShader(gGeometryShaderParticle, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShaderParticle, nullptr, 0);
+
+	UINT32 vertexSize = sizeof(VertexType);
+	UINT32 offset = 0;
+
+	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBufferParticle, &vertexSize, &offset);
+	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+
+	gDeviceContext->Draw(1, 0);
 
 	
 }
@@ -969,6 +995,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 		createTriangle();
 
+		initParticle();
+
 		createTextures();
 		
 		//Shows the window
@@ -987,6 +1015,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 				Update();
 				RenderShadow(); // Rendera
 				Render(); // Rendera
+				RenderParticles(); // Rendera
 
 				frameCount++;
 				if (getTime() > 1.0f)

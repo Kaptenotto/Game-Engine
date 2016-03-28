@@ -1,4 +1,12 @@
-float4 main() : SV_TARGET
+struct VS_OUT
 {
-	return float4(1.0f, 1.0f, 1.0f, 1.0f);
+	float4 pos : SV_POSITION;
+	float2 size: SIZE;
+	float3 color : COLOR;
+};
+
+
+float4 main(VS_OUT input) : SV_TARGET
+{
+	return float4(input.color, 1.0f);
 }
