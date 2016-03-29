@@ -59,7 +59,7 @@ private:
 	ParticleType* m_particleList;
 
 	int m_vertexCount, m_indexCount;
-	VertexType* m_vertices;
+	//VertexType* m_vertices;
 	ID3D11Buffer *m_vertexBuffer, *m_indexBuffer;
 
 };

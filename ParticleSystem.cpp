@@ -3,7 +3,7 @@
 ParticleSystem::ParticleSystem()
 {
 	m_particleList = 0;
-	m_vertices = 0;
+	//m_vertices = 0;
 	m_vertexBuffer = 0;
 	m_indexBuffer = 0;
 }
@@ -138,11 +138,11 @@ bool ParticleSystem::InitializeBuffers(ID3D11Device* device)
 
 	m_indexCount = m_vertexCount;
 
-	m_vertices = new VertexType[m_vertexCount];
-	if (!m_vertices)
-	{
-		return false;
-	}
+	//m_vertices = new VertexType[m_vertexCount];
+	//if (!m_vertices)
+	//{
+	//	return false;
+	//}
 
 	indices = new unsigned long[m_indexCount];
 	if (!indices)
@@ -150,7 +150,7 @@ bool ParticleSystem::InitializeBuffers(ID3D11Device* device)
 		return false;
 	}
 	
-	memset(m_vertices, 0, (sizeof(VertexType) * m_vertexCount));
+	//memset(m_vertices, 0, (sizeof(VertexType) * m_vertexCount));
 
 	for (i = 0; i < m_indexCount; i++)
 	{
@@ -158,13 +158,13 @@ bool ParticleSystem::InitializeBuffers(ID3D11Device* device)
 	}
 
 	vertexBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	vertexBufferDesc.ByteWidth = sizeof(VertexType) * m_vertexCount;
+	//vertexBufferDesc.ByteWidth = sizeof(VertexType) * m_vertexCount;
 	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	vertexBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	vertexBufferDesc.MiscFlags = 0;
 	vertexBufferDesc.StructureByteStride = 0;
 
-	vertexData.pSysMem = m_vertices;
+	//vertexData.pSysMem = m_vertices;
 	vertexData.SysMemPitch = 0;
 	vertexData.SysMemSlicePitch = 0;
 
@@ -339,44 +339,44 @@ bool ParticleSystem::UpdateBuffers(ID3D11DeviceContext* deviceContext)
 	int index, i;
 	HRESULT hr;
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	VertexType* vtxPtr;
+	//VertexType* vtxPtr;
 
-	memset(m_vertices, 0, (sizeof(VertexType) * m_vertexCount));
+	//memset(m_vertices, 0, (sizeof(VertexType) * m_vertexCount));
 
 	index = 0;
 
-	for (i = 0; i < m_currentParticleCount; i++)
-	{
-		// Bottom left.
-		m_vertices[index].position = XMFLOAT3(m_particleList[i].positionX - m_particleSize, m_particleList[i].positionY - m_particleSize, m_particleList[i].positionZ);
-		m_vertices[index].color = XMFLOAT4(m_particleList[i].red, m_particleList[i].green, m_particleList[i].blue, 1.0f);
-		index++;
+	//for (i = 0; i < m_currentParticleCount; i++)
+	//{
+	//	// Bottom left.
+	//	m_vertices[index].position = XMFLOAT3(m_particleList[i].positionX - m_particleSize, m_particleList[i].positionY - m_particleSize, m_particleList[i].positionZ);
+	//	m_vertices[index].color = XMFLOAT4(m_particleList[i].red, m_particleList[i].green, m_particleList[i].blue, 1.0f);
+	//	index++;
 
-		// Top left.
-		m_vertices[index].position = XMFLOAT3(m_particleList[i].positionX - m_particleSize, m_particleList[i].positionY + m_particleSize, m_particleList[i].positionZ);
-		m_vertices[index].color = XMFLOAT4(m_particleList[i].red, m_particleList[i].green, m_particleList[i].blue, 1.0f);
-		index++;
+	//	// Top left.
+	//	m_vertices[index].position = XMFLOAT3(m_particleList[i].positionX - m_particleSize, m_particleList[i].positionY + m_particleSize, m_particleList[i].positionZ);
+	//	m_vertices[index].color = XMFLOAT4(m_particleList[i].red, m_particleList[i].green, m_particleList[i].blue, 1.0f);
+	//	index++;
 
-		// Bottom right.
-		m_vertices[index].position = XMFLOAT3(m_particleList[i].positionX + m_particleSize, m_particleList[i].positionY - m_particleSize, m_particleList[i].positionZ);
-		m_vertices[index].color = XMFLOAT4(m_particleList[i].red, m_particleList[i].green, m_particleList[i].blue, 1.0f);
-		index++;
+	//	// Bottom right.
+	//	m_vertices[index].position = XMFLOAT3(m_particleList[i].positionX + m_particleSize, m_particleList[i].positionY - m_particleSize, m_particleList[i].positionZ);
+	//	m_vertices[index].color = XMFLOAT4(m_particleList[i].red, m_particleList[i].green, m_particleList[i].blue, 1.0f);
+	//	index++;
 
-		// Bottom right.
-		m_vertices[index].position = XMFLOAT3(m_particleList[i].positionX + m_particleSize, m_particleList[i].positionY - m_particleSize, m_particleList[i].positionZ);
-		m_vertices[index].color = XMFLOAT4(m_particleList[i].red, m_particleList[i].green, m_particleList[i].blue, 1.0f);
-		index++;
+	//	// Bottom right.
+	//	m_vertices[index].position = XMFLOAT3(m_particleList[i].positionX + m_particleSize, m_particleList[i].positionY - m_particleSize, m_particleList[i].positionZ);
+	//	m_vertices[index].color = XMFLOAT4(m_particleList[i].red, m_particleList[i].green, m_particleList[i].blue, 1.0f);
+	//	index++;
 
-		// Top left.
-		m_vertices[index].position = XMFLOAT3(m_particleList[i].positionX - m_particleSize, m_particleList[i].positionY + m_particleSize, m_particleList[i].positionZ);
-		m_vertices[index].color = XMFLOAT4(m_particleList[i].red, m_particleList[i].green, m_particleList[i].blue, 1.0f);
-		index++;
+	//	// Top left.
+	//	m_vertices[index].position = XMFLOAT3(m_particleList[i].positionX - m_particleSize, m_particleList[i].positionY + m_particleSize, m_particleList[i].positionZ);
+	//	m_vertices[index].color = XMFLOAT4(m_particleList[i].red, m_particleList[i].green, m_particleList[i].blue, 1.0f);
+	//	index++;
 
-		// Top right.
-		m_vertices[index].position = XMFLOAT3(m_particleList[i].positionX + m_particleSize, m_particleList[i].positionY + m_particleSize, m_particleList[i].positionZ);
-		m_vertices[index].color = XMFLOAT4(m_particleList[i].red, m_particleList[i].green, m_particleList[i].blue, 1.0f);
-		index++;
-	}
+	//	// Top right.
+	//	m_vertices[index].position = XMFLOAT3(m_particleList[i].positionX + m_particleSize, m_particleList[i].positionY + m_particleSize, m_particleList[i].positionZ);
+	//	m_vertices[index].color = XMFLOAT4(m_particleList[i].red, m_particleList[i].green, m_particleList[i].blue, 1.0f);
+	//	index++;
+	//}
 
 	hr = deviceContext->Map(m_vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
 	if (FAILED(hr))
@@ -384,9 +384,9 @@ bool ParticleSystem::UpdateBuffers(ID3D11DeviceContext* deviceContext)
 		return false;
 	}
 
-	vtxPtr = (VertexType*)mappedResource.pData;
+	//vtxPtr = (VertexType*)mappedResource.pData;
 
-	memcpy(vtxPtr,(void*)m_vertices,(sizeof(VertexType) * m_vertexCount));
+	//memcpy(vtxPtr,(void*)m_vertices,(sizeof(VertexType) * m_vertexCount));
 
 	deviceContext->Unmap(m_vertexBuffer, 0);
 
@@ -398,7 +398,7 @@ void ParticleSystem::RenderBuffers(ID3D11DeviceContext* deviceContext)
 	unsigned int stride;
 	unsigned int offset;
 
-	stride = sizeof(VertexType);
+	//stride = sizeof(VertexType);
 	offset = 0;
 
 	deviceContext->IASetVertexBuffers(0, 1, &m_vertexBuffer, &stride, &offset);

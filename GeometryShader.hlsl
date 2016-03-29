@@ -31,7 +31,7 @@ void main(
 	GSOutput output = (GSOutput)0;
 
 	float4 temp = 0.0f;
-
+	
 
 	float3 faceEdgeA = input[1].pos - input[0].pos;
 	float3 faceEdgeB = input[2].pos - input[0].pos;
