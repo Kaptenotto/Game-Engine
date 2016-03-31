@@ -89,50 +89,24 @@ ID3D11Buffer* gConstantBuffer = nullptr;
 ID3D11Buffer* gConstantLightBuffer = nullptr;
 
 ID3D11Texture2D* gBackBuffer = nullptr;
-ID3D11Texture2D* gBackBufferDefTexture = nullptr;
-ID3D11Texture2D* gBackBufferDefShadow = nullptr;
-ID3D11Texture2D* gBackBufferDefNormal = nullptr;
-
 ID3D11RenderTargetView* gBackBufferRTV = nullptr;
-ID3D11RenderTargetView* gBackBufferDefTextureRTV = nullptr;
-ID3D11RenderTargetView* gBackBufferDefShadowRTV = nullptr;
-ID3D11RenderTargetView* gBackBufferDefNormalRTV = nullptr;
+
+ID3D11RenderTargetView* TextureDefRTV = nullptr;
+ID3D11RenderTargetView* ShadowDefRTV = nullptr;
+ID3D11RenderTargetView* NormalDefRTV = nullptr;
+ID3D11Texture2D* TextureDef = nullptr;
+ID3D11Texture2D* ShadowDef = nullptr;
+ID3D11Texture2D* NormalDef = nullptr;
+
+ID3D11ShaderResourceView* TextureDefResource = nullptr;
+ID3D11ShaderResourceView* ShadowDefResource = nullptr;
+ID3D11ShaderResourceView* NormalDefResource = nullptr;
 
 
 ID3D11DepthStencilView* gDepthStencilView = nullptr;
 
 ID3D11DepthStencilView* gShadowDepthStencilView = nullptr;
 ID3D11ShaderResourceView* ShadowDepthResource = nullptr;
-
-//IWICImagingFactory* imgFac;
-
-
-//static IWICImagingFactory * _GetWIC()
-//{
-//	static IWICImagingFactory* s_Factory = nullptr;
-//
-//	if (s_Factory)
-//		return s_Factory;
-//
-//	HRESULT hr = CoCreateInstance(
-//		CLSID_WICImagingFactory1,
-//		nullptr,
-//		CLSCTX_INPROC_SERVER,
-//		__uuidof(IWICImagingFactory),
-//		(LPVOID*)&s_Factory
-//		);
-//
-//	if (FAILED(hr))
-//	{
-//		s_Factory = nullptr;
-//		return nullptr;
-//	}
-//
-//	return s_Factory;
-//}
-
-//CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, __uuidof(IWICImagingFactory), (void**)&imgFac);
-
 
 // INITIALIZE OBJ-IMPORTER ******************************************
 Importer obj;
@@ -533,6 +507,91 @@ void createDepthStencil()
 	hr = gDevice->CreateDepthStencilView(gDepthStencil, &descDSV, &gDepthStencilView);
 }
 
+void createDefResources()
+{
+	//TEXTURE
+	TextureDef = NULL;
+	D3D11_TEXTURE2D_DESC TextureDefDesc;
+	gBackBuffer->GetDesc(&TextureDefDesc);
+
+	D3D11_TEXTURE2D_DESC DescTextureDef;
+	DescTextureDef.Width = TextureDefDesc.Width;
+	DescTextureDef.Height = TextureDefDesc.Height;
+	DescTextureDef.MipLevels = TextureDefDesc.MipLevels;
+	DescTextureDef.ArraySize = TextureDefDesc.ArraySize;
+	DescTextureDef.Format = TextureDefDesc.Format;
+	DescTextureDef.SampleDesc.Count = TextureDefDesc.SampleDesc.Count;
+	DescTextureDef.SampleDesc.Quality = TextureDefDesc.SampleDesc.Quality;
+	DescTextureDef.Usage = D3D11_USAGE_DEFAULT;
+	DescTextureDef.BindFlags = D3D11_BIND_RENDER_TARGET;
+	DescTextureDef.CPUAccessFlags = 0;
+	DescTextureDef.MiscFlags = 0;
+	HRESULT hr = gDevice->CreateTexture2D(&DescTextureDef, NULL, &TextureDef);
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC TextureResDesc;
+	TextureResDesc.Format = TextureDefDesc.Format;
+	TextureResDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	TextureResDesc.Texture2D.MostDetailedMip = 0;
+	TextureResDesc.Texture2D.MipLevels = 1;
+
+	hr = gDevice->CreateShaderResourceView(TextureDef, &TextureResDesc, &TextureDefResource);
+
+	//SHADOW
+	ShadowDef = NULL;
+	D3D11_TEXTURE2D_DESC ShadowDefDesc;
+	gBackBuffer->GetDesc(&ShadowDefDesc);
+
+	D3D11_TEXTURE2D_DESC DescShadowDef;
+	DescShadowDef.Width = ShadowDefDesc.Width;
+	DescShadowDef.Height = ShadowDefDesc.Height;
+	DescShadowDef.MipLevels = ShadowDefDesc.MipLevels;
+	DescShadowDef.ArraySize = ShadowDefDesc.ArraySize;
+	DescShadowDef.Format = ShadowDefDesc.Format;
+	DescShadowDef.SampleDesc.Count = ShadowDefDesc.SampleDesc.Count;
+	DescShadowDef.SampleDesc.Quality = ShadowDefDesc.SampleDesc.Quality;
+	DescShadowDef.Usage = D3D11_USAGE_DEFAULT;
+	DescShadowDef.BindFlags = D3D11_BIND_RENDER_TARGET;
+	DescShadowDef.CPUAccessFlags = 0;
+	DescShadowDef.MiscFlags = 0;
+	hr = gDevice->CreateTexture2D(&DescShadowDef, NULL, &ShadowDef);
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC ShadowResDesc;
+	ShadowResDesc.Format = ShadowDefDesc.Format;
+	ShadowResDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	ShadowResDesc.Texture2D.MostDetailedMip = 0;
+	ShadowResDesc.Texture2D.MipLevels = 1;
+
+	hr = gDevice->CreateShaderResourceView(ShadowDef, &ShadowResDesc, &ShadowDefResource);
+
+	//NORMAL
+	NormalDef = NULL;
+	D3D11_TEXTURE2D_DESC NormalDefDesc;
+	gBackBuffer->GetDesc(&NormalDefDesc);
+
+	D3D11_TEXTURE2D_DESC DescNormalDef;
+	DescNormalDef.Width = NormalDefDesc.Width;
+	DescNormalDef.Height = NormalDefDesc.Height;
+	DescNormalDef.MipLevels = NormalDefDesc.MipLevels;
+	DescNormalDef.ArraySize = NormalDefDesc.ArraySize;
+	DescNormalDef.Format = NormalDefDesc.Format;
+	DescNormalDef.SampleDesc.Count = NormalDefDesc.SampleDesc.Count;
+	DescNormalDef.SampleDesc.Quality = NormalDefDesc.SampleDesc.Quality;
+	DescNormalDef.Usage = D3D11_USAGE_DEFAULT;
+	DescNormalDef.BindFlags = D3D11_BIND_RENDER_TARGET;
+	DescNormalDef.CPUAccessFlags = 0;
+	DescNormalDef.MiscFlags = 0;
+	
+	hr = gDevice->CreateTexture2D(&DescNormalDef, NULL, &NormalDef);
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC NormalResDesc;
+	NormalResDesc.Format = NormalDefDesc.Format;
+	NormalResDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	NormalResDesc.Texture2D.MostDetailedMip = 0;
+	NormalResDesc.Texture2D.MipLevels = 1;
+
+	hr = gDevice->CreateShaderResourceView(NormalDef, &NormalResDesc, &NormalDefResource);
+}
+
 void ConstantBuffer()
 {
 	float fovangleY = XM_PI * 0.45;
@@ -843,7 +902,6 @@ void RenderShadow()
 	gDeviceContext->Draw(vertexCount, 0);
 
 	SetViewport();
-	gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
 }
 
 void RenderFinalPass()
@@ -871,35 +929,26 @@ void RenderFinalPass()
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	gDeviceContext->IASetInputLayout(gVertexLayout);
 
-	gDeviceContext->PSSetShaderResources(1, 1, &ShadowDepthResource);
+	gDeviceContext->PSSetShaderResources(0, 1, &TextureDefResource);
+	gDeviceContext->PSSetShaderResources(1, 1, &ShadowDefResource);
+	gDeviceContext->PSSetShaderResources(2, 1, &NormalDefResource);
 	gDeviceContext->PSSetSamplers(0, 1, &texSamplerState);
 
-
+	gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
 	/************************************************************
 	 ****************************DRAW****************************
 	 ************************************************************/
 	
 	for (int i = 0; i < (obj.drawOffset.size() - 1); i++)
 	{
-		if (i < textureResources.size())
-		{
-			gDeviceContext->PSSetShaderResources(0, 1, &textureResources[i]);
-			
-		}
-
-		if (i < normalResources.size())
-		{
-			gDeviceContext->PSSetShaderResources(2, 1, &normalResources[i]);
-		}
-		gDeviceContext->Draw((obj.drawOffset[(i + 1)] - obj.drawOffset[i]), obj.drawOffset[i]);
-		
+		gDeviceContext->Draw((obj.drawOffset[(i + 1)] - obj.drawOffset[i]), obj.drawOffset[i]);	
 	}
 }
 void RenderDefTexture()
 {
 
 	float clearColor[] = { 0, 0, 0, 1 };
-	gDeviceContext->ClearRenderTargetView(gBackBufferDefTextureRTV, clearColor);
+	gDeviceContext->ClearRenderTargetView(TextureDefRTV, clearColor);
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 
@@ -922,6 +971,7 @@ void RenderDefTexture()
 
 	gDeviceContext->PSSetSamplers(0, 1, &texSamplerState);
 
+	gDeviceContext->OMSetRenderTargets(1, &TextureDefRTV, gDepthStencilView);
 
 	/************************************************************
 	****************************DRAW****************************
@@ -937,12 +987,13 @@ void RenderDefTexture()
 		gDeviceContext->Draw((obj.drawOffset[(i + 1)] - obj.drawOffset[i]), obj.drawOffset[i]);
 
 	}
+
 }
 void RenderDefShadow()
 {
 
 	float clearColor[] = { 0, 0, 0, 1 };
-	gDeviceContext->ClearRenderTargetView(gBackBufferDefShadowRTV, clearColor);
+	gDeviceContext->ClearRenderTargetView(ShadowDefRTV, clearColor);
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 
@@ -966,7 +1017,7 @@ void RenderDefShadow()
 	gDeviceContext->PSSetShaderResources(1, 1, &ShadowDepthResource);
 	gDeviceContext->PSSetSamplers(0, 1, &texSamplerState);
 
-
+	gDeviceContext->OMSetRenderTargets(1, &ShadowDefRTV, gDepthStencilView);
 	/************************************************************
 	****************************DRAW****************************
 	************************************************************/
@@ -980,7 +1031,7 @@ void RenderDefNormal()
 {
 
 	float clearColor[] = { 0, 0, 0, 1 };
-	gDeviceContext->ClearRenderTargetView(gBackBufferDefNormalRTV, clearColor);
+	gDeviceContext->ClearRenderTargetView(NormalDefRTV, clearColor);
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 
@@ -1003,7 +1054,7 @@ void RenderDefNormal()
 
 	gDeviceContext->PSSetSamplers(0, 1, &texSamplerState);
 
-
+	gDeviceContext->OMSetRenderTargets(1, &NormalDefRTV, gDepthStencilView);
 	/************************************************************
 	****************************DRAW****************************
 	************************************************************/
@@ -1012,7 +1063,7 @@ void RenderDefNormal()
 	{
 		if (i < normalResources.size())
 		{
-			gDeviceContext->PSSetShaderResources(2, 1, &normalResources[i]);
+			gDeviceContext->PSSetShaderResources(0, 1, &normalResources[i]);
 		}
 		gDeviceContext->Draw((obj.drawOffset[(i + 1)] - obj.drawOffset[i]), obj.drawOffset[i]);
 
@@ -1122,9 +1173,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		gDeviceContext->Release();
 		gSwapChain->Release();
 		gBackBufferRTV->Release();
-		gBackBufferDefTextureRTV->Release();
-		gBackBufferDefShadowRTV->Release();
-		gBackBufferDefNormalRTV->Release();
+		TextureDefRTV->Release();
+		ShadowDefRTV->Release();
+		NormalDefRTV->Release();
 		DestroyWindow(wndHandle);
 
 		DIKeyboard->Unacquire();
@@ -1216,9 +1267,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 
 													// Fill the swap chain description struct
 
-	SCD.BufferCount = 4;								// One back buffer
+	SCD.BufferCount = 1;								// One back buffer
 	SCD.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // Use 32 bit color
-	SCD.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;  // How swap chain is to be used
+	SCD.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHADER_INPUT;  // How swap chain is to be used
 	SCD.OutputWindow = windowHandle;						// The window to be used
 	SCD.SampleDesc.Count = 4;							// How many multisamples
 	SCD.Windowed = false;
@@ -1230,6 +1281,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 		NULL,
 		D3D_DRIVER_TYPE_HARDWARE,
 		NULL,
+		//D3D11_CREATE_DEVICE_DEBUG,
 		NULL,
 		NULL,
 		NULL,
@@ -1244,19 +1296,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 	{
 		//Get the adress of the backbuffer
 		gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&gBackBuffer);
-		gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&gBackBufferDefTexture);
-		gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&gBackBufferDefShadow);
-		gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&gBackBufferDefNormal);
+		//gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&gBackBufferDefTexture);
+		//gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&gBackBufferDefShadow);
+		//gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&gBackBufferDefNormal);
 
 		createDepthStencil();
 
 		createLightDepthStencil();
 
+		createDefResources();
+
 		//use the back buffer adress to create the render target
 		gDevice->CreateRenderTargetView(gBackBuffer, NULL, &gBackBufferRTV);
-		gDevice->CreateRenderTargetView(gBackBufferDefTexture, NULL, &gBackBufferDefTextureRTV);
-		gDevice->CreateRenderTargetView(gBackBufferDefShadow, NULL, &gBackBufferDefShadowRTV);
-		gDevice->CreateRenderTargetView(gBackBufferDefNormal, NULL, &gBackBufferDefNormalRTV);
+		gDevice->CreateRenderTargetView(TextureDef, NULL, &TextureDefRTV);
+		gDevice->CreateRenderTargetView(ShadowDef, NULL, &ShadowDefRTV);
+		gDevice->CreateRenderTargetView(NormalDef, NULL, &NormalDefRTV);
 		gBackBuffer->Release();
 
 		//Set the render target as the back buffer

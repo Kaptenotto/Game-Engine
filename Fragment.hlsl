@@ -1,6 +1,6 @@
-Texture2D txDiffuse : register (t0);
-Texture2D depthMapTexture : register(t1);
-Texture2D shaderTexture : register(t2);
+Texture2D TextureRes : register (t0);
+Texture2D ShadowRes : register (t1);
+Texture2D NormalRes : register (t2);
 SamplerState SampleTypeClamp : register(s0);
 
 cbuffer MatrixBuffer : register (b0)
@@ -34,7 +34,7 @@ float4 PS_main(VS_OUT input) : SV_Target
 	float4 color;
 	float4 textureColor;
 	color = float4(1,1,1,1);
-	textureColor = txDiffuse.Sample(SampleTypeClamp, input.uvs);
+	textureColor = TextureRes.Sample(SampleTypeClamp, input.uvs);
 
 	return textureColor;
 };

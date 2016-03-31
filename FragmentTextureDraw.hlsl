@@ -1,6 +1,4 @@
 Texture2D txDiffuse : register (t0);
-Texture2D depthMapTexture : register(t1);
-Texture2D shaderTexture : register(t2);
 SamplerState SampleTypeClamp : register(s0);
 
 cbuffer MatrixBuffer : register (b0)
