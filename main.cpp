@@ -442,126 +442,75 @@ void createTextures()
 
 void initParticle()
 {
-	vertexList.push_back(VertexType{ 1.0f, 1.0f, 1.0f, 0.2f, 0.2f, 1.0f, 0.0f, 0.0f });
+	//vertexList.push_back(VertexType{ 1.0f, 1.0f, 1.0f, 0.2f, 0.2f, 1.0f, 0.0f, 0.0f });
 	
 	D3D11_BUFFER_DESC bufferdesc;
 	std::memset(&bufferdesc, 0, sizeof(bufferdesc));
 	bufferdesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	bufferdesc.Usage = D3D11_USAGE_IMMUTABLE;
-	bufferdesc.ByteWidth = sizeof(VertexType) * 2000;
+	bufferdesc.Usage = D3D11_USAGE_DYNAMIC;
+	bufferdesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	bufferdesc.ByteWidth = sizeof(VertexType) * maxParticles;
 	bufferdesc.MiscFlags = 0;
 	bufferdesc.StructureByteStride = 0;
 
 	D3D11_SUBRESOURCE_DATA data;
-	data.pSysMem = &vertexList[0];
+	data.pSysMem = vertexList.data(); 
 	HRESULT hr = gDevice->CreateBuffer(&bufferdesc, &data, &gVertexBufferParticle);
 
 }
 
-void EmitParticles(float frameTime)
+void EmitParticles()
 {
-	bool emitParticle, found;
 	float positionX, positionY, positionZ, velocity, red, green, blue;
-	int index, i, j;
-
-	accumulatedTime += frameTime;
-
-	emitParticle = false;
-
-	if (accumulatedTime > (1000.0f / particlesPerSecond))
+	//int index, i, j;
+	int i = 0;
+	while (i < maxParticles)
 	{
-		accumulatedTime = 0.0f;
-		emitParticle = true;
-	}
-
-	if ((emitParticle == true) && (currentParticleCount < (maxParticles - 1)))
-	{
-		currentParticleCount++;
-
 		//generate randomized particle properties.
 		positionX = (((float)rand() - (float)rand()) / RAND_MAX) * particleDeviationX;
 		positionY = (((float)rand() - (float)rand()) / RAND_MAX) * particleDeviationY;
 		positionZ = (((float)rand() - (float)rand()) / RAND_MAX) * particleDeviationZ;
 
-		velocity = particleVelocity + (((float)rand() - (float)rand()) / RAND_MAX) * particleVelocityVariation;
+		//velocity = particleVelocity + (((float)rand() - (float)rand()) / RAND_MAX) * particleVelocityVariation;
 
 		red = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
 		green = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
 		blue = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
 
-
-		index = 0;
-		found = false;
-		while (!found)
-		{
-			if (particleList[index].active == false || (particleList[index].positionZ < positionZ))
-			{
-				found = true;
-			}
-			else
-			{
-				index++;
-			}
-		}
-
-
-		// Now that we know the location to insert into we need to copy the array over by one position from the index to make room for the new particle.
-		i = currentParticleCount;
-		j = i - 1;
-
-		while (i != index)
-		{
-			particleList.at(i).positionX = particleList.at(j).positionX;
-			particleList.at(i).positionY= particleList.at(j).positionY;
-			particleList.at(i).positionZ = particleList.at(j).positionZ;
-			particleList.at(i).red = particleList.at(j).red;
-			particleList.at(i).green = particleList.at(j).green;
-			particleList.at(i).blue = particleList.at(j).blue;
-			particleList.at(i).velocity = particleList.at(j).velocity;
-			particleList.at(i).active = particleList.at(j).active;
-			i--;
-			j--;
-		}
-
-		particleList.at(index).positionX = positionX;
-		particleList.at(index).positionY = positionY;
-		particleList.at(index).positionZ = positionZ;
-		particleList.at(index).red = red;
-		particleList.at(index).green = green;
-		particleList.at(index).blue = blue;
-		particleList.at(index).velocity = velocity;
-		particleList.at(index).active = true;
+		vertexList.push_back(VertexType{ positionX, positionY, positionZ, 0.2f, 0.2f,red, green, blue });
+		i++;
 	}
+		
 
 	return;
 }
 
-void KillParticles()
-{
-	int i, j;
-
-	for (i = 0; i < maxParticles; i++)
-	{
-		if ((particleList[i].active == true) && (particleList[i].positionY < -3.0));
-		{
-			particleList[i].active = false;
-			currentParticleCount--;
-			for (j = i; j<maxParticles - 1; j++)
-			{
-				particleList[j].positionX = particleList[j + 1].positionX;
-				particleList[j].positionY = particleList[j + 1].positionY;
-				particleList[j].positionZ = particleList[j + 1].positionZ;
-				particleList[j].red = particleList[j + 1].red;
-				particleList[j].green = particleList[j + 1].green;
-				particleList[j].blue = particleList[j + 1].blue;
-				particleList[j].velocity = particleList[j + 1].velocity;
-				particleList[j].active = particleList[j + 1].active;
-			}
-
-		}
-	}
-	return;
-}
+//void KillParticles()
+//{
+//	int i, j;
+//
+//	for (i = 0; i < maxParticles; i++)
+//	{
+//		if ((particleList[i].active == true) && (particleList[i].positionY < -3.0));
+//		{
+//			particleList[i].active = false;
+//			currentParticleCount--;
+//			for (j = i; j<maxParticles - 1; j++)
+//			{
+//				particleList[j].positionX = particleList[j + 1].positionX;
+//				particleList[j].positionY = particleList[j + 1].positionY;
+//				particleList[j].positionZ = particleList[j + 1].positionZ;
+//				particleList[j].red = particleList[j + 1].red;
+//				particleList[j].green = particleList[j + 1].green;
+//				particleList[j].blue = particleList[j + 1].blue;
+//				particleList[j].velocity = particleList[j + 1].velocity;
+//				particleList[j].active = particleList[j + 1].active;
+//			}
+//
+//		}
+//	}
+//	return;
+//}
 
 void createTriangle()
 {
@@ -958,13 +907,7 @@ void InitializeParticleSystem()
 
 	particlesPerSecond = 250.0f;
 
-	maxParticles = 2000;
-
-	for (i = 0; i < maxParticles; i++)
-	{
-		particleList.push_back(ParticleType{0,0,0,0,0,0,particleVelocity,false});
-		particleList[i].active = false;
-	}
+	maxParticles = 20;
 
 	currentParticleCount = 0;
 
@@ -972,24 +915,34 @@ void InitializeParticleSystem()
 
 }
 
-void UpdateBuffers()
+void UpdateBuffers(float frameTime)
 {
-	int index, i;
 
-	index = 0;
+	for (int i = 0; i < vertexList.size() -1; i++)
+	{																				//these are comments
+																					//these are comments
+		vertexList[i].x = (vertexList[i].x + 0.001);									//these are comments
+		vertexList[i].y = (vertexList[i].y + 0.001);						//these are comments
+																					//these are comments
+	}																				//these are comments
 
-	for (i = 0; i < currentParticleCount; i++)
-	{
-		// Bottom left.
-		vertexList[i].x = particleList[i].positionX;
-		vertexList[i].y = particleList[i].positionY;
-		vertexList[i].z = particleList[i].positionZ;
-		vertexList[i].r = particleList[i].red;
-		vertexList[i].g = particleList[i].green;
-		vertexList[i].b = particleList[i].blue;
-				
-	}
-	gDeviceContext->UpdateSubresource(gVertexBufferParticle, 0, 0, &vertexList, 0, 0);
+	D3D11_MAPPED_SUBRESOURCE gMappedResource;
+	VertexType* vtxPtr;
+	HRESULT hr = gDeviceContext->Map(gVertexBufferParticle, 0, D3D11_MAP_WRITE_DISCARD, 0, &gMappedResource);
+
+	vtxPtr = (VertexType*)gMappedResource.pData;
+	memcpy(vtxPtr, vertexList.data(), sizeof(VertexType) * maxParticles);
+
+	gDeviceContext->Unmap(gVertexBufferParticle, 0);
+
+
+	
+
+	//matrices.World = XMMatrixTranslation(1.0f, 2.0f, 0.0f);
+	//gDeviceContext->UpdateSubresource(gVertexBufferParticle, 0, 0, vertexList.data(), 0, 0);
+
+	//gDeviceContext->GSSetConstantBuffers(0, 1, &gConstantBuffer);
+
 }
 
 void Update()
@@ -1053,7 +1006,7 @@ void RenderParticles()
 	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBufferParticle, &vertexSize, &offset);
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 
-	gDeviceContext->Draw((currentParticleCount - 1), 0);
+	gDeviceContext->Draw((vertexList.size() - 1), 0);
 
 	
 }
@@ -1162,6 +1115,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 		InitializeParticleSystem();
 
+		EmitParticles();
+
 		initParticle();
 
 		createTextures();
@@ -1189,10 +1144,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 				}
 				Update();
 				
-				EmitParticles(getFrameTime());
 				
-				UpdateParticles(getFrameTime());
-				UpdateBuffers();
+				
+				//UpdateParticles(getFrameTime());
+				UpdateBuffers(getFrameTime());
 				RenderShadow(); // Rendera
 				Render(); // Rendera
 				RenderParticles(); // Rendera
