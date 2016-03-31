@@ -523,7 +523,7 @@ void createDefResources()
 	DescTextureDef.SampleDesc.Count = TextureDefDesc.SampleDesc.Count;
 	DescTextureDef.SampleDesc.Quality = TextureDefDesc.SampleDesc.Quality;
 	DescTextureDef.Usage = D3D11_USAGE_DEFAULT;
-	DescTextureDef.BindFlags = D3D11_BIND_RENDER_TARGET;
+	DescTextureDef.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 	DescTextureDef.CPUAccessFlags = 0;
 	DescTextureDef.MiscFlags = 0;
 	HRESULT hr = gDevice->CreateTexture2D(&DescTextureDef, NULL, &TextureDef);
@@ -535,6 +535,10 @@ void createDefResources()
 	TextureResDesc.Texture2D.MipLevels = 1;
 
 	hr = gDevice->CreateShaderResourceView(TextureDef, &TextureResDesc, &TextureDefResource);
+
+	gDevice->CreateRenderTargetView(TextureDef, NULL, &TextureDefRTV);
+
+	TextureDef->Release();
 
 	//SHADOW
 	ShadowDef = NULL;
@@ -550,7 +554,7 @@ void createDefResources()
 	DescShadowDef.SampleDesc.Count = ShadowDefDesc.SampleDesc.Count;
 	DescShadowDef.SampleDesc.Quality = ShadowDefDesc.SampleDesc.Quality;
 	DescShadowDef.Usage = D3D11_USAGE_DEFAULT;
-	DescShadowDef.BindFlags = D3D11_BIND_RENDER_TARGET;
+	DescShadowDef.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 	DescShadowDef.CPUAccessFlags = 0;
 	DescShadowDef.MiscFlags = 0;
 	hr = gDevice->CreateTexture2D(&DescShadowDef, NULL, &ShadowDef);
@@ -562,6 +566,10 @@ void createDefResources()
 	ShadowResDesc.Texture2D.MipLevels = 1;
 
 	hr = gDevice->CreateShaderResourceView(ShadowDef, &ShadowResDesc, &ShadowDefResource);
+	
+	gDevice->CreateRenderTargetView(ShadowDef, NULL, &ShadowDefRTV);
+
+	ShadowDef->Release();
 
 	//NORMAL
 	NormalDef = NULL;
@@ -577,7 +585,7 @@ void createDefResources()
 	DescNormalDef.SampleDesc.Count = NormalDefDesc.SampleDesc.Count;
 	DescNormalDef.SampleDesc.Quality = NormalDefDesc.SampleDesc.Quality;
 	DescNormalDef.Usage = D3D11_USAGE_DEFAULT;
-	DescNormalDef.BindFlags = D3D11_BIND_RENDER_TARGET;
+	DescNormalDef.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 	DescNormalDef.CPUAccessFlags = 0;
 	DescNormalDef.MiscFlags = 0;
 	
@@ -590,6 +598,11 @@ void createDefResources()
 	NormalResDesc.Texture2D.MipLevels = 1;
 
 	hr = gDevice->CreateShaderResourceView(NormalDef, &NormalResDesc, &NormalDefResource);
+
+	gDevice->CreateRenderTargetView(NormalDef, NULL, &NormalDefRTV);
+
+	NormalDef->Release();
+
 }
 
 void ConstantBuffer()
@@ -1308,10 +1321,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 
 		//use the back buffer adress to create the render target
 		gDevice->CreateRenderTargetView(gBackBuffer, NULL, &gBackBufferRTV);
-		gDevice->CreateRenderTargetView(TextureDef, NULL, &TextureDefRTV);
-		gDevice->CreateRenderTargetView(ShadowDef, NULL, &ShadowDefRTV);
-		gDevice->CreateRenderTargetView(NormalDef, NULL, &NormalDefRTV);
+
 		gBackBuffer->Release();
+
 
 		//Set the render target as the back buffer
 		gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
