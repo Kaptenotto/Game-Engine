@@ -50,6 +50,11 @@ ID3D11VertexShader* gVertexShader = nullptr;
 
 ID3D11PixelShader* gPixelShader = nullptr;
 
+ID3D11PixelShader* gPixelShaderTest = nullptr;
+
+ID3D11PixelShader* gPixelShaderTest2 = nullptr;
+
+
 ID3D11GeometryShader* gGeometryShader = nullptr;
 
 ID3D11VertexShader* gVertexShaderShadow = nullptr;
@@ -176,11 +181,11 @@ struct ReflectionBuffer
 };
 ReflectionBuffer reflection;
 
-struct clipPlaneBuffer
+struct ClipPlaneBuffer
 {
 	XMVECTOR clipPlane;
 };
-clipPlaneBuffer clipPlaneB;
+ClipPlaneBuffer clipPlaneB;
 typedef struct DIMOUSESTATES
 {
 	LONG IX;
@@ -260,7 +265,7 @@ void CreateShaders()
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 3 , D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD1", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 5, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD2", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 8, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD2", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 9, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	
 
 
@@ -383,7 +388,7 @@ void CreateShaders()
 		&waterpPS,				//double pointer to ID3DBlob
 		nullptr				// point for error blob messages
 		);
-	 gDevice->CreatePixelShader(waterpPS->GetBufferPointer(), waterpPS->GetBufferSize(), nullptr, &gPixelShader);
+	 gDevice->CreatePixelShader(waterpPS->GetBufferPointer(), waterpPS->GetBufferSize(), nullptr, &gPixelShaderTest);
 
 	waterpPS->Release();
 
@@ -396,10 +401,10 @@ void CreateShaders()
 		"ps_4_0",			// Shader model target
 		0,					//shader compile options
 		0,					// Effect compile options
-		&waterpPS,				//double pointer to ID3DBlob
+		&RefractionpPS,				//double pointer to ID3DBlob
 		nullptr				// point for error blob messages
 		);
-	gDevice->CreatePixelShader(RefractionpPS->GetBufferPointer(), RefractionpPS->GetBufferSize(), nullptr, &gPixelShader);
+	HRESULT hr = gDevice->CreatePixelShader(RefractionpPS->GetBufferPointer(), RefractionpPS->GetBufferSize(), nullptr, &gPixelShaderTest2);
 
 	RefractionpPS->Release();
 
@@ -412,7 +417,7 @@ void CreateShaders()
 		"vs_4_0",
 		0,
 		0,
-		&waterpVS,
+		&RefractionpVS,
 		nullptr
 		);
 
@@ -692,19 +697,19 @@ void Waterstuff()
 	D3D11_BUFFER_DESC reflectionBufferDesc;
 	D3D11_BUFFER_DESC waterBufferDesc;
 
-	ZeroMemory(&reflectionBufferDesc, sizeof(reflectionBufferDesc));
+//	ZeroMemory(&reflectionBufferDesc, sizeof(reflectionBufferDesc));
 	reflectionBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	reflectionBufferDesc.ByteWidth = sizeof(reflectionBuffer);
+	reflectionBufferDesc.ByteWidth = sizeof(ReflectionBuffer);
 	reflectionBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	reflectionBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	reflectionBufferDesc.MiscFlags = 0;
 	reflectionBufferDesc.StructureByteStride = 0;
 
-	gDevice->CreateBuffer(&reflectionBufferDesc, NULL, &reflectionBuffer);
+	HRESULT hr = gDevice->CreateBuffer(&reflectionBufferDesc, NULL, &reflectionBuffer);
 
 	ZeroMemory(&waterBufferDesc, sizeof(waterBufferDesc));
 	waterBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	waterBufferDesc.ByteWidth = sizeof(waterBuffer);
+	waterBufferDesc.ByteWidth = sizeof(WaterBuffer);
 	waterBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	waterBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	waterBufferDesc.MiscFlags = 0;
@@ -715,10 +720,11 @@ void Waterstuff()
 
 
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	D3D11_MAPPED_SUBRESOURCE waterMappedResource;
 	unsigned int buffernr;
-	ReflectionBuffer * dataPtr;
-	WaterBuffer * dataPtr1;
-
+	ReflectionBuffer* dataPtr;
+	WaterBuffer* dataPtr1;
+	hr = gDeviceContext->Map(reflectionBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
 	matrices.Projection = XMMatrixTranspose(matrices.Projection);
 
 	reflection.reflection = XMMatrixTranspose(reflection.reflection);
@@ -737,7 +743,7 @@ void Waterstuff()
 	//gDeviceContext->PSGetShaderResources(1, 1, &textureResources);
 	
 	//gDeviceContext->PSSetShaderResources(2, 1, &normalTexture);
-
+	hr = gDeviceContext->Map(waterBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &waterMappedResource);
 
 	dataPtr1 = (WaterBuffer*)mappedResource.pData;
 
@@ -772,8 +778,9 @@ void Waterstuff()
 
 	D3D11_BUFFER_DESC clipPlaneBufferDesc;
 	clipPlaneBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	clipPlaneBufferDesc.ByteWidth = sizeof(clipPlaneBuffer);
+	clipPlaneBufferDesc.ByteWidth = sizeof(ClipPlaneBuffer);
 	clipPlaneBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	clipPlaneBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	clipPlaneBufferDesc.MiscFlags = 0;
 	clipPlaneBufferDesc.StructureByteStride = 0;
 
@@ -791,11 +798,15 @@ void Waterstuff()
 
 	//D3D11_MAPPED_SUBRESOURCE mappedResource;
 	unsigned int bufferNr;
-	clipPlaneBuffer*dataptr3;
+	ClipPlaneBuffer*dataptr3;
+
+	D3D11_MAPPED_SUBRESOURCE clipMappedResource;
+
+	hr = gDeviceContext->Map(clipPlaneBuffers, 0, D3D11_MAP_WRITE_DISCARD, 0, &clipMappedResource);
 
 	gDeviceContext->PSSetShaderResources(0, 1, &texture);
 
-	dataptr3 = (clipPlaneBuffer*)mappedResource.pData;
+	dataptr3 = (ClipPlaneBuffer*)mappedResource.pData;
 
 	dataptr3->clipPlane = clipPlaneB.clipPlane;
 
