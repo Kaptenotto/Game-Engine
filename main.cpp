@@ -74,6 +74,10 @@ vector<ID3D11ShaderResourceView*> textureResources;
 vector<ID3D11ShaderResourceView*> normalResources;
 
 ID3D11SamplerState* texSamplerState;
+ID3D11SamplerState* sampleState;
+ID3D11ShaderResourceView* reflectionTexture;
+ID3D11ShaderResourceView* refractionTexture;
+ID3D11ShaderResourceView* normalTexture;
 
 // INITIALIZE BUFFERS ***********************************************
 
@@ -83,6 +87,10 @@ ID3D11Buffer* gIndexBuffer = nullptr;
 ID3D11Buffer* gConstantBuffer = nullptr;
 ID3D11Buffer* gConstantLightBuffer = nullptr;
 
+ID3D11Buffer* clipPlaneBuffers = nullptr;
+ID3D11Buffer* reflectionBuffer = nullptr;
+ID3D11Buffer* matrixBuffer = nullptr;
+ID3D11Buffer* waterBuffer = nullptr;
 ID3D11Texture2D* gBackBuffer = nullptr;
 //ID3D11Texture2D* gShadowBackBuffer = nullptr;
 
@@ -94,6 +102,13 @@ ID3D11DepthStencilView* gDepthStencilView = nullptr;
 
 ID3D11DepthStencilView* gShadowDepthStencilView = nullptr;
 ID3D11ShaderResourceView* ShadowDepthResource = nullptr;
+
+ID3D11ShaderResourceView* texture = nullptr;
+
+
+
+//D3D11_BUFFER_DESC clipPlaneBufferDesc;
+
 
 //IWICImagingFactory* imgFac;
 
@@ -134,7 +149,6 @@ struct MatrixBuffer {
 	XMMATRIX World;
 	XMMATRIX camView;
 	XMMATRIX Projection;
-	
 };
 MatrixBuffer matrices;
 
@@ -149,7 +163,24 @@ struct LightBuffer
 };
 LightBuffer Lights;
 
+struct WaterBuffer
+{
+	float waterTranslation;
+	float reflectRefractScale;
+	XMFLOAT2 padding;
+};
+WaterBuffer water;
+struct ReflectionBuffer
+{
+	XMMATRIX reflection;
+};
+ReflectionBuffer reflection;
 
+struct clipPlaneBuffer
+{
+	XMVECTOR clipPlane;
+};
+clipPlaneBuffer clipPlaneB;
 typedef struct DIMOUSESTATES
 {
 	LONG IX;
@@ -217,10 +248,24 @@ void CreateShaders()
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 5, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 8, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 11, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		
+		
 		//{ "TEXCOORD1", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 13 , D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		//{ "TEXCOORD2", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 15 , D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 	//Create the vertex shader
+
+
+	D3D11_INPUT_ELEMENT_DESC descWater[] = {
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 3 , D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD1", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 5, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD2", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 8, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	
+
+
+		
+	};
 
 	ID3DBlob* pVS = nullptr;
 	D3DCompileFromFile(
@@ -235,7 +280,7 @@ void CreateShaders()
 		nullptr
 		);
 
-	HRESULT Hr = gDevice->CreateVertexShader(pVS->GetBufferPointer(), pVS->GetBufferSize(), nullptr, &gVertexShader);
+	gDevice->CreateVertexShader(pVS->GetBufferPointer(), pVS->GetBufferSize(), nullptr, &gVertexShader);
 
 	//Create an input-layout to describe the input buffer data for the input-assembler stage
 	gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), pVS->GetBufferPointer(), pVS->GetBufferSize(), &gVertexLayout);
@@ -257,7 +302,7 @@ void CreateShaders()
 		&pPS,				//double pointer to ID3DBlob
 		nullptr				// point for error blob messages
 		);
-	Hr = gDevice->CreatePixelShader(pPS->GetBufferPointer(), pPS->GetBufferSize(), nullptr, &gPixelShader);
+	gDevice->CreatePixelShader(pPS->GetBufferPointer(), pPS->GetBufferSize(), nullptr, &gPixelShader);
 
 	pPS->Release();
 
@@ -292,7 +337,7 @@ void CreateShaders()
 		&pVSShadow,
 		nullptr
 		);
-	Hr = gDevice->CreateVertexShader(pVSShadow->GetBufferPointer(), pVSShadow->GetBufferSize(), nullptr, &gVertexShaderShadow);
+	gDevice->CreateVertexShader(pVSShadow->GetBufferPointer(), pVSShadow->GetBufferSize(), nullptr, &gVertexShaderShadow);
 	gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), pVSShadow->GetBufferPointer(), pVSShadow->GetBufferSize(), &gVertexLayout);
 	pVSShadow->Release();
 
@@ -303,44 +348,81 @@ void CreateShaders()
 
 	////////WATER STUFF DOWN BELOW!!!!!
 
-	//ID3DBlob* waterpVS = nullptr;
-	//D3DCompileFromFile(
-	//	L"VertexShader.hlsl",	//Name of file
-	//	nullptr,
-	//	nullptr,
-	//	"VS_main",				// Name of main in file
-	//	"vs_4_0",
-	//	0,
-	//	0,
-	//	&waterpVS,
-	//	nullptr
-	//	);
+	ID3DBlob* waterpVS = nullptr;
+	D3DCompileFromFile(
+		L"VertexShader.hlsl",	//Name of file
+		nullptr,
+		nullptr,
+		"VS_main",				// Name of main in file
+		"vs_4_0",
+		0,
+		0,
+		&waterpVS,
+		nullptr
+		);
 
-	//HRESULT Hr = gDevice->CreateVertexShader(waterpVS->GetBufferPointer(), waterpVS->GetBufferSize(), nullptr, &gVertexShader);
+	 gDevice->CreateVertexShader(waterpVS->GetBufferPointer(), waterpVS->GetBufferSize(), nullptr, &gVertexShader);
 
-	////Create an input-layout to describe the input buffer data for the input-assembler stage
-	//gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), waterpVS->GetBufferPointer(), waterpVS->GetBufferSize(), &gVertexLayout);
+	//Create an input-layout to describe the input buffer data for the input-assembler stage
+	gDevice->CreateInputLayout(descWater, ARRAYSIZE(descWater), waterpVS->GetBufferPointer(), waterpVS->GetBufferSize(), &gVertexLayout);
 
-	////Do not need the com object anymore therefor releasing it
-	//waterpVS->Release();
+	//Do not need the com object anymore therefor releasing it
+	waterpVS->Release();
 
-	////Create pixel shader
+	//Create pixel shader
 
-	//ID3DBlob* waterpPS = nullptr;
-	//D3DCompileFromFile(
-	//	L"PixelShader.hlsl",	//name of file
-	//	nullptr,			//optional macros
-	//	nullptr,			// optional include files
-	//	"PS_main",			// Entry point
-	//	"ps_4_0",			// Shader model target
-	//	0,					//shader compile options
-	//	0,					// Effect compile options
-	//	&waterpPS,				//double pointer to ID3DBlob
-	//	nullptr				// point for error blob messages
-	//	);
-	//Hr = gDevice->CreatePixelShader(waterpPS->GetBufferPointer(), waterpPS->GetBufferSize(), nullptr, &gPixelShader);
+	ID3DBlob* waterpPS = nullptr;
+	D3DCompileFromFile(
+		L"PixelShader.hlsl",	//name of file
+		nullptr,			//optional macros
+		nullptr,			// optional include files
+		"PS_main",			// Entry point
+		"ps_4_0",			// Shader model target
+		0,					//shader compile options
+		0,					// Effect compile options
+		&waterpPS,				//double pointer to ID3DBlob
+		nullptr				// point for error blob messages
+		);
+	 gDevice->CreatePixelShader(waterpPS->GetBufferPointer(), waterpPS->GetBufferSize(), nullptr, &gPixelShader);
 
-	//waterpPS->Release();
+	waterpPS->Release();
+
+	ID3DBlob* RefractionpPS = nullptr;
+	D3DCompileFromFile(
+		L"RefractionPS.hlsl",	//name of file
+		nullptr,			//optional macros
+		nullptr,			// optional include files
+		"PS_main",			// Entry point
+		"ps_4_0",			// Shader model target
+		0,					//shader compile options
+		0,					// Effect compile options
+		&waterpPS,				//double pointer to ID3DBlob
+		nullptr				// point for error blob messages
+		);
+	gDevice->CreatePixelShader(RefractionpPS->GetBufferPointer(), RefractionpPS->GetBufferSize(), nullptr, &gPixelShader);
+
+	RefractionpPS->Release();
+
+	ID3DBlob* RefractionpVS = nullptr;
+	D3DCompileFromFile(
+		L"RefractionVS.hlsl",	//Name of file
+		nullptr,
+		nullptr,
+		"VS_main",				// Name of main in file
+		"vs_4_0",
+		0,
+		0,
+		&waterpVS,
+		nullptr
+		);
+
+	gDevice->CreateVertexShader(RefractionpVS->GetBufferPointer(), RefractionpVS->GetBufferSize(), nullptr, &gVertexShader);
+
+	//Create an input-layout to describe the input buffer data for the input-assembler stage
+	gDevice->CreateInputLayout(descWater, ARRAYSIZE(descWater), RefractionpVS->GetBufferPointer(), RefractionpVS->GetBufferSize(), &gVertexLayout);
+
+	//Do not need the com object anymore therefor releasing it
+	RefractionpVS->Release();
 }
 
 void createTextures()
@@ -601,6 +683,129 @@ void ConstantBuffer()
 
 	gDevice->CreateSamplerState(&sampDesc, &texSamplerState);
 
+	
+}
+
+void Waterstuff()
+{
+	
+	D3D11_BUFFER_DESC reflectionBufferDesc;
+	D3D11_BUFFER_DESC waterBufferDesc;
+
+	ZeroMemory(&reflectionBufferDesc, sizeof(reflectionBufferDesc));
+	reflectionBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	reflectionBufferDesc.ByteWidth = sizeof(reflectionBuffer);
+	reflectionBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	reflectionBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	reflectionBufferDesc.MiscFlags = 0;
+	reflectionBufferDesc.StructureByteStride = 0;
+
+	gDevice->CreateBuffer(&reflectionBufferDesc, NULL, &reflectionBuffer);
+
+	ZeroMemory(&waterBufferDesc, sizeof(waterBufferDesc));
+	waterBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	waterBufferDesc.ByteWidth = sizeof(waterBuffer);
+	waterBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	waterBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	waterBufferDesc.MiscFlags = 0;
+	waterBufferDesc.StructureByteStride = 0;
+
+	gDevice->CreateBuffer(&waterBufferDesc, NULL, &waterBuffer);
+
+
+
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	unsigned int buffernr;
+	ReflectionBuffer * dataPtr;
+	WaterBuffer * dataPtr1;
+
+	matrices.Projection = XMMatrixTranspose(matrices.Projection);
+
+	reflection.reflection = XMMatrixTranspose(reflection.reflection);
+
+	dataPtr = (ReflectionBuffer*)mappedResource.pData;
+
+	dataPtr->reflection = reflection.reflection;
+
+	gDeviceContext->Unmap(reflectionBuffer, 0);
+
+	buffernr = 1;
+
+	gDeviceContext->VSSetConstantBuffers(buffernr, 1, &reflectionBuffer);
+
+	//gDeviceContext->PSSetShaderResources(0, 1, &textureResources);
+	//gDeviceContext->PSGetShaderResources(1, 1, &textureResources);
+	
+	//gDeviceContext->PSSetShaderResources(2, 1, &normalTexture);
+
+
+	dataPtr1 = (WaterBuffer*)mappedResource.pData;
+
+	dataPtr1->waterTranslation = water.waterTranslation;
+
+	dataPtr1->reflectRefractScale = water.reflectRefractScale;
+
+	dataPtr1->padding = XMFLOAT2(0.0f, 0.0f);
+
+	gDeviceContext->Unmap(waterBuffer, 0);
+
+	buffernr = 0;
+
+	gDeviceContext->PSSetConstantBuffers(buffernr, 1, &waterBuffer);
+
+	D3D11_SAMPLER_DESC samplerDesc;
+	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.MipLODBias = 0.0f;
+	samplerDesc.MaxAnisotropy = 1;
+	samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+	samplerDesc.BorderColor[0] = 0;
+	samplerDesc.BorderColor[1] = 0;
+	samplerDesc.BorderColor[2] = 0;
+	samplerDesc.BorderColor[3] = 0;
+	samplerDesc.MinLOD = 0;
+	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+	gDevice->CreateSamplerState(&samplerDesc,&sampleState);
+
+	D3D11_BUFFER_DESC clipPlaneBufferDesc;
+	clipPlaneBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	clipPlaneBufferDesc.ByteWidth = sizeof(clipPlaneBuffer);
+	clipPlaneBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	clipPlaneBufferDesc.MiscFlags = 0;
+	clipPlaneBufferDesc.StructureByteStride = 0;
+
+	gDevice->CreateBuffer(&clipPlaneBufferDesc, NULL, &clipPlaneBuffers);
+
+	D3D11_BUFFER_DESC matrixBufferDesc;
+	matrixBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	matrixBufferDesc.ByteWidth = sizeof(MatrixBuffer);
+	matrixBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	matrixBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	matrixBufferDesc.MiscFlags = 0;
+	matrixBufferDesc.StructureByteStride = 0;
+
+	gDevice->CreateBuffer(&matrixBufferDesc, NULL, &matrixBuffer);
+
+	//D3D11_MAPPED_SUBRESOURCE mappedResource;
+	unsigned int bufferNr;
+	clipPlaneBuffer*dataptr3;
+
+	gDeviceContext->PSSetShaderResources(0, 1, &texture);
+
+	dataptr3 = (clipPlaneBuffer*)mappedResource.pData;
+
+	dataptr3->clipPlane = clipPlaneB.clipPlane;
+
+	gDeviceContext->Unmap(clipPlaneBuffers, 0); // check this mofo out..
+
+	bufferNr = 1;
+
+	gDeviceContext->VSSetConstantBuffers(bufferNr, 1, &clipPlaneBuffers);
+
+
 }
 
 void SetViewport()
@@ -857,6 +1062,7 @@ void Render()
 		if (i < textureResources.size())
 		{
 			gDeviceContext->PSSetShaderResources(0, 1, &textureResources[i]);
+			gDeviceContext->PSSetShaderResources(3, 1, &textureResources[i]);
 			
 		}
 
@@ -919,6 +1125,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 		createTextures();
 		
+		Waterstuff();
 		//Shows the window
 		ShowWindow(wndHandle, nCmdShow);
 
