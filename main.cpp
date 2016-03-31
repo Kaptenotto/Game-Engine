@@ -911,18 +911,18 @@ void InitializeParticleSystem()
 
 	currentParticleCount = 0;
 
-	accumulatedTime = 0.0f;
-
-}
-
-void UpdateBuffers(float frameTime)
-{
-
+	accumulatedTime = 0.0f;														
+																				
+}																				
+																				
+void UpdateBuffers(float frameTime)												
+																				
+{																				
 	for (int i = 0; i < vertexList.size() -1; i++)
 	{																				//these are comments
 																					//these are comments
-		vertexList[i].x = (vertexList[i].x + 0.001);									//these are comments
-		vertexList[i].y = (vertexList[i].y + 0.001);						//these are comments
+		vertexList[i].x = (vertexList[i].x + 0.001);								//these are comments
+		vertexList[i].y = (vertexList[i].y + 0.001);								//these are comments
 																					//these are comments
 	}																				//these are comments
 
