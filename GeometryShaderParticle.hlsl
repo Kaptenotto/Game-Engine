@@ -3,6 +3,7 @@ cbuffer MatrixBuffer : register (b0)
 	matrix worldMatrix;
 	matrix camView;
 	matrix projectionMatrix;
+	float4 camPos;
 }
 
 struct GSInput
@@ -17,6 +18,7 @@ struct GSOutput
 	float4 pos : SV_POSITION;
 	float2 size: SIZE;
 	float3 color : COLOR;
+	float4 norm : NORMAL;
 	uint primID : SV_PrimitiveID;
 };
 
@@ -28,7 +30,7 @@ void main(
 )
 {	
 	float3 up = float3(0.0f, 1.0f, 0.0f);
-	float3 look = float4(0, 1, -5, 0) - input[0].pos;
+	float3 look = camPos - input[0].pos;
 	look.y = 0.0f; // y-axis aligned, so project to xz-plane
 	look = normalize(look);
 	float3 right = cross(up, look);
@@ -49,7 +51,7 @@ void main(
 		float4 p = mul(v[i], worldMatrix);
 		p = mul(p, camView);
 		p = mul(p, projectionMatrix);
-		
+		element.norm = float4(look,0.1);
 		element.pos = p;
 		element.color = input[0].color;
 		element.primID = primID;

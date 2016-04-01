@@ -3,6 +3,8 @@ cbuffer MatrixBuffer : register (b0)
 	matrix worldMatrix;
 	matrix camView;
 	matrix projectionMatrix;
+	float4 camPos;
+
 }
 
 struct Input

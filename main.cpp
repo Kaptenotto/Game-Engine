@@ -8,6 +8,8 @@
 #include <string>
 #include <dinput.h>
 #include <vector>
+#include<cstdlib>
+#include<ctime>
 
 #include <stdio.h>
 #include <io.h>
@@ -43,6 +45,7 @@ IDXGISwapChain* gSwapChain = nullptr;
 
 ID3D11Device* gDevice = nullptr;
 ID3D11DeviceContext* gDeviceContext = nullptr;
+
 
 // INITIALIZE LAYOUTS **********************************************
 
@@ -118,6 +121,7 @@ struct MatrixBuffer {
 	XMMATRIX World;
 	XMMATRIX camView;
 	XMMATRIX Projection;
+	XMVECTOR camPos;
 	
 };
 MatrixBuffer matrices;
@@ -185,6 +189,8 @@ int maxParticles;
 vector<ParticleType> particleList;
 
 vector<VertexType> vertexList;
+
+vector<float> velocity;
 
 float particlesPerSecond;
 double accumulatedTime;
@@ -461,7 +467,7 @@ void initParticle()
 
 void EmitParticles()
 {
-	float positionX, positionY, positionZ, velocity, red, green, blue;
+	float positionX, positionY, positionZ, red, green, blue;
 	//int index, i, j;
 	int i = 0;
 	while (i < maxParticles)
@@ -477,7 +483,8 @@ void EmitParticles()
 		green = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
 		blue = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
 
-		vertexList.push_back(VertexType{ positionX, positionY, positionZ, 0.2f, 0.2f,red, green, blue });
+		vertexList.push_back(VertexType{ positionX, 10, positionZ, 0.002f, 0.5f,0.2f, 0.2f, 0.5f });
+		velocity.push_back(((float)rand() / (RAND_MAX + 1) + 1 + (rand() % 3)) / 5.0f);
 		i++;
 	}
 		
@@ -622,6 +629,8 @@ void ConstantBuffer()
 		(camPosition),
 		(camTarget),
 		(camUp));
+
+	matrices.camPos = camPosition;
 
 	matrices.Projection = XMMatrixPerspectiveFovLH(
 		(fovangleY),    //  The field of view in radians along the y-axis
@@ -782,7 +791,7 @@ void updateCamera()
 	moveupDown = 0.0f;
 
 	camTarget = camPosition + camTarget;
-
+	matrices.camPos = camPosition;
 	matrices.camView = XMMatrixLookAtLH(camPosition, camTarget, camUp);
 	matrices.camView = XMMatrixTranspose(matrices.camView);
 }
@@ -896,9 +905,9 @@ void UpdateParticles(float frameTime)
 void InitializeParticleSystem()
 {
 	int i;
-	particleDeviationX = 0.5f;
-	particleDeviationY = 0.1f;
-	particleDeviationZ = 2.0f;
+	particleDeviationX = 20.0f;
+	particleDeviationY = 2.0f;
+	particleDeviationZ = 20.0f;
 
 	particleVelocity = 1.0f;
 	particleVelocityVariation = 0.2f;
@@ -907,7 +916,7 @@ void InitializeParticleSystem()
 
 	particlesPerSecond = 250.0f;
 
-	maxParticles = 20;
+	maxParticles = 5000;
 
 	currentParticleCount = 0;
 
@@ -915,16 +924,24 @@ void InitializeParticleSystem()
 																				
 }																				
 																				
-void UpdateBuffers(float frameTime)												
-																				
-{																				
+void UpdateBuffers(float frameTime)
+{
+	srand(unsigned(time(NULL)));
+	double test = getTime();
+	
 	for (int i = 0; i < vertexList.size() -1; i++)
-	{																				//these are comments
-																					//these are comments
-		vertexList[i].x = (vertexList[i].x + 0.001);								//these are comments
-		vertexList[i].y = (vertexList[i].y + 0.001);								//these are comments
-																					//these are comments
-	}																				//these are comments
+	{
+		
+		if (vertexList[i].y >= 0)
+		{
+			vertexList[i].y = (vertexList[i].y - velocity[i]);
+			//vertexList[i].y = (vertexList[i].y + 0.001f);
+		}
+		else
+		{
+			vertexList[i].y = 10;
+		}
+	}
 
 	D3D11_MAPPED_SUBRESOURCE gMappedResource;
 	VertexType* vtxPtr;
@@ -1147,7 +1164,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 				
 				
 				//UpdateParticles(getFrameTime());
-				UpdateBuffers(getFrameTime());
+				UpdateBuffers(getTime());
 				RenderShadow(); // Rendera
 				Render(); // Rendera
 				RenderParticles(); // Rendera
@@ -1158,7 +1175,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 				detectInput(frameTime);
 
-				gSwapChain->Present(0, 0); // Växla front och back buffer
+				gSwapChain->Present(1, 0); // Växla front och back buffer
 			}
 		}
 
@@ -1269,6 +1286,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 													// Fill the swap chain description struct
 
 	SCD.BufferCount = 1;								// One back buffer
+	SCD.BufferDesc.RefreshRate.Numerator = 60;			// FPS-cap
 	SCD.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // Use 32 bit color
 	SCD.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;  // How swap chain is to be used
 	SCD.OutputWindow = windowHandle;						// The window to be used
