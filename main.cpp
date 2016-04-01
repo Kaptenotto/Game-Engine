@@ -916,7 +916,7 @@ void InitializeParticleSystem()
 
 	particlesPerSecond = 250.0f;
 
-	maxParticles = 5000;
+	maxParticles = 10000;
 
 	currentParticleCount = 0;
 
