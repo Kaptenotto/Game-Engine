@@ -53,6 +53,9 @@
     <FxCompile Include="GeometryFinalPass.hlsl">
       <Filter>Source Files</Filter>
     </FxCompile>
+    <FxCompile Include="VertexFinalPass.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="importer.h">

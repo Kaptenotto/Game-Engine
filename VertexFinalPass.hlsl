@@ -28,7 +28,6 @@ struct VS_OUT
 	float4 pos : SV_POSITION;
 	float2 uvs : TEXCOORD;
 	float4 norm : NORMAL;
-	float4 wPos : WPOS;
 };
 
 VS_OUT VS_main(VS_IN input)
@@ -36,11 +35,11 @@ VS_OUT VS_main(VS_IN input)
 	VS_OUT output = (VS_OUT)0;
 
 	output.uvs = input.uvs;
-	output.norm = float4(input.norm,1);
+	output.norm = float4(input.norm, 1);
+	output.norm = normalize(output.norm);
 	output.pos = float4(input.pos, 1);
 
 	output.pos = mul(output.pos, worldMatrix);
-	output.wPos = output.pos;
 	output.pos = mul(output.pos, camView);
 	output.pos = mul(output.pos, projectionMatrix);
 

@@ -83,6 +83,7 @@ ID3D11SamplerState* texSamplerState;
 // INITIALIZE BUFFERS ***********************************************
 
 ID3D11Buffer* gVertexBuffer = nullptr;
+ID3D11Buffer* gVertexBufferFinalPass = nullptr;
 ID3D11Buffer* gIndexBuffer = nullptr;
 
 ID3D11Buffer* gConstantBuffer = nullptr;
@@ -117,7 +118,7 @@ struct MatrixBuffer {
 	XMMATRIX World;
 	XMMATRIX camView;
 	XMMATRIX Projection;
-	
+	XMVECTOR camPos;
 };
 MatrixBuffer matrices;
 
@@ -140,7 +141,6 @@ typedef struct DIMOUSESTATES
 	LONG IZ;
 	BYTE rgbButtons[4];
 };
-
 
 // GLOBALS FOR FIRST PERSON CAMERA *********************************
 
@@ -344,6 +344,23 @@ void CreateShaders()
 		);
 	gDevice->CreateGeometryShader(pGSFinalPass->GetBufferPointer(), pGSFinalPass->GetBufferSize(), nullptr, &gGeometryFinalPass);
 	pGSFinalPass->Release();
+
+	ID3DBlob* pVSFinalPass = nullptr;
+	D3DCompileFromFile(
+		L"VertexFinalPass.hlsl",	//Name of file
+		nullptr,
+		nullptr,
+		"VS_main",				// Name of main in file
+		"vs_4_0",
+		0,
+		0,
+		&pVSFinalPass,
+		nullptr
+		);
+
+	Hr = gDevice->CreateVertexShader(pVSFinalPass->GetBufferPointer(), pVSFinalPass->GetBufferSize(), nullptr, &gVertexShader);
+	gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), pVSFinalPass->GetBufferPointer(), pVSFinalPass->GetBufferSize(), &gVertexLayout);
+	pVSFinalPass->Release();
 
 	
 }
@@ -633,7 +650,7 @@ void ConstantBuffer()
 	matrices.camView = XMMatrixTranspose(matrices.camView);
 	matrices.Projection = XMMatrixTranspose(matrices.Projection); // Transposing the projection and view matrices.
 	matrices.World = XMMatrixIdentity();              // Setting the world matrix as a identity matrix
-
+	matrices.camPos = camPosition;
 	// = matrices.World * matrices.camView * matrices.Projection;
 
 	D3D11_BUFFER_DESC desc;
@@ -834,6 +851,57 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 	return;
 }
 
+void finalPassQuadData()
+{
+	struct TriangleVertex
+	{
+		float x, y, z;
+		float u, v;
+	};
+
+	TriangleVertex triangleVertices[6] =
+	{
+		//T1
+
+		-0.5f, 0.5f, 0.0f,	//v0 pos
+							//1.0f, 0.0f, 0.0f,	//v0 color
+		0.0f, 0.0f,			//v0 UV
+
+		0.5f, -0.5f, 0.0f,	//v1
+							//0.0f, 1.0f, 0.0f,	//v1 color
+		1.0f, 1.0f,			//v1 UV
+
+		-0.5f, -0.5f, 0.0f, //v2
+							//0.0f, 0.0f, 0.0f,	//v2 color
+		0.0f, 1.0f,			//v2 UV
+
+							//T2
+
+		0.5f, -0.5f, 0.0f,	//v3 pos
+							//0.5f, 0.0f, 0.5f,	//v3 color
+		1.0f, 1.0f,			//v3 UV
+
+		-0.5f, 0.5f, 0.0f,	//v4
+							//1.0f, 0.0f, 0.0f,	//v4 color
+		0.0f, 0.0f,			//v4 UV
+
+		0.5f, 0.5f, 0.0f, //v5
+						  //0.0f, 0.0f, 0.0f	//v5 color
+		1.0f, 0.0f			//v5 UV
+
+	};
+
+	D3D11_BUFFER_DESC bufferDesc;
+	memset(&bufferDesc, 0, sizeof(bufferDesc));
+	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	bufferDesc.ByteWidth = sizeof(triangleVertices);
+
+	D3D11_SUBRESOURCE_DATA data;
+	data.pSysMem = triangleVertices;
+	gDevice->CreateBuffer(&bufferDesc, &data, &gVertexBufferFinalPass);
+}
+
 //TIME FUNCTIONS*********************************************************
 
 void startTimer()
@@ -931,12 +999,10 @@ void RenderFinalPass()
 	gDeviceContext->GSSetShader(gGeometryFinalPass, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShader, nullptr, 0);
 
-	UINT32 vertexSize = sizeof(obj.finalVector[0]);
-	UINT32 vertexCount = obj.finalVector.size();
-	UINT32 indexSize = obj.index_counter;
+	UINT32 vertexSize = sizeof(float) * 5;
 	UINT32 offset = 0;
 
-	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &vertexSize, &offset);
+	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBufferFinalPass, &vertexSize, &offset);
 	gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT , 0); // sets the index buffer
 
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -952,10 +1018,8 @@ void RenderFinalPass()
 	 ****************************DRAW****************************
 	 ************************************************************/
 	
-	for (int i = 0; i < (obj.drawOffset.size() - 1); i++)
-	{
-		gDeviceContext->Draw((obj.drawOffset[(i + 1)] - obj.drawOffset[i]), obj.drawOffset[i]);	
-	}
+	gDeviceContext->Draw(6, 0);	
+
 }
 void RenderDefTexture()
 {
@@ -1132,6 +1196,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		createTriangle();
 
 		createTextures();
+
+		finalPassQuadData();
 		
 		//Shows the window
 		ShowWindow(wndHandle, nCmdShow);
