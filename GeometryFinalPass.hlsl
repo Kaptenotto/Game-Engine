@@ -29,7 +29,7 @@ void main(
 
 	for (int i = 0; i < 3; i++)
 	{
-		output.pos = mul(input[i].pos, camView);
+		output.pos = input[i].pos;
 		output.uvs = input[i].uvs;
 		output.norm = camPos - input[i].norm;
 		output.norm = normalize(output.norm);

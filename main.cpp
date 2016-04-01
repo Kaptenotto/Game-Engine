@@ -47,6 +47,7 @@ ID3D11InputLayout* gVertexLayout = nullptr;
  // INITIALIZE SHADERS *********************************************
 
 ID3D11VertexShader* gVertexShader = nullptr;
+ID3D11VertexShader* gVertexFinalPass = nullptr;
 
 ID3D11PixelShader* gPixelShader = nullptr;
 ID3D11PixelShader* gPixelShaderDefTexture = nullptr;
@@ -358,7 +359,7 @@ void CreateShaders()
 		nullptr
 		);
 
-	Hr = gDevice->CreateVertexShader(pVSFinalPass->GetBufferPointer(), pVSFinalPass->GetBufferSize(), nullptr, &gVertexShader);
+	Hr = gDevice->CreateVertexShader(pVSFinalPass->GetBufferPointer(), pVSFinalPass->GetBufferSize(), nullptr, &gVertexFinalPass);
 	gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), pVSFinalPass->GetBufferPointer(), pVSFinalPass->GetBufferSize(), &gVertexLayout);
 	pVSFinalPass->Release();
 
@@ -526,11 +527,14 @@ void createDepthStencil()
 
 void createDefResources()
 {
+
+
+
 	//TEXTURE
 	TextureDef = NULL;
 	D3D11_TEXTURE2D_DESC TextureDefDesc;
 	gBackBuffer->GetDesc(&TextureDefDesc);
-
+	
 	D3D11_TEXTURE2D_DESC DescTextureDef;
 	DescTextureDef.Width = TextureDefDesc.Width;
 	DescTextureDef.Height = TextureDefDesc.Height;
@@ -619,7 +623,6 @@ void createDefResources()
 	gDevice->CreateRenderTargetView(NormalDef, NULL, &NormalDefRTV);
 
 	NormalDef->Release();
-
 }
 
 void ConstantBuffer()
@@ -993,7 +996,7 @@ void RenderFinalPass()
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 
-	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
+	gDeviceContext->VSSetShader(gVertexFinalPass, nullptr, 0);
 	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->GSSetShader(gGeometryFinalPass, nullptr, 0);
@@ -1217,7 +1220,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 				RenderDefTexture();
 				RenderDefShadow();
 				RenderDefNormal();
-				RenderFinalPass(); // Rendera finalpass
+				//RenderFinalPass(); // Rendera finalpass
 
 				frameCount++;
 				if (getTime() > 1.0f)
@@ -1346,7 +1349,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 
 													// Fill the swap chain description struct
 
-	SCD.BufferCount = 1;								// One back buffer
+	SCD.BufferCount = 2;								// One back buffer
 	SCD.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // Use 32 bit color
 	SCD.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHADER_INPUT;  // How swap chain is to be used
 	SCD.OutputWindow = windowHandle;						// The window to be used
@@ -1377,7 +1380,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 		gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&gBackBuffer);
 		//gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&gBackBufferDefTexture);
 		//gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&gBackBufferDefShadow);
-		//gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&gBackBufferDefNormal);
+		gSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&NormalDef);
 
 		createDepthStencil();
 

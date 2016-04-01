@@ -52,7 +52,8 @@ float4 PS_main(VS_OUT input) : SV_Target
 	lightDirection = (float4(-lightDir, 1) - input.wPos);
 
 	lightIntensity  = saturate(dot(Normal, lightDirection));
-	norColor = saturate(diffuse * lightIntensity);
+
+	norColor = saturate(norMap * lightIntensity);
 
 	return norColor;
 };
