@@ -92,6 +92,7 @@ ID3D11SamplerState* texSamplerState;
 
 ID3D11Buffer* gVertexBuffer = nullptr;
 ID3D11Buffer* gVertexBufferParticle = nullptr;
+ID3D11Buffer* gVertexBufferExplosion = nullptr;
 ID3D11Buffer* gIndexBuffer = nullptr;
 
 ID3D11Buffer* gConstantBuffer = nullptr;
@@ -146,22 +147,18 @@ typedef struct DIMOUSESTATES
 	BYTE rgbButtons[4];
 };
 
-
-struct ParticleType
-{
-	float positionX, positionY, positionZ;
-	float red, green, blue;
-	float velocity;
-	bool active;
-};
-
 struct VertexType
 {
 	float x,y,z;
 	float h,w;
 	float r, g, b;
 };
-VertexType test[1] = { 0, 1, -4,3.0f,3.0f,0.5f,0.5f,0.5f };
+
+struct StartingPos
+{
+	float x, y, z;
+};
+
 // GLOBALS FOR FIRST PERSON CAMERA *********************************
 
 XMVECTOR defaultForward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
@@ -186,17 +183,18 @@ float particleSize;
 
 int maxParticles;
 
-vector<ParticleType> particleList;
+vector<VertexType> explosionTest;
 
 vector<VertexType> vertexList;
 
+vector<StartingPos> explosionStartingPos;
+
 vector<float> velocity;
 
-float particlesPerSecond;
-double accumulatedTime;
-int currentParticleCount;
-
-float particleVelocity, particleVelocityVariation;
+int maxExplosionParticles;
+float expDeviationX, expDeviationY, expDeviationZ;
+bool explosion = false;
+XMVECTOR origin;
 
 float particleDeviationX, particleDeviationY, particleDeviationZ;
 
@@ -445,79 +443,6 @@ void createTextures()
 	}
 	
 }
-
-void initParticle()
-{
-	//vertexList.push_back(VertexType{ 1.0f, 1.0f, 1.0f, 0.2f, 0.2f, 1.0f, 0.0f, 0.0f });
-	
-	D3D11_BUFFER_DESC bufferdesc;
-	std::memset(&bufferdesc, 0, sizeof(bufferdesc));
-	bufferdesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	bufferdesc.Usage = D3D11_USAGE_DYNAMIC;
-	bufferdesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	bufferdesc.ByteWidth = sizeof(VertexType) * maxParticles;
-	bufferdesc.MiscFlags = 0;
-	bufferdesc.StructureByteStride = 0;
-
-	D3D11_SUBRESOURCE_DATA data;
-	data.pSysMem = vertexList.data(); 
-	HRESULT hr = gDevice->CreateBuffer(&bufferdesc, &data, &gVertexBufferParticle);
-
-}
-
-void EmitParticles()
-{
-	float positionX, positionY, positionZ, red, green, blue;
-	//int index, i, j;
-	int i = 0;
-	while (i < maxParticles)
-	{
-		//generate randomized particle properties.
-		positionX = (((float)rand() - (float)rand()) / RAND_MAX) * particleDeviationX;
-		positionY = (((float)rand() - (float)rand()) / RAND_MAX) * particleDeviationY;
-		positionZ = (((float)rand() - (float)rand()) / RAND_MAX) * particleDeviationZ;
-
-		//velocity = particleVelocity + (((float)rand() - (float)rand()) / RAND_MAX) * particleVelocityVariation;
-
-		red = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
-		green = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
-		blue = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
-
-		vertexList.push_back(VertexType{ positionX, 10, positionZ, 0.002f, 0.5f, 1.0f, 1.0f, 1.0f });
-		velocity.push_back(((float)rand() / (RAND_MAX + 1) + 1 + (rand() % 3)) / 5.0f);
-		i++;
-	}
-		
-
-	return;
-}
-
-//void KillParticles()
-//{
-//	int i, j;
-//
-//	for (i = 0; i < maxParticles; i++)
-//	{
-//		if ((particleList[i].active == true) && (particleList[i].positionY < -3.0));
-//		{
-//			particleList[i].active = false;
-//			currentParticleCount--;
-//			for (j = i; j<maxParticles - 1; j++)
-//			{
-//				particleList[j].positionX = particleList[j + 1].positionX;
-//				particleList[j].positionY = particleList[j + 1].positionY;
-//				particleList[j].positionZ = particleList[j + 1].positionZ;
-//				particleList[j].red = particleList[j + 1].red;
-//				particleList[j].green = particleList[j + 1].green;
-//				particleList[j].blue = particleList[j + 1].blue;
-//				particleList[j].velocity = particleList[j + 1].velocity;
-//				particleList[j].active = particleList[j + 1].active;
-//			}
-//
-//		}
-//	}
-//	return;
-//}
 
 void createTriangle()
 {
@@ -848,6 +773,10 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 
 		mouseLastState = mouseCurrentState;
 	}
+	if (keyBoardState[DIK_R] & 0x80)
+	{
+		explosion = true;
+	}
 	updateCamera();
 
 	return;
@@ -890,44 +819,148 @@ double getFrameTime()
 	return float(tickCount) / countsPerSecond;
 }
 
-void UpdateParticles(float frameTime)
-{
-	int i;
 
-	for (i = 0; i < currentParticleCount; i++)
+void initExplosion()
+{
+	
+	origin = { 0.0f,0.0f,0.0f };
+	
+	expDeviationX = 20.0f;
+	expDeviationY = 2.0f;
+	expDeviationZ = 20.0f;
+
+	maxExplosionParticles = 5000;
+
+	float positionX, positionY, positionZ, red, green, blue;
+	//int index, i, j;
+	int i = 0;
+	while (i < maxExplosionParticles)
 	{
-		particleList[i].positionY = particleList[i].positionY - (particleList[i].velocity *frameTime * 0.001f);
+		//generate randomized particle properties.
+		positionX = ((float)rand() / (RAND_MAX) + (rand() % 1))-0.5f;
+		positionY = ((float)rand() / (RAND_MAX) + (rand() % 1))-0.5f;
+		positionZ = ((float)rand() / (RAND_MAX) + (rand() % 1))-0.5f;
+
+		//saving the starting position for all particles for reset;
+		explosionStartingPos.push_back(StartingPos{ positionX,positionY,positionZ });
+
+		explosionTest.push_back(VertexType{ positionX, positionY, positionZ, 0.02f, 0.02f, 1.0f, 0.0f, 0.0f });
+		
+		i++;
 	}
 
-	return;
+	D3D11_BUFFER_DESC bufferdesc;
+	std::memset(&bufferdesc, 0, sizeof(bufferdesc));
+	bufferdesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	bufferdesc.Usage = D3D11_USAGE_DYNAMIC;
+	bufferdesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	bufferdesc.ByteWidth = sizeof(VertexType) * maxExplosionParticles;
+	bufferdesc.MiscFlags = 0;
+	bufferdesc.StructureByteStride = 0;
+
+	D3D11_SUBRESOURCE_DATA data;
+	data.pSysMem = explosionTest.data();
+	HRESULT hr = gDevice->CreateBuffer(&bufferdesc, &data, &gVertexBufferExplosion);
+
 }
 
-void InitializeParticleSystem()
+void updateExplosion()
 {
-	int i;
+	XMVECTOR travelDir;
+	float x, y, z;
+	for (int i = 0; i < explosionTest.size() - 1; i++)
+	{
+		XMVECTOR temp = { explosionTest[i].x,explosionTest[i].y,explosionTest[i].z };
+		travelDir = temp - origin;
+		x = XMVectorGetX(travelDir);
+		y = XMVectorGetY(travelDir);
+		z = XMVectorGetZ(travelDir);
+
+		explosionTest[i].x = explosionTest[i].x + x / 10.0f;
+		explosionTest[i].y = explosionTest[i].y + y / 10.0f;
+		explosionTest[i].z = explosionTest[i].z + z / 10.0f;
+	}
+
+	D3D11_MAPPED_SUBRESOURCE gMappedResource;
+	VertexType* vtxPtr;
+	HRESULT hr = gDeviceContext->Map(gVertexBufferExplosion, 0, D3D11_MAP_WRITE_DISCARD, 0, &gMappedResource);
+
+	vtxPtr = (VertexType*)gMappedResource.pData;
+	memcpy(vtxPtr, explosionTest.data(), sizeof(VertexType) * maxExplosionParticles);
+
+	gDeviceContext->Unmap(gVertexBufferExplosion, 0);
+}
+
+void killExplosion()
+{
+	if(explosion)
+	{
+		if (explosionTest[0].x>=5|| explosionTest[0].y >= 5|| explosionTest[0].z >= 5)
+		{
+			for (int i = 0; i < maxExplosionParticles - 1; i++)
+			{
+				explosionTest[i].x = explosionStartingPos[i].x;
+				explosionTest[i].y = explosionStartingPos[i].y;
+				explosionTest[i].z = explosionStartingPos[i].z;
+			}
+			explosion = false;
+		}
+	}
+}
+
+void initParticle()
+{
+	//vertexList.push_back(VertexType{ 1.0f, 1.0f, 1.0f, 0.2f, 0.2f, 1.0f, 0.0f, 0.0f });
+
+	D3D11_BUFFER_DESC bufferdesc;
+	std::memset(&bufferdesc, 0, sizeof(bufferdesc));
+	bufferdesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	bufferdesc.Usage = D3D11_USAGE_DYNAMIC;
+	bufferdesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	bufferdesc.ByteWidth = sizeof(VertexType) * maxParticles;
+	bufferdesc.MiscFlags = 0;
+	bufferdesc.StructureByteStride = 0;
+
+	D3D11_SUBRESOURCE_DATA data;
+	data.pSysMem = vertexList.data();
+	HRESULT hr = gDevice->CreateBuffer(&bufferdesc, &data, &gVertexBufferParticle);
+
+}
+
+void EmitParticles()
+{
 	particleDeviationX = 20.0f;
 	particleDeviationY = 2.0f;
 	particleDeviationZ = 20.0f;
 
-	particleVelocity = 1.0f;
-	particleVelocityVariation = 0.2f;
+	maxParticles = 2000;
 
-	particleSize = 0.2f;
+	float positionX, positionY, positionZ, red, green, blue;
+	//int index, i, j;
+	int i = 0;
+	while (i < maxParticles)
+	{
+		//generate randomized particle properties.
+		positionX = (((float)rand() - (float)rand()) / RAND_MAX) * particleDeviationX;
+		positionY = (((float)rand() - (float)rand()) / RAND_MAX) * particleDeviationY;
+		positionZ = (((float)rand() - (float)rand()) / RAND_MAX) * particleDeviationZ;
 
-	particlesPerSecond = 250.0f;
+		//velocity = particleVelocity + (((float)rand() - (float)rand()) / RAND_MAX) * particleVelocityVariation;
 
-	maxParticles = 10000;
+		red = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
+		green = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
+		blue = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
 
-	currentParticleCount = 0;
+		vertexList.push_back(VertexType{ positionX, 10, positionZ, 0.002f, 0.5f, 0.7f, 0.7f, 1.0f });
+		velocity.push_back(((float)rand() / (RAND_MAX + 1) + 1 + (rand() % 3)) / 5.0f);
+		i++;
+	}
 
-	accumulatedTime = 0.0f;														
+
+}																		
 																				
-}																				
-																				
-void UpdateBuffers(float frameTime)
+void UpdateBuffers()
 {
-	srand(unsigned(time(NULL)));
-	double test = getTime();
 	
 	for (int i = 0; i < vertexList.size() -1; i++)
 	{
@@ -935,7 +968,7 @@ void UpdateBuffers(float frameTime)
 		if (vertexList[i].y >= 0)
 		{
 			vertexList[i].y = (vertexList[i].y - velocity[i]);
-			//vertexList[i].y = (vertexList[i].y + 0.001f);
+			
 		}
 		else
 		{
@@ -1024,8 +1057,24 @@ void RenderParticles()
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 
 	gDeviceContext->Draw((vertexList.size() - 1), 0);
+	
 
 	
+}
+
+void RenderExplosion()
+{
+	gDeviceContext->VSSetShader(gVertexShaderParticle, nullptr, 0);
+	gDeviceContext->GSSetShader(gGeometryShaderParticle, nullptr, 0);
+	gDeviceContext->PSSetShader(gPixelShaderParticle, nullptr, 0);
+
+	UINT32 vertexSize = sizeof(VertexType);
+	UINT32 offset = 0;
+
+	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBufferExplosion, &vertexSize, &offset);
+	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+
+	gDeviceContext->Draw((explosionTest.size() - 1), 0);
 }
 
 void Render()
@@ -1130,7 +1179,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 		createTriangle();
 
-		InitializeParticleSystem();
+		initExplosion();
 
 		EmitParticles();
 
@@ -1160,14 +1209,22 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 					startTimer();
 				}
 				Update();
-				
-				
-				
+
+
+
 				//UpdateParticles(getFrameTime());
-				UpdateBuffers(getTime());
+				UpdateBuffers();
 				RenderShadow(); // Rendera
 				Render(); // Rendera
 				RenderParticles(); // Rendera
+
+				if (explosion)
+				{
+					RenderExplosion(); // Rendera
+					updateExplosion();
+					killExplosion();
+				}
+				
 
 				
 
