@@ -483,7 +483,7 @@ void EmitParticles()
 		green = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
 		blue = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
 
-		vertexList.push_back(VertexType{ positionX, 10, positionZ, 0.002f, 0.5f,0.2f, 0.2f, 0.5f });
+		vertexList.push_back(VertexType{ positionX, 10, positionZ, 0.002f, 0.5f, 1.0f, 1.0f, 1.0f });
 		velocity.push_back(((float)rand() / (RAND_MAX + 1) + 1 + (rand() % 3)) / 5.0f);
 		i++;
 	}
