@@ -27,12 +27,12 @@ void main(
 {
 	GSOutput output = (GSOutput)0;
 
+
 	for (int i = 0; i < 3; i++)
 	{
 		output.pos = input[i].pos;
 		output.uvs = input[i].uvs;
-		output.norm = camPos - input[i].norm;
-		output.norm = normalize(output.norm);
+		output.norm = input[i].norm;
 		TriStream.Append(output);
 	}
 

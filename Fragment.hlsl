@@ -28,11 +28,55 @@ struct VS_OUT
 };
 
 float4 PS_main(VS_OUT input) : SV_Target
-{
-	float4 color;
-	float4 textureColor;
-	color = float4(1,1,1,1);
-	textureColor = TextureRes.Sample(SampleTypeClamp, input.uvs);
-
-	return textureColor;
+{	
+		float4 color;
+		float4 textureColor;
+		float4 shadowColor;
+		float4 normalColor;
+		float4 finalColor;
+		color = ambient;
+		textureColor = TextureRes.Sample(SampleTypeClamp, input.uvs);
+		shadowColor = ShadowRes.Sample(SampleTypeClamp, input.uvs);
+		normalColor = NormalRes.Sample(SampleTypeClamp, input.uvs);
+	
+		textureColor.a = 1;
+		shadowColor.a = 1;
+		normalColor.a = 1;
+	
+	
+		finalColor = ambient;
+		finalColor = finalColor * textureColor + finalColor * shadowColor + finalColor * normalColor;
+		//finalColor = finalColor * shadowColor;
+		//finalColor = finalColor * normalColor;
+		//finalColor = finalColor * ambient;
+		finalColor = saturate(finalColor);
+		return finalColor;
 };
+
+
+
+//float4 PS_main(VS_OUT input) : SV_Target
+//{
+//	float4 color;
+//	float4 textureColor;
+//	float4 shadowColor;
+//	float4 normalColor;
+//	float4 finalColor;
+//	color = ambient;
+//	textureColor = TextureRes.Sample(SampleTypeClamp, input.uvs);
+//	shadowColor = ShadowRes.Sample(SampleTypeClamp, input.uvs);
+//	normalColor = NormalRes.Sample(SampleTypeClamp, input.uvs);
+//
+//	textureColor.a = 1;
+//	shadowColor.a = 1;
+//	normalColor.a = 1;
+//
+//
+//	finalColor = ambient;
+//	finalColor = finalColor * textureColor + finalColor * shadowColor + finalColor * normalColor;
+//	//finalColor = finalColor * shadowColor;
+//	//finalColor = finalColor * normalColor;
+//	//finalColor = finalColor * ambient;
+//	finalColor = saturate(finalColor);
+//	return finalColor;
+//};

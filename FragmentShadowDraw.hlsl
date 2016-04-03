@@ -65,7 +65,7 @@ float4 PS_main(VS_OUT input) : SV_Target
 	float2 lerps = frac(texelpos);
 	float shadowcooef = lerp(lerp(s0, s1, lerps.x), lerp(s2, s3, lerps.x), lerps.y);
 
-	color =  color * shadowcooef;
+	color = color * shadowcooef;
 
 	return color;
 };

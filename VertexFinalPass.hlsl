@@ -4,6 +4,8 @@ cbuffer MatrixBuffer : register (b0)
 	matrix camView;
 	matrix projectionMatrix;
 	float4 camPos;
+	matrix InverseProjection;
+	float2 ScrnSize;
 }
 
 cbuffer Lights : register (b1)
@@ -33,6 +35,17 @@ struct VS_OUT
 VS_OUT VS_main(VS_IN input)
 {
 	VS_OUT output = (VS_OUT)0;
+
+	//matrix cMatrix = mul(mul(worldMatrix, camView), projectionMatrix);
+
+	//float2 ScrPos = input.pos * halfpixel * 2;
+	//float2 TexCoord = 0.5f * float2(1280.0f, -720.0f) + 0.5f;
+
+
+	//output.pos = mul(input.pos, cMatrix);
+	//output.norm = input.norm;
+	//output.uvs = input.uvs;
+
 
 	output.uvs = input.uvs;
 	output.norm = float4(input.norm, 1);

@@ -53,7 +53,7 @@ float4 PS_main(VS_OUT input) : SV_Target
 
 	lightIntensity  = saturate(dot(Normal, lightDirection));
 
-	norColor = saturate(norMap * lightIntensity);
+	norColor = saturate(color * lightIntensity);
 
 	return norColor;
 };
