@@ -110,6 +110,9 @@ ID3D11DepthStencilView* gDepthStencilView = nullptr;
 ID3D11DepthStencilView* gShadowDepthStencilView = nullptr;
 ID3D11ShaderResourceView* ShadowDepthResource = nullptr;
 
+D3D11_RASTERIZER_DESC rasterDesc;
+ID3D11RasterizerState* gRasterState = nullptr;
+
 
 // INITIALIZE OBJ-IMPORTER ******************************************
 Importer obj;
@@ -505,6 +508,21 @@ void createLightDepthStencil()
 	ShadowRDesc.Texture2D.MipLevels = 1;
 
 	hr = gDevice->CreateShaderResourceView(shadowDepthStencil, &ShadowRDesc, &ShadowDepthResource);
+
+	rasterDesc.AntialiasedLineEnable = false;
+	rasterDesc.CullMode = D3D11_CULL_NONE;
+	rasterDesc.DepthBias = 0;
+	rasterDesc.DepthBiasClamp = 0.0f;
+	rasterDesc.DepthClipEnable = true;
+	//rasterDesc.FillMode = D3D11_FILL_SOLID;
+	rasterDesc.FillMode = D3D11_FILL_WIREFRAME;
+	rasterDesc.FrontCounterClockwise = false;
+	rasterDesc.MultisampleEnable = false;
+	rasterDesc.ScissorEnable = false;
+	rasterDesc.SlopeScaledDepthBias = 0.0f;
+
+	hr = gDevice->CreateRasterizerState(&rasterDesc, &gRasterState);
+	gDeviceContext->RSSetState(gRasterState);
 }
 
 void createDepthStencil()

@@ -55,23 +55,30 @@ void main(
 	tangent = mul(float4(tangent, 1), worldMatrix).xyz;
 	binormal = mul(float4(binormal, 1), worldMatrix).xyz;
 	
+	/*float3 test = mul(output.pos ,worldMatrix)
 
-	for (int i = 0; i < 3; i++)
+	if (dot(normal, view) < 0)
 	{
-		output.pos = input[i].pos;
+		TriStream.RestartStrip();
+	}*/
+	/*else
+	{*/
+		for (int i = 0; i < 3; i++)
+		{
+			output.pos = input[i].pos;
 
-		output.uvs = input[i].uvs;
-		//output.norm = float4(normal, 0); //mul(float4 (normal, 0), worldMatrix).xyz; // normal calculation
-		//output.norm = input[i].norm;
-		output.norm = mul(input[i].norm, worldMatrix);
+			output.uvs = input[i].uvs;
 
-		output.tangent = tangent;
+			output.norm = mul(input[i].norm, worldMatrix);
 
-		output.binormal = binormal;
-		
-		output.wPos = input[i].wPos;
+			output.tangent = tangent;
 
-		TriStream.Append(output);
-	}
+			output.binormal = binormal;
 
+			output.wPos = input[i].wPos;
+
+			TriStream.Append(output);
+
+		}
+	/*}*/
 }
