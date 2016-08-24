@@ -1,5 +1,6 @@
 
 #include <windows.h>
+#include "Constants.h"
 
 #include <d3d11.h>
 #include <d3dcompiler.h>
@@ -25,12 +26,12 @@
 using namespace DirectX; 
 using namespace std; 
 
-
-
+#pragma region pragmaComments
 #pragma comment (lib, "d3d11.lib")
 #pragma comment (lib, "d3dcompiler.lib")
 #pragma comment (lib, "dinput8.lib")
 #pragma comment (lib, "dxguid.lib")
+#pragma endregion
 
 HWND InitWindow(HINSTANCE hInstance);
 
@@ -39,20 +40,14 @@ LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 HRESULT CreateDirect3DContext(HWND wndHandle);
 IDXGISwapChain* gSwapChain = nullptr;
 
-
-
-// DEVICE **********************************************************
-
+#pragma region Devices
 ID3D11Device* gDevice = nullptr;
 ID3D11DeviceContext* gDeviceContext = nullptr;
-
-
-// INITIALIZE LAYOUTS **********************************************
+#pragma endregion
 
 ID3D11InputLayout* gVertexLayout = nullptr;
 
- // INITIALIZE SHADERS *********************************************
-
+#pragma region Init shaders
 ID3D11VertexShader* gVertexShader = nullptr;
 
 ID3D11PixelShader* gPixelShader = nullptr;
@@ -70,8 +65,9 @@ ID3D11VertexShader* gVertexShaderParticle = nullptr;
 ID3D11PixelShader* gPixelShaderParticle = nullptr;
 
 ID3D11GeometryShader* gGeometryShaderParticle = nullptr;
+#pragma endregion
 
-//INITIALIZE VECTORS ***********************************************
+#pragma region camVectors
 
 XMVECTOR camPosition = XMVectorSet(0, 1, -5, 0);
 XMVECTOR camTarget = XMVectorSet(0, 0, 0, 0);
@@ -81,46 +77,10 @@ XMVECTOR lightPosition = XMVectorSet(10, 5, -5, 1);
 XMVECTOR lightDir = XMVectorSet(0, 0, 0, 0);
 XMVECTOR lightUp = XMVectorSet(0, 1, 0, 0);
 
-// INITIALIZE SHADER THINGS *****************************************
+#pragma endregion
 
-vector<ID3D11ShaderResourceView*> textureResources;
-vector<ID3D11ShaderResourceView*> normalResources;
+#pragma region init Structs
 
-ID3D11SamplerState* texSamplerState;
-
-// INITIALIZE BUFFERS ***********************************************
-
-ID3D11Buffer* gVertexBuffer = nullptr;
-ID3D11Buffer* gVertexBufferParticle = nullptr;
-ID3D11Buffer* gVertexBufferExplosion = nullptr;
-ID3D11Buffer* gIndexBuffer = nullptr;
-
-ID3D11Buffer* gConstantBuffer = nullptr;
-ID3D11Buffer* gConstantLightBuffer = nullptr;
-
-ID3D11Texture2D* gBackBuffer = nullptr;
-//ID3D11Texture2D* gShadowBackBuffer = nullptr;
-
-ID3D11RenderTargetView* gBackBufferRTV = nullptr;
-
-//ID3D11RenderTargetView* gShadowRenderTarget = nullptr; //egen
-
-ID3D11DepthStencilView* gDepthStencilView = nullptr;
-
-ID3D11DepthStencilView* gShadowDepthStencilView = nullptr;
-ID3D11ShaderResourceView* ShadowDepthResource = nullptr;
-
-D3D11_RASTERIZER_DESC rasterDesc;
-ID3D11RasterizerState* gRasterState = nullptr;
-
-
-// INITIALIZE OBJ-IMPORTER ******************************************
-Importer obj;
-
-
-
-
-// INITIALIZE STRUCTS ***********************************************
 struct MatrixBuffer {
 	XMMATRIX World;
 	XMMATRIX camView;
@@ -161,6 +121,45 @@ struct StartingPos
 {
 	float x, y, z;
 };
+
+#pragma endregion
+
+#pragma region init buffers
+
+ID3D11Buffer* gVertexBuffer = nullptr;
+ID3D11Buffer* gVertexBufferParticle = nullptr;
+ID3D11Buffer* gVertexBufferExplosion = nullptr;
+ID3D11Buffer* gIndexBuffer = nullptr;
+
+ID3D11Buffer* gConstantBuffer = nullptr;
+ID3D11Buffer* gConstantLightBuffer = nullptr;
+
+ID3D11Texture2D* gBackBuffer = nullptr;
+//ID3D11Texture2D* gShadowBackBuffer = nullptr;
+
+ID3D11RenderTargetView* gBackBufferRTV = nullptr;
+
+//ID3D11RenderTargetView* gShadowRenderTarget = nullptr; //egen
+
+ID3D11DepthStencilView* gDepthStencilView = nullptr;
+
+ID3D11DepthStencilView* gShadowDepthStencilView = nullptr;
+ID3D11ShaderResourceView* ShadowDepthResource = nullptr;
+
+D3D11_RASTERIZER_DESC rasterDesc;
+ID3D11RasterizerState* gRasterState = nullptr;
+
+#pragma endregion
+
+
+// INITIALIZE SHADER THINGS
+
+vector<ID3D11ShaderResourceView*> textureResources;
+vector<ID3D11ShaderResourceView*> normalResources;
+
+ID3D11SamplerState* texSamplerState;
+
+Importer obj;
 
 // GLOBALS FOR FIRST PERSON CAMERA *********************************
 
@@ -217,6 +216,8 @@ float rotz = 0;
 float scaleX = 1.0f;
 float scaleY = 1.0f;
 
+int clientWidth = 0;
+int clientHeight = 0;
 
 XMMATRIX rotationX;
 XMMATRIX rotationY;
@@ -233,7 +234,7 @@ __int64 frameTimeOld = 0;
 double frameTime;
 
 // FUNCTIONS********************************************************
-
+#pragma region Shaders
 void CreateShaders()
 {
 	
@@ -380,6 +381,7 @@ void CreateShaders()
 
 	pPSParticles->Release();
 }
+#pragma endregion
 
 void createTextures()
 {
@@ -514,8 +516,8 @@ void createLightDepthStencil()
 	rasterDesc.DepthBias = 0;
 	rasterDesc.DepthBiasClamp = 0.0f;
 	rasterDesc.DepthClipEnable = true;
-	//rasterDesc.FillMode = D3D11_FILL_SOLID;
-	rasterDesc.FillMode = D3D11_FILL_WIREFRAME;
+	rasterDesc.FillMode = D3D11_FILL_SOLID;
+	//rasterDesc.FillMode = D3D11_FILL_WIREFRAME;
 	rasterDesc.FrontCounterClockwise = false;
 	rasterDesc.MultisampleEnable = false;
 	rasterDesc.ScissorEnable = false;
@@ -661,8 +663,8 @@ void ConstantBuffer()
 void SetViewport()
 {
 	D3D11_VIEWPORT vP;
-	vP.Width = (float)1280;
-	vP.Height = (float)720;
+	vP.Width = WIN_WIDTH;
+	vP.Height = WIN_HEIGHT;
 	vP.MinDepth = 0.0f;
 	vP.MaxDepth = 1.0f;
 	vP.TopLeftX = 0;
@@ -800,8 +802,7 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 	return;
 }
 
-//TIME FUNCTIONS*********************************************************
-
+#pragma region timeFunctions
 void startTimer()
 {
 	LARGE_INTEGER frequencycount;
@@ -836,7 +837,9 @@ double getFrameTime()
 
 	return float(tickCount) / countsPerSecond;
 }
+#pragma endregion
 
+#pragma region Explosion
 
 void initExplosion()
 {
@@ -886,6 +889,7 @@ void updateExplosion()
 {
 	XMVECTOR travelDir;
 	float x, y, z;
+
 	for (int i = 0; i < explosionTest.size() - 1; i++)
 	{
 		XMVECTOR temp = { explosionTest[i].x,explosionTest[i].y,explosionTest[i].z };
@@ -925,6 +929,8 @@ void killExplosion()
 		}
 	}
 }
+
+#pragma endregion
 
 void initParticle()
 {
@@ -1102,7 +1108,6 @@ void Render()
 	gDeviceContext->ClearRenderTargetView(gBackBufferRTV, clearColor);
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-
 	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
 	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
@@ -1148,6 +1153,7 @@ void Render()
 		
 	}
 }
+
 
 // handle of instance                      commandline		 how the window is shown
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) // wWinMain Predefined main for directx
@@ -1278,7 +1284,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	return (int)msg.wParam;
 }
 
-
 HWND InitWindow(HINSTANCE hInstance)
 {
 	//Creating the window class
@@ -1343,9 +1348,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 
 }
 
-
-
-	HRESULT CreateDirect3DContext(HWND windowHandle)
+HRESULT CreateDirect3DContext(HWND windowHandle)
 {
 	DXGI_SWAP_CHAIN_DESC SCD; //Create a struct to hold information about the swap chain
 
@@ -1409,8 +1412,3 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 	}
 	return hr;
 }
-
-
-
-
-

@@ -121,6 +121,7 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Constants.h" />
     <ClInclude Include="Wic.h" />
     <ClInclude Include="importer.h" />
   </ItemGroup>
