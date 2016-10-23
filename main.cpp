@@ -233,6 +233,15 @@ int fps = 0;
 __int64 frameTimeOld = 0;
 double frameTime;
 
+struct Plane
+{
+	XMFLOAT3 normal;
+	float distance;
+};
+Plane planes[6];
+
+
+
 // FUNCTIONS********************************************************
 #pragma region Shaders
 void CreateShaders()
@@ -739,6 +748,152 @@ void updateCamera()
 	matrices.camPos = camPosition;
 	matrices.camView = XMMatrixLookAtLH(camPosition, camTarget, camUp);
 	matrices.camView = XMMatrixTranspose(matrices.camView);
+}
+
+void FrustumLoop()
+{
+	for (int i = 0; i < 6; i++)
+	{
+		planes[i].normal.x = 0.0f;
+		planes[i].normal.y = 0.0f;
+		planes[i].normal.z = 0.0f;
+		planes[i].distance = 0.0f;
+	}
+}
+
+void CreateFrustum(float FarZ, DirectX::XMFLOAT4X4 projectionMatrix, DirectX::XMFLOAT4X4 &viewMatrix)
+{
+	float zMin = -projectionMatrix._43 / projectionMatrix._33;
+	float r = (FarZ / (FarZ - zMin));
+	projectionMatrix._33 = r;
+	projectionMatrix._43 = -r * zMin;
+
+	XMMATRIX temp = DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&viewMatrix), DirectX::XMLoadFloat4x4(&projectionMatrix));
+	XMMatrixTranspose(temp);
+	XMFLOAT4X4 m;
+	XMStoreFloat4x4(&m, temp);
+
+	//PLANE CALC
+	//left
+	planes[0].normal.x = (m._14 + m._11);
+	planes[0].normal.y = (m._24 + m._21);
+	planes[0].normal.z = (m._34 + m._31);
+	planes[0].distance = (m._44 + m._41);
+	//right
+	planes[1].normal.x = (m._14 - m._11);
+	planes[1].normal.y = (m._24 - m._21);
+	planes[1].normal.z = (m._34 - m._31);
+	planes[1].distance = (m._44 - m._41);
+	//top
+	planes[2].normal.x = (m._14 - m._12);
+	planes[2].normal.y = (m._24 - m._22);
+	planes[2].normal.z = (m._34 - m._32);
+	planes[2].distance = (m._44 - m._42);
+	//bottom
+	planes[3].normal.x = (m._14 + m._12);
+	planes[3].normal.y = (m._24 + m._22);
+	planes[3].normal.z = (m._34 + m._32);
+	planes[3].distance = (m._44 + m._42);
+	//near
+	planes[4].normal.x = (m._14 + m._13);
+	planes[4].normal.y = (m._24 + m._23);
+	planes[4].normal.z = (m._34 + m._33);
+	planes[4].distance = (m._44 + m._43);
+	//far
+	planes[5].normal.x = (m._14 - m._13);
+	planes[5].normal.y = (m._24 - m._23);
+	planes[5].normal.z = (m._34 - m._33);
+	planes[5].distance = (m._44 - m._43);
+
+	for (unsigned int i = 0; i < 6; i++)
+	{
+		float lengthSquared =
+			planes[i].normal.x * planes[i].normal.x +
+			planes[i].normal.y * planes[i].normal.y +
+			planes[i].normal.z * planes[i].normal.z;
+
+		float denom = 1.0f / sqrt(lengthSquared);
+
+		planes[i].normal.x *= denom;
+		planes[i].normal.y *= denom;
+		planes[i].normal.z *= denom;
+		planes[i].distance *= denom;
+	}
+}
+
+bool CheckCircle(float xCenter, float yCenter, float zCenter, float radius)
+{
+	XMFLOAT3 centerPoint = { xCenter , yCenter , zCenter };
+
+	for (unsigned int i = 0; i < 6; i++)
+	{
+		XMFLOAT4 plane =
+		{
+			planes[i].normal.x,
+			planes[i].normal.y,
+			planes[i].normal.z,
+			planes[i].distance
+		};
+
+		if (XMPlaneDotCoord(DirectX::XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&centerPoint)).m128_f32[0] < -radius)
+		{
+			return false;
+		}
+	}
+	return true;
+	//return true;
+}
+
+//feed me positions!
+bool CheckCube(float xCenter, float yCenter, float zCenter, float radius)
+{
+	for (unsigned int i = 0; i < 6; i++)
+	{
+		XMFLOAT4 plane =
+		{
+			planes[i].normal.x,
+			planes[i].normal.y,
+			planes[i].normal.z,
+			planes[i].distance
+		};
+
+		XMFLOAT3 point;
+		point = { (xCenter - radius), (yCenter - radius), (zCenter - radius) };
+		if (DirectX::XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+			continue;
+
+		point = { (xCenter + radius), (yCenter - radius), (zCenter - radius) };
+		if (DirectX::XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+			continue;
+
+		point = { (xCenter - radius), (yCenter + radius), (zCenter - radius) };
+		if (DirectX::XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+			continue;
+
+		point = { (xCenter + radius), (yCenter + radius), (zCenter - radius) };
+		if (DirectX::XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+			continue;
+
+		point = { (xCenter - radius), (yCenter - radius), (zCenter + radius) };
+		if (DirectX::XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+			continue;
+
+		point = { (xCenter + radius), (yCenter - radius), (zCenter + radius) };
+		if (DirectX::XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+			continue;
+
+		point = { (xCenter - radius), (yCenter + radius), (zCenter + radius) };
+		if (DirectX::XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+			continue;
+
+		point = { (xCenter + radius), (yCenter + radius), (zCenter + radius) };
+		if (DirectX::XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+			continue;
+
+		return false;
+	}
+
+	return true;
 }
 
 void detectInput(double time) // checking keyboard and mouse input for movement in Engine
