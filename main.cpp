@@ -11,7 +11,8 @@
 #include <vector>
 #include<cstdlib>
 #include<ctime>
-
+#include <d2d1.h>
+#include <dxgi.h>
 #include <stdio.h>
 #include <io.h>
 #include <fcntl.h>
@@ -220,12 +221,18 @@ float scaleY = 1.0f;
 
 int clientWidth = 0;
 int clientHeight = 0;
+std::wstring printText;
 
 bool isShot = false;
 
 XMMATRIX rotationX;
 XMMATRIX rotationY;
 
+//TEXT
+IDXGIKeyedMutex *keyedMutex11;
+IDXGIKeyedMutex *keyedMutex10;
+ID2D1RenderTarget *D2DRenderTarget;
+ID2D1SolidColorBrush *Brush;
 // TIME GLOBALS ****************************************************
 
 double countsPerSecond = 0.0;
@@ -809,29 +816,7 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 			int hitIndex;
 
 			XMVECTOR prwsPos, prwsDir;
-			pickRayVector(mousex, mousey, prwsPos, prwsDir);
-
-			for (int i = 0; i < obj.drawOffset.size(); i++)
-			{
-				if (bottleHit[i] == 0) //No need to check bottles already hit
-				{
-					tempDist = pick(prwsPos, prwsDir, bottleVertPosArray, bottleVertIndexArray, bottleWorld[i]);
-					if (tempDist < closestDist)
-					{
-						closestDist = tempDist;
-						hitIndex = i;
-					}
-				}
-			}
-
-			if (closestDist < FLT_MAX)
-			{
-				bottleHit[hitIndex] = 1;
-				pickedDist = closestDist;
-				score++;
-			}
-
-			isShot = true;
+			//pickRayVector(mousex, mousey, prwsPos, prwsDir);
 		}
 	}
 	if (!mouseCurrentState.rgbButtons[0])
@@ -866,8 +851,8 @@ void pickRayVector(float mouseX, float mouseY, XMVECTOR& pickRayInWorldSpacePos,
 	XMVECTOR projectionRow1 = matrices.Projection.r[0];
 	float camProjectionFloat0 = XMVectorGetX(projectionRow1);
 
-	XMVECTOR projectionRow1 = matrices.Projection.r[1];
-	float camProjectionFloatMid = XMVectorGetY(projectionRow1);
+	XMVECTOR projectionRow2 = matrices.Projection.r[1];
+	float camProjectionFloatMid = XMVectorGetY(projectionRow2);
 
 	//Transform 2D pick position on screen space to 3D ray in View space
 	PRVecX = (((2.0f * mouseX) / clientWidth) - 1) / camProjectionFloat0;
