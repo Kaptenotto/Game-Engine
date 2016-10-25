@@ -5,3 +5,4 @@
 
 #define SHADOW_WIDTH  2048.0f 
 #define SHADOW_HEIGHT 2048.0f 
+#define numRTVs 4

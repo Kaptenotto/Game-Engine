@@ -23,12 +23,12 @@ cbuffer Lights : register (b1)
 
 struct VS_OUT
 {
-	float4 pos : SV_POSITION;
-	float2 uvs : TEXCOORD;
-	float4 norm : NORMAL;
-	float4 wPos : WPOS;
-	float3 tangent : TANGENT;
-	float3 binormal : BINORMAL;
+	float4 pos			 : SV_POSITION;
+	float2 uvs			 : TEXCOORD;
+	float4 norm			 : NORMAL;
+	float4 wPos			 : WPOS;
+	float3 tangent		 : TANGENT;
+	float3 binormal		 : BINORMAL;
 };
 
 float4 PS_main(VS_OUT input) : SV_Target
@@ -101,7 +101,5 @@ float4 PS_main(VS_OUT input) : SV_Target
 	textureColor = textureColor * shadowcooef + textureColor * norColor;
 
 	textureColor = textureColor * color;
-	//norColor = norColor * textureColor;
-	//textureColor = saturate(textureColor + norColor);
 	return textureColor;
 };

@@ -50,6 +50,12 @@
     <FxCompile Include="PixelShaderParticle.hlsl">
       <Filter>Source Files</Filter>
     </FxCompile>
+    <FxCompile Include="GBuffer.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
+    <FxCompile Include="FinalPass.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="importer.h">

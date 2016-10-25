@@ -49,7 +49,6 @@ ID3D11DeviceContext* gDeviceContext = nullptr;
 #pragma endregion
 
 ID3D11InputLayout* gVertexLayout = nullptr;
-
 #pragma region Init shaders
 ID3D11VertexShader* gVertexShader = nullptr;
 
@@ -68,6 +67,15 @@ ID3D11VertexShader* gVertexShaderParticle = nullptr;
 ID3D11PixelShader* gPixelShaderParticle = nullptr;
 
 ID3D11GeometryShader* gGeometryShaderParticle = nullptr;
+
+ID3D11VertexShader* GBuffer_VS = nullptr;
+ID3D11GeometryShader* GBuffer_GS = nullptr;
+ID3D11PixelShader* GBuffer_PS = nullptr;
+ID3D11InputLayout* GBuffer_VertexLayout = nullptr;
+
+ID3D11VertexShader*	FinalPass_VS = nullptr;
+ID3D11PixelShader* FinalPass_PS = nullptr;
+ID3D11InputLayout* FinalPass_VertexLayout = nullptr;
 #pragma endregion
 
 #pragma region camVectors
@@ -76,7 +84,7 @@ XMVECTOR camPosition = XMVectorSet(0, 1, -5, 0);
 XMVECTOR camTarget = XMVectorSet(0, 0, 0, 0);
 XMVECTOR camUp = XMVectorSet(0, 1, 0, 0);
 
-XMVECTOR lightPosition = XMVectorSet(10, 5, -5, 1);
+XMVECTOR lightPosition = XMVectorSet(10, 7, -5, 1);
 XMVECTOR lightDir = XMVectorSet(0, 0, 0, 0);
 XMVECTOR lightUp = XMVectorSet(0, 1, 0, 0);
 
@@ -136,7 +144,7 @@ ID3D11Buffer* gIndexBuffer = nullptr;
 
 ID3D11Buffer* gConstantBuffer = nullptr;
 ID3D11Buffer* gConstantLightBuffer = nullptr;
-
+ID3D11Buffer* gVertexBufferFinalPass = nullptr;
 ID3D11Texture2D* gBackBuffer = nullptr;
 //ID3D11Texture2D* gShadowBackBuffer = nullptr;
 
@@ -145,6 +153,7 @@ ID3D11RenderTargetView* gBackBufferRTV = nullptr;
 //ID3D11RenderTargetView* gShadowRenderTarget = nullptr; //egen
 
 ID3D11DepthStencilView* gDepthStencilView = nullptr;
+ID3D11DepthStencilView* GBufferDepthStencilView = nullptr;
 
 ID3D11DepthStencilView* gShadowDepthStencilView = nullptr;
 ID3D11ShaderResourceView* ShadowDepthResource = nullptr;
@@ -152,6 +161,9 @@ ID3D11ShaderResourceView* ShadowDepthResource = nullptr;
 D3D11_RASTERIZER_DESC rasterDesc;
 ID3D11RasterizerState* gRasterState = nullptr;
 
+ID3D11Texture2D* GBuffer_Textures[numRTVs]				 = { nullptr };
+ID3D11RenderTargetView* textureRTVs[numRTVs]			 = { nullptr };
+ID3D11ShaderResourceView* shaderResourceViews[numRTVs]	 = { nullptr };
 #pragma endregion
 
 
@@ -161,7 +173,8 @@ vector<ID3D11ShaderResourceView*> textureResources;
 vector<ID3D11ShaderResourceView*> normalResources;
 
 ID3D11SamplerState* texSamplerState;
-
+ID3D11SamplerState* linearSamplerState;
+ID3D11SamplerState* pointSamplerState;
 Importer obj;
 
 // GLOBALS FOR FIRST PERSON CAMERA *********************************
@@ -392,6 +405,294 @@ void CreateShaders()
 
 	pPSParticles->Release();
 }
+void CreateDefferedShaders()
+{
+	//IMPUT LAYOUT
+	D3D11_INPUT_ELEMENT_DESC inputDesc[] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 3 , D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 5, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 8, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 11, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	};
+
+	HRESULT hr;
+	ID3DBlob* pVS = nullptr;
+
+	//Vertex shader
+	D3DCompileFromFile(
+		L"GBuffer.hlsl",
+		nullptr,
+		nullptr,
+		"GBUFFER_VS_main",
+		"vs_5_0",
+		0,
+		0,
+		&pVS,
+		nullptr);
+
+	hr = gDevice->CreateVertexShader(pVS->GetBufferPointer(), pVS->GetBufferSize(), nullptr, &GBuffer_VS);
+
+	hr = gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), pVS->GetBufferPointer(), pVS->GetBufferSize(), &GBuffer_VertexLayout);
+	pVS->Release();
+
+	//Geometry shader
+	ID3DBlob* pGS = nullptr;
+	D3DCompileFromFile(
+		L"GBuffer.hlsl",
+		nullptr,
+		nullptr,
+		"GBUFFER_GS_main",
+		"gs_5_0",
+		0,
+		0,
+		&pGS,
+		nullptr);
+
+	hr = gDevice->CreateGeometryShader(pGS->GetBufferPointer(), pGS->GetBufferSize(), nullptr, &GBuffer_GS);
+	pGS->Release();
+
+	//Pixel shader
+	ID3DBlob *pPs = nullptr;
+	D3DCompileFromFile(
+		L"GBuffer.hlsl",
+		nullptr,
+		nullptr,
+		"GBUFFER_PS_main",
+		"ps_5_0",
+		0,
+		0,
+		&pPs,
+		nullptr);
+
+	hr = gDevice->CreatePixelShader(pPs->GetBufferPointer(), pPs->GetBufferSize(), nullptr, &GBuffer_PS);
+	pPs->Release();
+}
+void CreateTextureViews()
+{
+	for (int i = 0; i < numRTVs; i++)
+	{
+		HRESULT hr;
+		D3D11_TEXTURE2D_DESC textureDesc;
+		D3D11_RENDER_TARGET_VIEW_DESC renderTargetDesc;
+		D3D11_SHADER_RESOURCE_VIEW_DESC resourceViewDesc;
+
+
+		ZeroMemory(&textureDesc, sizeof(textureDesc));
+		//Set up the render texture desciption
+
+		textureDesc.Width = (UINT)WIN_WIDTH;
+		textureDesc.Height = (UINT)WIN_HEIGHT;
+		textureDesc.MipLevels = 1;
+		textureDesc.ArraySize = 1;
+		textureDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+		textureDesc.SampleDesc.Count = 1;
+		textureDesc.Usage = D3D11_USAGE_DEFAULT;
+		textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+		textureDesc.CPUAccessFlags = 0;
+		textureDesc.MiscFlags = 0;
+
+		//Create the render target Texture
+
+		hr = gDevice->CreateTexture2D(&textureDesc, NULL, &GBuffer_Textures[i]);
+		if (FAILED(hr))
+			MessageBox(NULL, L"Failed to create  Gbuffer", L"Error", MB_ICONERROR | MB_OK);
+
+		//set up description for render target view
+		ZeroMemory(&renderTargetDesc, sizeof(renderTargetDesc));
+		renderTargetDesc.Format = textureDesc.Format;
+		renderTargetDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+		renderTargetDesc.Texture2D.MipSlice = 0;
+
+		//Create render target
+
+		hr = gDevice->CreateRenderTargetView(GBuffer_Textures[i], &renderTargetDesc, &textureRTVs[i]);
+		if (FAILED(hr))
+			MessageBox(NULL, L"Failed to create  Gbuffer", L"Error", MB_ICONERROR | MB_OK);
+
+		//Set up the shader resource view
+		ZeroMemory(&resourceViewDesc, sizeof(resourceViewDesc));
+		resourceViewDesc.Format = textureDesc.Format;
+		resourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		resourceViewDesc.Texture2D.MostDetailedMip = 0;
+		resourceViewDesc.Texture2D.MipLevels = 1;
+
+		//Create the resourceView;
+
+
+		hr = gDevice->CreateShaderResourceView(GBuffer_Textures[i], nullptr, &shaderResourceViews[i]);
+		if (FAILED(hr))
+			MessageBox(NULL, L"Failed to create  Gbuffer", L"Error", MB_ICONERROR | MB_OK);
+	}
+
+	HRESULT hr;
+
+	ID3D11Texture2D* GBufferStencilTest;
+
+	D3D11_TEXTURE2D_DESC textureDesc;
+	ZeroMemory(&textureDesc, sizeof(textureDesc));
+	//Set up the render texture desciption
+
+	textureDesc.Width = (UINT)WIN_WIDTH;
+	textureDesc.Height = (UINT)WIN_HEIGHT;
+	textureDesc.MipLevels = 1;
+	textureDesc.ArraySize = 1;
+	textureDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	textureDesc.SampleDesc.Count = 1;
+	textureDesc.Usage = D3D11_USAGE_DEFAULT;
+	textureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	textureDesc.CPUAccessFlags = 0;
+	textureDesc.MiscFlags = 0;
+
+	hr = gDevice->CreateTexture2D(&textureDesc, NULL, &GBufferStencilTest);
+	if (FAILED(hr))
+		MessageBox(NULL, L"nyfel1", L"Error", MB_ICONERROR | MB_OK);
+
+	hr = gDevice->CreateDepthStencilView(GBufferStencilTest, nullptr, &GBufferDepthStencilView);
+	if (FAILED(hr))
+		MessageBox(NULL, L"nyfel2", L"Error", MB_ICONERROR | MB_OK);
+	GBufferStencilTest->Release();
+
+
+	for (int i = 0; i < numRTVs; i++)
+	{
+		GBuffer_Textures[i]->Release();
+	}
+
+
+
+
+}
+void finalPassQuadData()
+{
+	struct TriangleVertex
+	{
+		float x, y, z;
+		float u, v;
+	};
+	TriangleVertex triangleVertices[6] =
+	{
+		//T1
+
+		-1.0f, -1.0f, 0.0f,	//v0 pos
+							//1.0f, 0.0f, 0.0f,	//v0 color
+		0.0f, 1.0f,			//v0 UV
+
+		-1.0f, 1.0f, 0.0f,	//v1
+							//0.0f, 1.0f, 0.0f,	//v1 color
+		0.0f, 0.0f,			//v1 UV
+
+		1.0f, -1.0f, 0.0f, //v2
+							//0.0f, 0.0f, 0.0f,	//v2 color
+		1.0f, 1.0f,			//v2 UV
+
+		//T2
+
+		-1.0f, 1.0f, 0.0f,	//v3 pos
+							//0.5f, 0.0f, 0.5f,	//v3 color
+		0.0f, 0.0f,			//v3 UV
+
+		1.0f, 1.0f, 0.0f,	//v4
+							//1.0f, 0.0f, 0.0f,	//v4 color
+		1.0f, 0.0f,			//v4 UV
+
+		1.0f, -1.0f, 0.0f,	//v5
+							//0.0f, 0.0f, 0.0f	//v5 color
+		1.0f, 1.0f			//v5 UV
+
+	};
+
+	D3D11_BUFFER_DESC bufferDesc;
+	memset(&bufferDesc, 0, sizeof(bufferDesc));
+	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	bufferDesc.ByteWidth = sizeof(triangleVertices);
+
+	D3D11_SUBRESOURCE_DATA data;
+	data.pSysMem = triangleVertices;
+	gDevice->CreateBuffer(&bufferDesc, &data, &gVertexBufferFinalPass);
+}
+void CreateFinalPassShaders()
+{
+	HRESULT hr;
+
+	D3D11_SAMPLER_DESC samplerDesc;
+	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP; //wrap, (repeat) for use of tiling texutures
+	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.MipLODBias = 0.0f;
+	samplerDesc.MaxAnisotropy = 1; 
+	samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+	samplerDesc.MinLOD = 0; 
+	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+	samplerDesc.BorderColor[0] = 0.0f;
+	samplerDesc.BorderColor[1] = 0.0f;
+	samplerDesc.BorderColor[2] = 0.0f;
+	samplerDesc.BorderColor[3] = 1.0f;
+
+	hr = gDevice->CreateSamplerState(&samplerDesc, &linearSamplerState);
+
+	gDeviceContext->PSSetSamplers(0, 1, &linearSamplerState);
+
+
+	D3D11_SAMPLER_DESC samplerDescPoint;
+	samplerDescPoint.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+	samplerDescPoint.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+	samplerDescPoint.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+	samplerDescPoint.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+	samplerDescPoint.MipLODBias = 0.0f;  //mipmap offset level
+	samplerDescPoint.MaxAnisotropy = 1;  
+	samplerDescPoint.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+	samplerDescPoint.MinLOD = 0;
+	samplerDescPoint.MaxLOD = D3D11_FLOAT32_MAX;
+
+	hr = gDevice->CreateSamplerState(&samplerDesc, &pointSamplerState);
+
+	gDeviceContext->PSSetSamplers(1, 1, &pointSamplerState);
+
+
+	ID3DBlob* pVS = nullptr;
+
+	D3DCompileFromFile(
+		L"FinalPass.hlsl",
+		nullptr,
+		nullptr,
+		"VS_main",
+		"vs_5_0",
+		0,
+		0,
+		&pVS,
+		nullptr);
+
+	hr = gDevice->CreateVertexShader(pVS->GetBufferPointer(), pVS->GetBufferSize(), nullptr, &FinalPass_VS);
+
+	D3D11_INPUT_ELEMENT_DESC inputDesc[] =
+	{
+		/*POSITION*/{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		/*UV*/{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	};
+
+	hr = gDevice->CreateInputLayout(inputDesc, ARRAYSIZE(inputDesc), pVS->GetBufferPointer(), pVS->GetBufferSize(), &FinalPass_VertexLayout);
+	pVS->Release();
+
+	ID3DBlob *pPs = nullptr;
+	D3DCompileFromFile(
+		L"FinalPass.hlsl",
+		nullptr,
+		nullptr,
+		"PS_main",
+		"ps_5_0",
+		0,
+		0,
+		&pPs,
+		nullptr);
+
+	hr = gDevice->CreatePixelShader(pPs->GetBufferPointer(), pPs->GetBufferSize(), nullptr, &FinalPass_PS);
+	pPs->Release();
+}
+
 #pragma endregion
 
 void createTextures()
@@ -1244,7 +1545,7 @@ void RenderShadow()
 
 	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &vertexSize, &offset);
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	gDeviceContext->IASetInputLayout(gVertexLayout);
+	gDeviceContext->IASetInputLayout(GBuffer_VertexLayout);
 
 	gDeviceContext->OMSetRenderTargets(0, NULL, gShadowDepthStencilView);
 
@@ -1291,7 +1592,6 @@ void RenderExplosion()
 
 void Render()
 {
-
 	float clearColor[] = { 0, 0, 0, 1 };
 	gDeviceContext->ClearRenderTargetView(gBackBufferRTV, clearColor);
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
@@ -1342,7 +1642,101 @@ void Render()
 	}
 }
 
-// handle of instance                      commandline		 how the window is shown
+void RenderGBuffer()
+{
+	float clearColor[] = {0.5f, 0.5f, 0.5f, 1 };
+	for (int i = 0; i < numRTVs; i++)
+		gDeviceContext->ClearRenderTargetView(textureRTVs[i], clearColor);
+	gDeviceContext->ClearDepthStencilView(GBufferDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+	ID3D11RenderTargetView* rtvsToSet[] = {
+		textureRTVs[0],
+		textureRTVs[1],
+		textureRTVs[2],
+		textureRTVs[3],
+	};
+	gDeviceContext->OMSetRenderTargets(numRTVs, rtvsToSet, GBufferDepthStencilView);
+
+	gDeviceContext->VSSetShader(GBuffer_VS, nullptr, 0);
+	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->GSSetShader(GBuffer_GS, nullptr, 0);
+	gDeviceContext->PSSetShader(GBuffer_PS, nullptr, 0);
+
+	UINT32 vertexSize = sizeof(obj.finalVector[0]);
+	UINT32 vertexCount = obj.finalVector.size();
+	UINT32 indexSize = obj.index_counter;
+	UINT32 offset = 0;
+
+	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &vertexSize, &offset);
+	gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
+
+	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	gDeviceContext->IASetInputLayout(GBuffer_VertexLayout);
+
+	gDeviceContext->PSSetSamplers(0, 1, &linearSamplerState);
+
+
+	gDeviceContext->PSSetShaderResources(2, 1, &ShadowDepthResource);
+	/***************************DRAW****************************/
+
+	for (int i = 0; i < (obj.drawOffset.size() - 1); i++)
+	{
+		if (i < textureResources.size())
+		{
+			gDeviceContext->PSSetShaderResources(0, 1, &textureResources[i]);
+
+		}
+
+		if (i < normalResources.size())
+		{
+			gDeviceContext->PSSetShaderResources(1, 1, &normalResources[i]);
+		}
+
+
+		gDeviceContext->Draw((obj.drawOffset[(i + 1)] - obj.drawOffset[i]), obj.drawOffset[i]);
+
+	}
+
+	//gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
+}
+void RenderFinalPass()
+{
+	gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
+
+	float clearColor[] = { 0, 0, 0, 1 };
+	gDeviceContext->ClearRenderTargetView(gBackBufferRTV, clearColor);
+	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	
+	
+	gDeviceContext->VSSetShader(FinalPass_VS, nullptr, 0);
+	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->GSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->PSSetShader(FinalPass_PS, nullptr, 0);
+	
+	UINT32 vertexSize = sizeof(float) * 5;
+	UINT32 offset = 0;
+	
+	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBufferFinalPass, &vertexSize, &offset);
+	gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
+	
+	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	gDeviceContext->IASetInputLayout(FinalPass_VertexLayout);
+	
+
+	gDeviceContext->PSSetShaderResources(0, numRTVs, shaderResourceViews);
+	gDeviceContext->PSSetShaderResources(numRTVs + 1, 1, &ShadowDepthResource);
+	
+	/************************************************************
+	****************************DRAW****************************
+	************************************************************/
+	
+	gDeviceContext->Draw(6, 0);
+	
+}
+
+// handle of instance   commandline	  how the window is shown
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) // wWinMain Predefined main for directx
 {
 	//adding a console
@@ -1386,7 +1780,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 		CreateShaders();
 
+		CreateDefferedShaders();
+		CreateTextureViews();
+		CreateFinalPassShaders();
+
 		ConstantBuffer();
+		finalPassQuadData();
 
 		createTriangle();
 
@@ -1426,15 +1825,17 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 				//UpdateParticles(getFrameTime());
 				UpdateBuffers();
 				RenderShadow(); // Rendera
-				Render(); // Rendera
+				//Render(); // Rendera
+				RenderGBuffer(); // Rendera
 				RenderParticles(); // Rendera
-
 				if (explosion)
 				{
 					RenderExplosion(); // Rendera
 					updateExplosion();
 					killExplosion();
 				}
+				RenderFinalPass();
+
 				
 
 				
@@ -1453,7 +1854,19 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		gPixelShader->Release();
 		gGeometryShader->Release();
 		gVertexShader->Release();
-
+		GBuffer_GS->Release();
+		GBuffer_VS->Release();
+		GBuffer_PS->Release();
+		FinalPass_PS->Release();
+		FinalPass_VS->Release();
+		for (size_t i = 0; i < numRTVs; i++)
+		{
+			textureRTVs[i]->Release();
+		}
+		pointSamplerState->Release();
+		texSamplerState->Release();
+		linearSamplerState->Release();
+		GBufferDepthStencilView->Release();
 		//shadowrenderpass
 		gVertexShaderShadow->Release();
 
@@ -1565,7 +1978,7 @@ HRESULT CreateDirect3DContext(HWND windowHandle)
 		NULL,
 		D3D_DRIVER_TYPE_HARDWARE,
 		NULL,
-		NULL,
+		D3D11_CREATE_DEVICE_DEBUG,
 		NULL,
 		NULL,
 		D3D11_SDK_VERSION,
