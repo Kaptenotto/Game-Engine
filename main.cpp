@@ -43,7 +43,7 @@ LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 HRESULT CreateDirect3DContext(HWND wndHandle);
 IDXGISwapChain* gSwapChain = nullptr;
 
-float Intersection(XMVECTOR rayOrigin, XMVECTOR rayDirection);
+float Intersection(XMVECTOR rayOrigin, XMVECTOR rayDirection,XMMATRIX& worldSpace);
 void RenderExplosion();
 bool PointInTriangle(XMVECTOR&triV1, XMVECTOR&triV2, XMVECTOR&triV3, XMVECTOR&point);
 void Picking(float mouseX, float mouseY, XMVECTOR& pickRayVectorWorldSpacePos, XMVECTOR&pickRayVectorWorldSpaceDir);
@@ -895,15 +895,20 @@ void Picking(float mouseX, float mouseY,XMVECTOR& pickRayVectorWorldSpacePos, XM
 
 	float PRVecX, PRVecY, PRVecZ;
 
-	//transform 2D picking pos.
+	XMVECTOR matInvDeter;
+	XMMATRIX V = matrices.camView;
 
-	
+	XMMATRIX InversV; 
+
+	InversV = XMMatrixInverse(&matInvDeter, V);
+
+	//transform 2D picking pos.
 	XMFLOAT4X4 camProjection;
 
 	XMStoreFloat4x4(&camProjection, matrices.Projection);
 	
-	PRVecX = (((2.0f * mouseX) / WIN_WIDTH) - 1) / camProjection(0, 0);
-	PRVecY = -(((2.0f * mouseY) / WIN_HEIGHT) - 1) / camProjection(1, 1);
+	PRVecX = (2.0f * mouseX / WIN_WIDTH - 1) / camProjection(0, 0);
+	PRVecY = (-2.0f * mouseY / WIN_HEIGHT + 1) / camProjection(1, 1);
 	PRVecZ = 1.0f;
 
 
@@ -911,14 +916,14 @@ void Picking(float mouseX, float mouseY,XMVECTOR& pickRayVectorWorldSpacePos, XM
 
 
 	XMMATRIX pickRayToWorldSpaceMatrix;
-	XMVECTOR matInvDeter;
+	//XMVECTOR matInvDeter;
 
 	pickRayToWorldSpaceMatrix = XMMatrixInverse(&matInvDeter, matrices.camView);
 
 	pickRayVectorWorldSpacePos = XMVector3TransformCoord(pickRayInViewSpacePos, pickRayToWorldSpaceMatrix);
 	pickRayVectorWorldSpaceDir = XMVector3TransformNormal(pickRayInViewSpaceDir, pickRayToWorldSpaceMatrix);
 
-	Intersection(pickRayVectorWorldSpacePos, pickRayVectorWorldSpaceDir);
+	Intersection(pickRayVectorWorldSpacePos, pickRayVectorWorldSpaceDir,matrices.World);
 	//XMMATRIX projectionMatrix;
 	//XMMATRIX inverseViewMatrix;
 	//XMMATRIX translateMatrix;
@@ -1069,7 +1074,7 @@ void Picking(float mouseX, float mouseY,XMVECTOR& pickRayVectorWorldSpacePos, XM
 //	return true;
 //}
 
-float Intersection(XMVECTOR rayOrigin, XMVECTOR rayDirection)
+float Intersection(XMVECTOR rayOrigin, XMVECTOR rayDirection,XMMATRIX& worldSpace)
 {
 	for (int i = 0; i < obj.face_idxs.size()/ 3; i++)
 	{
@@ -1102,9 +1107,9 @@ float Intersection(XMVECTOR rayOrigin, XMVECTOR rayDirection)
 		tri1V2 = XMVectorSet(_tV2.x, _tV2.y, _tV2.z, 0.0f);
 		tri1V3 = XMVectorSet(_tV3.x, _tV3.y, _tV3.z, 0.0f);
 
-		tri1V1 = XMVector3TransformCoord(tri1V1, matrices.World);
-		tri1V2 = XMVector3TransformCoord(tri1V2, matrices.World);
-		tri1V3 = XMVector3TransformCoord(tri1V3, matrices.World);
+		tri1V2 = XMVector3TransformCoord(tri1V2, worldSpace);
+		tri1V3 = XMVector3TransformCoord(tri1V3, worldSpace);
+		tri1V1 = XMVector3TransformCoord(tri1V1, worldSpace);
 
 
 		XMVECTOR U = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
