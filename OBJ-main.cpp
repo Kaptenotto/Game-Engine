@@ -5,7 +5,7 @@
 using namespace std;
 Importer::Importer()
 {
-	objFile = ("./objFiles/testSphere.obj");
+	objFile = ("./objFiles/bajskorv.obj");
 
 	index_counter = 0;
 	objCounter = 0;

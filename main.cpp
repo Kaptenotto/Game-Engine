@@ -129,7 +129,7 @@ struct StartingPos
 {
 	float x, y, z;
 };
-
+float lowestnr = 0;
 #pragma endregion
 
 #pragma region init buffers
@@ -815,38 +815,21 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 	}
 	if (mouseCurrentState.rgbButtons[0])
 	{
-
-		// reading mouse
-
-
-		/*int mouseX = 0;
-		int mouseY= 0;
-		mouseX += mouseCurrentState.IX;
-		mouseY += mouseCurrentState.IY;
-
-		if (mouseX < 0 ){mouseX = 0; }
-		if (mouseY < 0) { mouseY = 0; }
-
-		if (mouseX > WIN_WIDTH) { mouseX = WIN_WIDTH; }
-		if (mouseY > WIN_HEIGHT) { mouseY = WIN_HEIGHT; }*/
-
 		POINT mousePos;
 
 		GetCursorPos(&mousePos);
 		ScreenToClient(hwnd, &mousePos);
 
-		int mouseX = mousePos.x;
-		int mouseY = mousePos.y;
+		float mouseX = mousePos.x;
+		float mouseY = mousePos.y;
 
 		float tempDist;
 		float closestDist = FLT_MAX;
 
-		XMVECTOR pwrsPos, pwrsDir;
+		XMVECTOR pwrsPos = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+		XMVECTOR pwrsDir = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
 
 		Picking(mouseX, mouseY, pwrsPos, pwrsDir);
-
-
-
 
 
 		//Picking(mouseX, mouseY);
@@ -869,214 +852,48 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 	return;
 }
 
-void Picking(float mouseX, float mouseY,XMVECTOR& pickRayVectorWorldSpacePos, XMVECTOR&pickRayVectorWorldSpaceDir)
+void Picking(float mouseX, float mouseY,XMVECTOR& rayOrigin, XMVECTOR& rayDirection)
 {
-	/*POINT mouse;
-	
-
-	GetCursorPos(&mouse);
-
-	float pointX, pointY;
-
-	float mousePosX = mouse.x;
-	float mousePosY = mouse.y;
-
-	if (GetCursorPos(&mouse))
-	{
-		ScreenToClient(hwnd, &mouse);
-		float mousePosX = mouse.x;
-		float mousePosY = mouse.y;
-
-	}*/
-	ShowCursor(TRUE);
-
+	//ShowCursor(TRUE);
 	XMVECTOR pickRayInViewSpaceDir = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
 	XMVECTOR pickRayInViewSpacePos = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
 
 	float PRVecX, PRVecY, PRVecZ;
 
-	XMVECTOR matInvDeter;
-	XMMATRIX V = matrices.camView;
-
-	XMMATRIX InversV; 
-
-	InversV = XMMatrixInverse(&matInvDeter, V);
-
-	//transform 2D picking pos.
 	XMFLOAT4X4 camProjection;
-
 	XMStoreFloat4x4(&camProjection, matrices.Projection);
-	
-	PRVecX = (2.0f * mouseX / WIN_WIDTH - 1) / camProjection(0, 0);
-	PRVecY = (-2.0f * mouseY / WIN_HEIGHT + 1) / camProjection(1, 1);
-	PRVecZ = 1.0f;
 
+	//Transform 2D pick position on screen space to 3D ray in View space
+	PRVecX = (((2.0f * mouseX) / clientWidth) - 1) / camProjection(0, 0);
+	PRVecY = -(((2.0f * mouseY) / clientHeight) - 1) / camProjection(1, 1);
+	PRVecZ = 1.0f;    //View space's Z direction ranges from 0 to 1, so we set 1 since the ray goes "into" the screen
 
-	pickRayInViewSpaceDir = XMVectorSet(PRVecX, PRVecY, PRVecZ, 0.0f);
+	//pickRayInViewSpaceDir = XMVectorSet(PRVecX, PRVecY, PRVecZ, 0.0f);
 
+	//Uncomment this line if you want to use the center of the screen (client area)
+	//to be the point that creates the picking ray (eg. first person shooter)
+	pickRayInViewSpaceDir = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
 
+	// Transform 3D Ray from View space to 3D ray in World space
 	XMMATRIX pickRayToWorldSpaceMatrix;
-	//XMVECTOR matInvDeter;
+	XMVECTOR matInvDeter;    //We don't use this, but the xna matrix inverse function requires the first parameter to not be null
 
-	pickRayToWorldSpaceMatrix = XMMatrixInverse(&matInvDeter, matrices.camView);
+	pickRayToWorldSpaceMatrix = XMMatrixInverse(&matInvDeter, matrices.camView);    //Inverse of View Space matrix is World space matrix
 
-	pickRayVectorWorldSpacePos = XMVector3TransformCoord(pickRayInViewSpacePos, pickRayToWorldSpaceMatrix);
-	pickRayVectorWorldSpaceDir = XMVector3TransformNormal(pickRayInViewSpaceDir, pickRayToWorldSpaceMatrix);
+	rayOrigin = XMVector3TransformCoord(pickRayInViewSpacePos, pickRayToWorldSpaceMatrix);
+	rayDirection = XMVector3TransformNormal(pickRayInViewSpaceDir, pickRayToWorldSpaceMatrix);
 
-	Intersection(pickRayVectorWorldSpacePos, pickRayVectorWorldSpaceDir,matrices.World);
-	//XMMATRIX projectionMatrix;
-	//XMMATRIX inverseViewMatrix;
-	//XMMATRIX translateMatrix;
-	//XMMATRIX inverseWorldMatrix;
-	//XMMATRIX viewMatrix;
-	//XMMATRIX worldMatrix;
+	rayDirection = XMVector3Normalize(rayDirection);
 
-	//XMVECTOR pickrayInViewSpaceDir = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-	//XMVECTOR pickRayInViewSpacePos = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-
-	//XMVECTOR direction = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-	//XMVECTOR origin = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-	//XMVECTOR rayOrigin = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-	//XMVECTOR rayDirection = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-
-	///*XMFLOAT3 direction;
-	//XMFLOAT3 origin;
-	//XMFLOAT3 rayOrigin;
-	//XMFLOAT3 rayDirection;*/
-
-	//bool intersect, result;
-	//XMFLOAT4 _direction;//so we can get the x,y,z values
-	//XMFLOAT4X4 _projectionMatrix;
-	//XMFLOAT4X4 _camView;
-
-	//pointX = ((2.0f * (float)mousePosX) / (float)WIN_WIDTH) - 1.0f;
-	//pointY = (((2.0f *(float)mousePosY) / (float)WIN_HEIGHT) -1.0f)*-1.0f;
-	//projectionMatrix = matrices.Projection;
-	//XMStoreFloat4x4(&_projectionMatrix, projectionMatrix);
-
-	//pointX = pointX / _projectionMatrix._11;
-	//pointY = pointY / _projectionMatrix._22;
-
-	////inverse of the view matrix.
-	//viewMatrix = matrices.camView;
-	//XMStoreFloat4x4(&_camView, viewMatrix);
-	//XMVECTOR matINVdeter;
-	//inverseViewMatrix = XMMatrixInverse(&matINVdeter, viewMatrix);
-	////XMMatrixInverse(nullptr, &viewMatrix);
-	////inverseViewMatrix = XMMatrixInverse(nullptr, matrices.camView);
-	//XMFLOAT4X4 viewInverseMatrix; //making a new variable of the XMFLOAT4x4 type so we can store it.
-	//XMStoreFloat4x4(&viewInverseMatrix, inverseViewMatrix);
-	//
-	////XMStoreFloat3(&_direction, direction);
-	//XMStoreFloat4(&_direction, direction);
-	//
-	////direction XMVectorGetX 
-	////XMVectorGetX;
-	//_direction.x = (pointX * viewInverseMatrix._11) + (pointY * viewInverseMatrix._21) + viewInverseMatrix._31;
-	//_direction.y = (pointX * viewInverseMatrix._12) + (pointY * viewInverseMatrix._22) + viewInverseMatrix._32;
-	//_direction.z = (pointX * viewInverseMatrix._13) + (pointY * viewInverseMatrix._23) + viewInverseMatrix._33;
-
-	//direction = XMLoadFloat4(&_direction);
-	////direction = _direction;
-	//origin = camPosition;
-	////XMLoadFloat3(&origin);
-	//worldMatrix = matrices.World;
-
-	//translateMatrix = XMMatrixTranslation(-5.0f, 1.0f, 5.0f);
-	//worldMatrix = XMMatrixMultiply(worldMatrix, translateMatrix);
-	//inverseWorldMatrix = XMMatrixInverse(&matINVdeter, worldMatrix);
-
-	//rayOrigin = XMVector3TransformCoord(origin, inverseWorldMatrix); // pickrayinworldspacepos
-	//rayDirection = XMVector3TransformNormal(direction, inverseWorldMatrix); // pickrayinworldspacedir
-	//rayDirection = XMVector3Normalize(rayDirection);
-
-	//intersect = Intersection(rayOrigin, rayDirection);
-
-
-	//if (intersect == true)
-	//{
-	//	RenderExplosion();
-	//}
-
-	////XMVECTOR v0, v1, v2;
-	/*for (int i = 0; i < obj.index_counter; i++)
-	{
-		 obj.vertices.at(i).x;
-		 obj.vertices.at(i).y;
-		 obj.vertices.at(i).z;
-
-		 float t;
-
-	}*/
+	
+	Intersection(rayOrigin, rayDirection, matrices.World);
 
 	return;
 }
 
-//bool HeightMapLoad(char * filename, HeightMapInfo & hminfo)
-//{
-//
-//	FILE *filePtr;
-//
-//	BITMAPFILEHEADER bitmapFileHeader;
-//	BITMAPINFOHEADER bitmapInfoHeader;
-//
-//	int imageSize, index;
-//
-//	unsigned char height;
-//
-//	filePtr = fopen(filename, "rb");
-//
-//	if (filePtr == NULL)
-//	{
-//		return 0; 
-//	}
-//
-//	fread(&bitmapFileHeader, sizeof(BITMAPFILEHEADER), 1, filePtr);
-//
-//	fread(&bitmapInfoHeader, sizeof(BITMAPINFOHEADER), 1, filePtr);
-//
-//	hminfo.terrainWidth = bitmapInfoHeader.biWidth;
-//	hminfo.terrainHeight = bitmapInfoHeader.biHeight;
-//
-//	imageSize = hminfo.terrainWidth * hminfo.terrainHeight * 3;
-//
-//	unsigned char* bitmapImage = new unsigned char[imageSize];
-//
-//	fseek(filePtr, bitmapFileHeader.bfOffBits, SEEK_SET);
-//
-//	fread(bitmapImage, 1, imageSize, filePtr);
-//
-//	fclose(filePtr);
-//
-//	hminfo.heightMap = new XMFLOAT3[hminfo.terrainWidth* hminfo.terrainHeight];
-//
-//	int k = 0;
-//
-//	float heightfactor = 10.0f;
-//
-//	for (int j = 0; j < hminfo.terrainHeight; j++)
-//	{
-//		for (int i = 0; i < hminfo.terrainWidth; i++)
-//		{
-//			height = bitmapImage[k];
-//
-//			index = (hminfo.terrainHeight * j) + i;
-//
-//			hminfo.heightMap[index].x = (float)i;
-//			hminfo.heightMap[index].y = (float)height / heightfactor;
-//			hminfo.heightMap[index].z = (float)j;
-//
-//			k += 3;
-//		}
-//	}
-//	delete[]bitmapImage;
-//	bitmapImage = 0;
-//	return true;
-//}
-
 float Intersection(XMVECTOR rayOrigin, XMVECTOR rayDirection,XMMATRIX& worldSpace)
 {
-	for (int i = 0; i < obj.face_idxs.size()/ 3; i++)
+	for (int i = 0; i < obj.face_idxs.size() / 3; i++)
 	{
 
 		//Triangle's vertices, V1, V2, V3
@@ -1087,29 +904,27 @@ float Intersection(XMVECTOR rayOrigin, XMVECTOR rayDirection,XMMATRIX& worldSpac
 
 		//Temporary 3d floats for each vertex.
 		XMFLOAT3 _tV1, _tV2, _tV3;
-		//XMVECTOR tV1, tV2, tV3;
-		// Komma åt triangle.
-	
-		_tV1.x = obj.finalVector[obj.face_idxs[i * 3 + 0].face_pos].x;
-		_tV1.y = obj.finalVector[obj.face_idxs[i * 3 + 0].face_pos].y;
-		_tV1.z = obj.finalVector[obj.face_idxs[i * 3 + 0].face_pos].z;
 
-		_tV2.x = obj.finalVector[obj.face_idxs[i * 3 + 1].face_pos].x;
-		_tV2.y = obj.finalVector[obj.face_idxs[i * 3 + 1].face_pos].y;
-		_tV2.z = obj.finalVector[obj.face_idxs[i * 3 + 1].face_pos].z;
-									
-		_tV3.x = obj.finalVector[obj.face_idxs[i * 3 + 2].face_pos].x;
-		_tV3.y = obj.finalVector[obj.face_idxs[i * 3 + 2].face_pos].y;
-		_tV3.z = obj.finalVector[obj.face_idxs[i * 3 + 2].face_pos].z;
+		_tV1.x = obj.finalVector[obj.face_idxs.at(i).face_pos * 3 + 0].x;
+		_tV1.y = obj.finalVector[obj.face_idxs.at(i).face_pos * 3 + 0].y;
+		_tV1.z = obj.finalVector[obj.face_idxs.at(i).face_pos * 3 + 0].z;
+
+		_tV2.x = obj.finalVector[obj.face_idxs.at(i).face_pos * 3 + 1].x;
+		_tV2.y = obj.finalVector[obj.face_idxs.at(i).face_pos * 3 + 1].y;
+		_tV2.z = obj.finalVector[obj.face_idxs.at(i).face_pos * 3 + 1].z;
+								
+		_tV3.x = obj.finalVector[obj.face_idxs.at(i).face_pos * 3 + 2].x;
+		_tV3.y = obj.finalVector[obj.face_idxs.at(i).face_pos * 3 + 2].y;
+		_tV3.z = obj.finalVector[obj.face_idxs.at(i).face_pos * 3 + 2].z;
 
 
-		tri1V1 = XMVectorSet(_tV1.x, _tV1.y, _tV1.z,0.0f);
-		tri1V2 = XMVectorSet(_tV2.x, _tV2.y, _tV2.z, 0.0f);
-		tri1V3 = XMVectorSet(_tV3.x, _tV3.y, _tV3.z, 0.0f);
+		tri1V1 = XMVectorSet(_tV1.x, _tV1.y, _tV1.z, 1.0f);
+		tri1V2 = XMVectorSet(_tV2.x, _tV2.y, _tV2.z, 1.0f);
+		tri1V3 = XMVectorSet(_tV3.x, _tV3.y, _tV3.z, 1.0f);
 
+		tri1V1 = XMVector3TransformCoord(tri1V1, worldSpace);
 		tri1V2 = XMVector3TransformCoord(tri1V2, worldSpace);
 		tri1V3 = XMVector3TransformCoord(tri1V3, worldSpace);
-		tri1V1 = XMVector3TransformCoord(tri1V1, worldSpace);
 
 
 		XMVECTOR U = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
@@ -1127,7 +942,6 @@ float Intersection(XMVECTOR rayOrigin, XMVECTOR rayDirection,XMMATRIX& worldSpac
 		XMVECTOR triPoint = tri1V1;
 
 		//plane equation
-
 		float tri1A = XMVectorGetX(faceNormal);
 		float tri1B = XMVectorGetY(faceNormal);
 		float tri1C = XMVectorGetZ(faceNormal);
@@ -1142,7 +956,7 @@ float Intersection(XMVECTOR rayOrigin, XMVECTOR rayDirection,XMMATRIX& worldSpac
 
 		XMVECTOR pointInPlane = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
 
-		ep1 = (XMVectorGetX(rayOrigin)*tri1A)    + (XMVectorGetY(rayOrigin)*tri1B)    + (XMVectorGetZ(rayOrigin)*tri1C);
+		ep1 = (XMVectorGetX(rayOrigin)*tri1A) + (XMVectorGetY(rayOrigin)*tri1B) + (XMVectorGetZ(rayOrigin)*tri1C);
 		ep2 = (XMVectorGetX(rayDirection)*tri1A) + (XMVectorGetY(rayDirection)*tri1B) + (XMVectorGetZ(rayDirection)*tri1C);
 
 		if (ep2 != 0.0f)
@@ -1151,16 +965,15 @@ float Intersection(XMVECTOR rayOrigin, XMVECTOR rayDirection,XMMATRIX& worldSpac
 		}
 		if (t > 0.0f)
 		{
-			planeIntersectX = XMVectorGetX(rayOrigin) + XMVectorGetX(rayDirection);
-			planeIntersectY = XMVectorGetY(rayOrigin) + XMVectorGetY(rayDirection);
-			planeIntersectz = XMVectorGetZ(rayOrigin) + XMVectorGetZ(rayDirection);
+			planeIntersectX = XMVectorGetX(rayOrigin) + XMVectorGetX(rayDirection) * t;
+			planeIntersectY = XMVectorGetY(rayOrigin) + XMVectorGetY(rayDirection) * t;
+			planeIntersectz = XMVectorGetZ(rayOrigin) + XMVectorGetZ(rayDirection) * t;
 
-			pointInPlane = XMVectorSet(planeIntersectX,planeIntersectY,planeIntersectz,0.0f);
+			pointInPlane = XMVectorSet(planeIntersectX,planeIntersectY,planeIntersectz,1.0f);
 
 			if (PointInTriangle(tri1V1, tri1V2, tri1V3, pointInPlane))
 			{
 				
-				RenderExplosion();
 				return t / 2.0f;
 				
 			}
@@ -1169,42 +982,9 @@ float Intersection(XMVECTOR rayOrigin, XMVECTOR rayDirection,XMMATRIX& worldSpac
 
 	}
 	return FLT_MAX;
-	
 }
 bool PointInTriangle(XMVECTOR&triV1, XMVECTOR&triV2, XMVECTOR&triV3, XMVECTOR&point)
 {
-	//find if point is inside the triangle
-
-	/*XMVECTOR cp1 = XMVector3Cross((triV3-triV2),(point-triV2));
-	XMVECTOR cp2 = XMVector3Cross((triV3 - triV2),(triV1-triV2));
-
-	if (XMVectorGetX(XMVector3Dot(cp1, cp2)) >= 0)
-	{
-		cp1 = XMVector3Cross((triV3 - triV1), (point - triV1));
-		cp2 = XMVector3Cross((triV3 - triV2), (triV1 - triV2));
-
-		if (XMVectorGetX(XMVector3Dot(cp1, cp2)) >= 0)
-		{
-			cp1 = XMVector3Cross((triV2 - triV1), (point - triV1));
-			cp2 = XMVector3Cross((triV2 - triV1), (triV3 - triV1));
-
-			if (XMVectorGetX(XMVector3Dot(cp1, cp2)) >= 0)
-			{
-				return true;
-			}
-			else
-				return false;
-			
-		}
-		else
-		{
-			return false;
-		}
-	}
-	return false;*/
-	//To find out if the point is inside the triangle, we will check to see if the point
-		//is on the correct side of each of the triangles edges.
-
 		XMVECTOR cp1 = XMVector3Cross((triV3 - triV2), (point - triV2));
 		XMVECTOR cp2 = XMVector3Cross((triV3 - triV2), (triV1 - triV2));
 		if (XMVectorGetX(XMVector3Dot(cp1, cp2)) >= 0)
@@ -1284,9 +1064,9 @@ void initExplosion()
 	while (i < maxExplosionParticles)
 	{
 		//generate randomized particle properties.
-		positionX = ((float)rand() / (RAND_MAX) + (rand() % 1))-0.5f;
-		positionY = ((float)rand() / (RAND_MAX) + (rand() % 1))-0.5f;
-		positionZ = ((float)rand() / (RAND_MAX) + (rand() % 1))-0.5f;
+		positionX = ((float)rand() / (RAND_MAX) + (rand() % 2))-0.5f;
+		positionY = ((float)rand() / (RAND_MAX) + (rand() % 2))-0.5f;
+		positionZ = ((float)rand() / (RAND_MAX) + (rand() % 2))-0.5f;
 
 		//saving the starting position for all particles for reset;
 		explosionStartingPos.push_back(StartingPos{ positionX,positionY,positionZ });
@@ -1532,7 +1312,7 @@ void Render()
 
 	
 
-	float clearColor[] = { 0, 0, 0, 1 };
+	float clearColor[] = { 0.5f, 0.5f, 0.5f, 1 };
 	gDeviceContext->ClearRenderTargetView(gBackBufferRTV, clearColor);
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
 
@@ -1769,7 +1549,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)/
 			return 0;
 
 		}
-
+	case WM_SIZE:
+		clientHeight = HIWORD(lParam);
+		clientWidth = LOWORD(lParam);
+		return 0;
 	}
 	return DefWindowProc(hWnd, message, wParam, lParam); // completing message procedure function.
 

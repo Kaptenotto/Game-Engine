@@ -37,11 +37,6 @@ void main(
 
 	float3 faceEdgeA = input[1].pos - input[0].pos;
 	float3 faceEdgeB = input[2].pos - input[0].pos;
-	//float tcV1 = input[1].uvs - input[0].uvs; //tcV1
-	//float tcV2 = input[1].uvs - input[0]uvs; //tcV2
-
-	//float tcU1 = input[2].uvs - input[1].uvs; //tcU1
-	//float tcU2 = input[2].uvs - input[1].uvs; //tcU2;
 	float2 uvEdge1 = input[1].uvs - input[0].uvs;
 	float2 uvEdge2 = input[2].uvs - input[0].uvs;
 
