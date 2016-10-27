@@ -912,17 +912,17 @@ float Intersection(XMVECTOR rayOrigin, XMVECTOR rayDirection)
 		//Temporary 3d floats for each vertex.
 		XMFLOAT3 _tV1, _tV2, _tV3;
 
-		_tV1.x = obj.finalVector[obj.face_idxs.at(i).face_pos * 3 + 0].x;
-		_tV1.y = obj.finalVector[obj.face_idxs.at(i).face_pos * 3 + 0].y;
-		_tV1.z = obj.finalVector[obj.face_idxs.at(i).face_pos * 3 + 0].z;
-
-		_tV2.x = obj.finalVector[obj.face_idxs.at(i).face_pos * 3 + 1].x;
-		_tV2.y = obj.finalVector[obj.face_idxs.at(i).face_pos * 3 + 1].y;
-		_tV2.z = obj.finalVector[obj.face_idxs.at(i).face_pos * 3 + 1].z;
-								
-		_tV3.x = obj.finalVector[obj.face_idxs.at(i).face_pos * 3 + 2].x;
-		_tV3.y = obj.finalVector[obj.face_idxs.at(i).face_pos * 3 + 2].y;
-		_tV3.z = obj.finalVector[obj.face_idxs.at(i).face_pos * 3 + 2].z;
+		_tV1.x = obj.finalVector[i * 3 + 0].x;
+		_tV1.y = obj.finalVector[i * 3 + 0].y;
+		_tV1.z = obj.finalVector[i * 3 + 0].z;
+								 
+		_tV2.x = obj.finalVector[i * 3 + 1].x;
+		_tV2.y = obj.finalVector[i * 3 + 1].y;
+		_tV2.z = obj.finalVector[i * 3 + 1].z;
+								 
+		_tV3.x = obj.finalVector[i * 3 + 2].x;
+		_tV3.y = obj.finalVector[i * 3 + 2].y;
+		_tV3.z = obj.finalVector[i * 3 + 2].z;
 
 
 		tri1V1 = XMVectorSet(_tV1.x, _tV1.y, _tV1.z, 1.0f);
