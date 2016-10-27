@@ -158,6 +158,27 @@ struct StartingPos
 	float x, y, z;
 };
 
+
+void getFrustrumPlanes(XMMATRIX& viewProj); //hämtar frustrum planes
+float retangleLenght(XMFLOAT3 input); // lägger ihop längderna på de olika planes.
+
+/*functioner som kommer att behövas
+
+	void CreateBBox(XMFLOAT minPoint, XMFLOAT3 maxPoint
+	void fillBBox() typ ett kollision test.
+	void splitbox. 
+
+*/
+int numberOfModels;
+int numOfChildModels = 0;
+
+struct Planes
+{
+	XMFLOAT3 normal;
+	float distance;
+};
+Planes frustrumPlanes[6];
+
 #pragma endregion
 
 #pragma region init buffers
@@ -2328,6 +2349,70 @@ bool SphereCollidingWithTriangle(Collision& cP, XMVECTOR &p0, XMVECTOR &p1, XMVE
 		}
 	}
 	return false;
+}
+void getFrustrumPlanes(XMMATRIX& viewProj)
+{
+	
+
+	XMFLOAT4X4 _viewProj;
+
+	XMStoreFloat4x4(&_viewProj, viewProj);
+
+	frustrumPlanes[0].normal.x = _viewProj._14 + _viewProj._11;
+	frustrumPlanes[0].normal.y = _viewProj._24 + _viewProj._21;
+	frustrumPlanes[0].normal.z = _viewProj._34 + _viewProj._31;
+	frustrumPlanes[0].distance = _viewProj._44 + _viewProj._41;
+	
+	frustrumPlanes[1].normal.x = _viewProj._14 - _viewProj._11;
+	frustrumPlanes[1].normal.y = _viewProj._24 - _viewProj._21;
+	frustrumPlanes[1].normal.z = _viewProj._34 - _viewProj._31;
+	frustrumPlanes[1].distance = _viewProj._44 - _viewProj._41;
+	
+	frustrumPlanes[2].normal.x = _viewProj._14 - _viewProj._12;
+	frustrumPlanes[2].normal.y = _viewProj._24 - _viewProj._22;
+	frustrumPlanes[2].normal.z = _viewProj._34 - _viewProj._32;
+	frustrumPlanes[2].distance = _viewProj._44 - _viewProj._42;
+	
+	frustrumPlanes[3].normal.x = _viewProj._14 + _viewProj._12;
+	frustrumPlanes[3].normal.y = _viewProj._24 + _viewProj._22;
+	frustrumPlanes[3].normal.z = _viewProj._34 + _viewProj._32;
+	frustrumPlanes[3].distance = _viewProj._44 + _viewProj._42;
+	
+	frustrumPlanes[5].normal.x = _viewProj._14 - _viewProj._13;
+	frustrumPlanes[5].normal.y = _viewProj._24 - _viewProj._23;
+	frustrumPlanes[5].normal.z = _viewProj._34 - _viewProj._33;
+	frustrumPlanes[5].distance = _viewProj._44 - _viewProj._43;
+
+
+	for (int i = 0; i < 6; ++i)
+	{
+
+		float length = 1.0f / retangleLenght(frustrumPlanes[i].normal); // rectangleLenght function to lower the amount of code.
+		frustrumPlanes[i].normal.x = frustrumPlanes[i].normal.x * length;
+		frustrumPlanes[i].normal.y = frustrumPlanes[i].normal.y * length;
+		frustrumPlanes[i].normal.z = frustrumPlanes[i].normal.z	* length;
+		frustrumPlanes[i].distance = frustrumPlanes[i].distance * length;
+	}
+}
+
+
+float retangleLenght(XMFLOAT3 input)
+{
+	return sqrt((input.x*input.x) + (input.y*input.y) + (input.z*input.z));
+}
+
+
+quadTreeCollided(BoundingBoxes * modelBox)
+{
+
+}
+hasCollided(BoundingBoxes*modelBox)
+{
+
+}
+void quadTreeCollision(GQuadTreeBoundingBox* rootBox, bool startCollision) //The loops herein could be hairy... Also: alway have the "original root" as input.
+{
+
 }
 
 bool checkPointInTriangle(const XMVECTOR& point, const XMVECTOR& triV1, const XMVECTOR& triV2, const XMVECTOR& triV3)
