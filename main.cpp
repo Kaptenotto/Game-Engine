@@ -817,7 +817,7 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 	}
 	if (mouseCurrentState.rgbButtons[0])
 	{
-		ShowCursor(TRUE);
+		//ShowCursor(TRUE);
 		XMVECTOR rayOrigin, rayDirection;
 		POINT mousePos;
 
@@ -872,8 +872,8 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 void calcRay(float mouseX, float mouseY, XMVECTOR& rayOrigin, XMVECTOR& rayDirection)
 {
 	XMVECTOR localRayDirection	 = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-	//XMVECTOR LocalRayOrigin		 = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-	XMVECTOR LocalRayOrigin		 = matrices.camPos;
+	XMVECTOR LocalRayOrigin		 = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+	//XMVECTOR LocalRayOrigin		 = matrices.camPos;
 
 	float X, Y, Z;
 	XMFLOAT4X4 camProjection;
@@ -884,14 +884,16 @@ void calcRay(float mouseX, float mouseY, XMVECTOR& rayOrigin, XMVECTOR& rayDirec
 	Y = -(((2.0f * mouseY) / WIN_HEIGHT) - 1) / camProjection._22;
 	Z = 1.0f;    //View space's Z direction ranges from 0 to 1, so we set 1 since the ray goes "into" the screen
 
-	localRayDirection = XMVectorSet(X, Y, Z, 0.0f);
+	//localRayDirection = XMVectorSet(X, Y, Z, 0.0f);
+	localRayDirection = XMVectorSet(0.0f, 0.0f, Z, 0.0f);
 
 	XMMATRIX inverseCamView;
 	XMVECTOR det = { 1,1,1,1 };
-	det = XMMatrixDeterminant(matrices.camView);
-	inverseCamView = XMMatrixInverse(&det, matrices.camView);
+	XMMATRIX temp = XMMatrixTranspose(matrices.camView);
+	inverseCamView = XMMatrixInverse(&det, temp);
 
 	rayOrigin = XMVector3TransformCoord(LocalRayOrigin, inverseCamView);
+	//rayOrigin = matrices.camPos;
 	rayDirection = XMVector3TransformNormal(localRayDirection, inverseCamView);
 	rayDirection = XMVector3Normalize(rayDirection);
 }
