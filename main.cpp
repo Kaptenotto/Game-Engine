@@ -45,9 +45,7 @@ HRESULT CreateDirect3DContext(HWND wndHandle);
 IDXGISwapChain* gSwapChain = nullptr;
 
 void RenderExplosion();
-XMVECTOR rayOrigin = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-XMVECTOR currentRay = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-bool Picking(float mouseX, float mouseY);
+void calcRay(float mouseX, float mouseY, XMVECTOR& rayOrigin, XMVECTOR& rayDirection);
 float Intersection(XMVECTOR rayOrigin, XMVECTOR rayDirection);
 bool PointInTriangle(XMVECTOR&triV1, XMVECTOR&triV2, XMVECTOR&triV3, XMVECTOR&point);
 
@@ -819,28 +817,39 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 	}
 	if (mouseCurrentState.rgbButtons[0])
 	{
-		XMMATRIX projectionMatrix;
-		XMMATRIX viewMatrix;
-
-		projectionMatrix = matrices.Projection;
-		viewMatrix = matrices.camView;
-		bool result;
+		ShowCursor(TRUE);
+		XMVECTOR rayOrigin, rayDirection;
 		POINT mousePos;
 
 		GetCursorPos(&mousePos);
 		ScreenToClient(hwnd, &mousePos);
 
-		float mouseX = mousePos.x;
-		float mouseY = mousePos.y;
+		int mouseX = mousePos.x;
+		int mouseY = mousePos.y;
+		if (mouseX > WIN_WIDTH)
+			mouseX = WIN_WIDTH;
+		else if (mouseX < 0)
+			mouseX = 0;
+		if (mouseY > WIN_HEIGHT)
+			mouseY = WIN_HEIGHT;
+		else if (mouseY < 0)
+			mouseY = 0;
 
 		float tempDist;
 		float closestDist = FLT_MAX;
 
-		result = Picking(mouseX, mouseY);
+		calcRay((float)mouseX, (float)mouseY, rayOrigin, rayDirection);
 
-		if (result = true)
+		tempDist = Intersection(rayOrigin, rayDirection);
+
+		if (tempDist < closestDist)
 		{
-			Intersection(rayOrigin, currentRay);
+			closestDist = tempDist;
+		}
+
+		if (closestDist < FLT_MAX)
+		{
+			RenderExplosion();
 		}
 	}
 	if ((mouseCurrentState.IX != mouseLastState.IX) || (mouseCurrentState.IY != mouseLastState.IY))
@@ -860,28 +869,31 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 	return;
 }
 
-bool Picking(float mouseX, float mouseY)
+void calcRay(float mouseX, float mouseY, XMVECTOR& rayOrigin, XMVECTOR& rayDirection)
 {
-	//ShowCursor(TRUE);
+	XMVECTOR localRayDirection	 = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+	//XMVECTOR LocalRayOrigin		 = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+	XMVECTOR LocalRayOrigin		 = matrices.camPos;
 
-	float PRVecX, PRVecY, PRVecZ;
+	float X, Y, Z;
 	XMFLOAT4X4 camProjection;
 	XMStoreFloat4x4(&camProjection, matrices.Projection);
 
 	//Transform 2D pick position on screen space to 3D ray in View space
-	PRVecX = (((2.0f * mouseX) / clientWidth) - 1) / camProjection._11;
-	PRVecY = -(((2.0f * mouseY) / clientHeight) - 1) / camProjection._22;
-	PRVecZ = 1.0f;    //View space's Z direction ranges from 0 to 1, so we set 1 since the ray goes "into" the screen
+	X = (((2.0f * mouseX) / WIN_WIDTH) - 1) / camProjection._11;
+	Y = -(((2.0f * mouseY) / WIN_HEIGHT) - 1) / camProjection._22;
+	Z = 1.0f;    //View space's Z direction ranges from 0 to 1, so we set 1 since the ray goes "into" the screen
 
-	currentRay = XMVectorSet(PRVecX, PRVecY, PRVecZ, 0.0f);
+	localRayDirection = XMVectorSet(X, Y, Z, 0.0f);
 
-	XMVECTOR dull = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);;
+	XMMATRIX inverseCamView;
+	XMVECTOR det = { 1,1,1,1 };
+	det = XMMatrixDeterminant(matrices.camView);
+	inverseCamView = XMMatrixInverse(&det, matrices.camView);
 
-	rayOrigin = XMVector3TransformCoord(dull, matrices.camView);
-	currentRay = XMVector3TransformNormal(currentRay, matrices.camView);
-	currentRay = XMVector3Normalize(currentRay);
-
-	return true;
+	rayOrigin = XMVector3TransformCoord(LocalRayOrigin, inverseCamView);
+	rayDirection = XMVector3TransformNormal(localRayDirection, inverseCamView);
+	rayDirection = XMVector3Normalize(rayDirection);
 }
 
 float Intersection(XMVECTOR rayOrigin, XMVECTOR rayDirection)
@@ -927,9 +939,7 @@ float Intersection(XMVECTOR rayOrigin, XMVECTOR rayDirection)
 
 		U = tri1V2 - tri1V1;
 		V = tri1V3 - tri1V1;
-
 		faceNormal = XMVector3Cross(U, V);
-
 		faceNormal = XMVector3Normalize(faceNormal);
 
 		XMVECTOR triPoint = tri1V1;
@@ -989,7 +999,6 @@ bool PointInTriangle(XMVECTOR&triV1, XMVECTOR&triV2, XMVECTOR&triV3, XMVECTOR&po
 				cp2 = XMVector3Cross((triV2 - triV1), (triV3 - triV1));
 				if (XMVectorGetX(XMVector3Dot(cp1, cp2)) >= 0)
 				{
-					RenderExplosion();
 					return true;
 				}
 				else
