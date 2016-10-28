@@ -2402,23 +2402,20 @@ float retangleLenght(XMFLOAT3 input)
 }
 
 
-void quadTreeCollided(BoundingBoxes * modelBox)
-{
-	if (true)
-	{
-		modelBox;
-	}
-}
+//void quadTreeCollided(BoundingBoxes * modelBox)
+//{
+//
+//}
 
-bool hasCollided(BoundingBoxes*modelBox)
-{
-	return true;
-}
+//bool hasCollided(BoundingBoxes*modelBox)
+//{
+//	return true;
+//}
 
-void quadTreeCollision(GQuadTreeBoundingBox* rootBox, bool startCollision) //The loops herein could be hairy... Also: alway have the "original root" as input.
-{
-
-}
+//void quadTreeCollision(GQuadTreeBoundingBox* rootBox, bool startCollision) //The loops herein could be hairy... Also: alway have the "original root" as input.
+//{
+//
+//}
 
 bool checkPointInTriangle(const XMVECTOR& point, const XMVECTOR& triV1, const XMVECTOR& triV2, const XMVECTOR& triV3)
 {
