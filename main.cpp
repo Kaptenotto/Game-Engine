@@ -1,6 +1,7 @@
 #pragma region Includes
 #include <windows.h>
 #include "Constants.h"
+#include "quadtree.h"
 
 #include <d3d11.h>
 #include <d3dcompiler.h>

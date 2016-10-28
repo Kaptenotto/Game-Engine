@@ -360,15 +360,8 @@ bool QuadTree::Initialize(ID3D11Device * gDevice, ID3D11DeviceContext * gDeviceC
 	return true;
 }
 
-void QuadTree::BindBuffersforATree(TreeNode* node)
+void QuadTree::BindNodeBuffers(TreeNode* node)
 {
-	//for each tree in the quadtree, recursively find trees with info, then bind that buffer and render, then continue to the next.
-	for (size_t i = 0; i < 4; i++)
-	{
-		if (node->nodes[i] != 0)
-			BindBuffersforATree(node->nodes[i]);
-	}
-
 	UINT32 vertexSize = sizeof(VertexType);
 	UINT32 vertexCount = node->VertexCount;
 	UINT32 indexSize = obj.index_counter;
@@ -377,24 +370,12 @@ void QuadTree::BindBuffersforATree(TreeNode* node)
 	gDeviceContext->IASetVertexBuffers(0, 1, &node->vertexBuffer, &vertexSize, &offset);
 	gDeviceContext->IASetIndexBuffer(node->indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
-	callRender();
-
-
 }
 
 void QuadTree::Release()
 {
 	//Recursively release the quad tree data
-	for (size_t i = 0; i < m_parentNode->size(); i++)
-	{
-		if (m_parentNode->at(i))
-		{
-			ReleaseNode(m_parentNode->at(i));
-			delete m_parentNode->at(i);
-			m_parentNode->at(i) = 0;
-		}
-	}
+	ReleaseNode(m_parentNode);
 	delete m_parentNode;
-
 	return;
 }

@@ -54,7 +54,7 @@ class QuadTree
 		~QuadTree();
 
 		bool Initialize(ID3D11Device *gDevice, ID3D11DeviceContext *gDeviceContext);
-		void BindBuffersforATree(TreeNode* node);
+		void BindNodeBuffers(TreeNode* node);
 		void Release();
 		TreeNode* getParent(unsigned int index) { return this->parentNode->at(index); };
 		unsigned int getNodeAmt() { return this->nodeCount; };
