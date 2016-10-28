@@ -80,6 +80,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="OBJ-main.cpp" />
     <ClCompile Include="OBJ_Structs.cpp" />
+    <ClCompile Include="quadtree.cpp" />
     <ClCompile Include="Wic.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -137,6 +138,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Constants.h" />
+    <ClInclude Include="quadtree.h" />
     <ClInclude Include="Wic.h" />
     <ClInclude Include="importer.h" />
   </ItemGroup>
