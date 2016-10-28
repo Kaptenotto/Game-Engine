@@ -2402,14 +2402,19 @@ float retangleLenght(XMFLOAT3 input)
 }
 
 
-quadTreeCollided(BoundingBoxes * modelBox)
+void quadTreeCollided(BoundingBoxes * modelBox)
 {
-
+	if (true)
+	{
+		modelBox;
+	}
 }
-hasCollided(BoundingBoxes*modelBox)
+
+bool hasCollided(BoundingBoxes*modelBox)
 {
-
+	return true;
 }
+
 void quadTreeCollision(GQuadTreeBoundingBox* rootBox, bool startCollision) //The loops herein could be hairy... Also: alway have the "original root" as input.
 {
 
