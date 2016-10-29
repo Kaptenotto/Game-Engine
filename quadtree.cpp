@@ -201,6 +201,8 @@ void QuadTree::CreateTreeNode(TreeNode * parent, float posX, float posY, float w
 
 		}
 	}
+	//MUST ADD A ZERO CHECK
+	//DOUBLE CHECK ISCONTAINED FUNC
 	newInd.shrink_to_fit();
 	newInd.resize(indexCount);
 	parent->IndexCount = indexCount;
