@@ -80,7 +80,7 @@ ID3D11InputLayout* FinalPass_VertexLayout = nullptr;
 
 #pragma region camVectors
 
-XMVECTOR camPosition = XMVectorSet(10.0, 10.0, 20.0, 0.0);
+XMVECTOR camPosition = XMVectorSet(0.0, 0.0, 1.0, 0.0);
 XMVECTOR camTarget = XMVectorSet(0.0, 0.0, 0.0, 0.0);
 XMVECTOR camUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
@@ -160,18 +160,8 @@ struct StartingPos
 };
 
 
-void getFrustrumPlanes(XMMATRIX& viewProj); //hämtar frustrum planes
-float retangleLenght(XMFLOAT3 input); // lägger ihop längderna på de olika planes.
-
-/*functioner som kommer att behövas
-
-	void CreateBBox(XMFLOAT minPoint, XMFLOAT3 maxPoint
-	void fillBBox() typ ett kollision test.
-	void splitbox. 
-
-*/
-int numberOfModels;
-int numOfChildModels = 0;
+void getFrustrumPlanes(float farZ, XMFLOAT4X4 projection, XMFLOAT4X4 &viewMatrix); //hämtar frustrum planes
+bool checkCube(float xCenter, float yCenter, float zCenter, float radius); // lägger ihop längderna på de olika planes.
 
 struct Planes
 {
@@ -236,7 +226,8 @@ struct Collision {
 };
 
 const float unitsPerMeter = 100.0f;
-XMVECTOR gravity = XMVectorSet(0.0f, -0.2f, 0.0f, 0.0f);
+//XMVECTOR gravity = XMVectorSet(0.0f, -0.2f, 0.0f, 0.0f);
+XMVECTOR gravity = XMVectorSet(0.0f, -0.0f, 0.0f, 0.0f);
 
 vector<XMFLOAT3> collidableGeometryPositions;
 vector<DWORD> collidableGeometryIndices;
@@ -281,7 +272,7 @@ XMVECTOR defaultForward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
 XMVECTOR defaultRight = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
 XMVECTOR camForward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
 XMVECTOR camRight = XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f);
-
+XMVECTOR camUpDown = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 //XMVECTOR defaultUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 //XMVECTOR camUpDown = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
@@ -1152,17 +1143,17 @@ void updateCamera()
 	cameraCP.w_Position = camPosition;
 	cameraCP.w_Velocity = (moveLeftRight*camRight) + (moveBackForward*camForward);
 
-	camPosition = CollisionSlide(cameraCP,
-		collidableGeometryPositions,
-		collidableGeometryIndices);
+	//camPosition = CollisionSlide(cameraCP,
+	//	collidableGeometryPositions,
+	//	collidableGeometryIndices);
 
-	/*camPosition += moveLeftRight* camRight;
-	camPosition += moveBackForward* camForward;*/
-	//camPosition += moveupDown * camUpDown;
+	camPosition += moveLeftRight* camRight;
+	camPosition += moveBackForward* camForward;
+	camPosition += moveupDown * camUpDown;
 
 	moveLeftRight = 0.0f;
 	moveBackForward = 0.0f;
-	//moveupDown = 0.0f;
+	moveupDown = 0.0f;
 
 	camTarget = camPosition + camTarget;
 
@@ -1170,6 +1161,23 @@ void updateCamera()
 	matrices.camView = XMMatrixLookAtLH(camPosition, camTarget, camUp);
 	matrices.camView = XMMatrixTranspose(matrices.camView);
 
+	//Comment away the block below to disable quadtree
+#pragma region
+	XMFLOAT4X4 tempProj2;
+	XMFLOAT4X4 tempView2;
+
+	XMMATRIX tempProj1;
+	XMMATRIX tempView1;
+
+	tempView1 = XMMatrixTranspose(matrices.camView);
+	tempProj1 = XMMatrixTranspose(matrices.Projection);
+
+
+	XMStoreFloat4x4(&tempProj2, tempProj1);
+	XMStoreFloat4x4(&tempView2, tempView1);
+
+	getFrustrumPlanes(100.0f, tempProj2, tempView2);
+#pragma endregion
 }
 
 void detectInput(double time) // checking keyboard and mouse input for movement in Engine
@@ -1353,9 +1361,9 @@ void updateExplosion()
 		y = XMVectorGetY(travelDir);
 		z = XMVectorGetZ(travelDir);
 
-		explosionTest[i].x = explosionTest[i].x + x / 10.0f;
-		explosionTest[i].y = explosionTest[i].y + y / 10.0f;
-		explosionTest[i].z = explosionTest[i].z + z / 10.0f;
+explosionTest[i].x = explosionTest[i].x + x / 10.0f;
+explosionTest[i].y = explosionTest[i].y + y / 10.0f;
+explosionTest[i].z = explosionTest[i].z + z / 10.0f;
 	}
 
 	D3D11_MAPPED_SUBRESOURCE gMappedResource;
@@ -1387,142 +1395,128 @@ void killExplosion()
 
 #pragma endregion
 
-//#pragma region Frustum
-//
-//vector<XMFLOAT4> getFrustrumPlanes(XMMATRIX& viewProj)
-//{
-//	vector<XMFLOAT4> tempFrustumPlane(6);
-//
-//	XMFLOAT4X4 _viewProj;
-//
-//	XMStoreFloat4x4(&_viewProj, viewProj);
-//
-//	tempFrustumPlane[0].x = _viewProj._14 + _viewProj._11;
-//	tempFrustumPlane[0].y = _viewProj._24 + _viewProj._21;
-//	tempFrustumPlane[0].z = _viewProj._34 + _viewProj._31;
-//	tempFrustumPlane[0].w = _viewProj._44 + _viewProj._41;
-//
-//	tempFrustumPlane[1].x = _viewProj._14 - _viewProj._11;
-//	tempFrustumPlane[1].y = _viewProj._24 - _viewProj._21;
-//	tempFrustumPlane[1].z = _viewProj._34 - _viewProj._31;
-//	tempFrustumPlane[1].w = _viewProj._44 - _viewProj._41;
-//
-//	tempFrustumPlane[2].x = _viewProj._14 - _viewProj._12;
-//	tempFrustumPlane[2].y = _viewProj._24 - _viewProj._22;
-//	tempFrustumPlane[2].z = _viewProj._34 - _viewProj._32;
-//	tempFrustumPlane[2].w = _viewProj._44 - _viewProj._42;
-//
-//	tempFrustumPlane[3].x = _viewProj._14 + _viewProj._12;
-//	tempFrustumPlane[3].y = _viewProj._24 + _viewProj._22;
-//	tempFrustumPlane[3].z = _viewProj._34 + _viewProj._32;
-//	tempFrustumPlane[3].w = _viewProj._44 + _viewProj._42;
-//
-//	tempFrustumPlane[5].x = _viewProj._14 - _viewProj._13;
-//	tempFrustumPlane[5].y = _viewProj._24 - _viewProj._23;
-//	tempFrustumPlane[5].z = _viewProj._34 - _viewProj._33;
-//	tempFrustumPlane[5].w = _viewProj._44 - _viewProj._43;
-//
-//
-//	for (int i = 0; i < 6; ++i)
-//	{
-//		float length = sqrt((tempFrustumPlane[i].x * tempFrustumPlane[i].x) + (tempFrustumPlane[i].y * tempFrustumPlane[i].y) + (tempFrustumPlane[i].z * tempFrustumPlane[i].z));
-//		tempFrustumPlane[i].x /= length;
-//		tempFrustumPlane[i].y /= length;
-//		tempFrustumPlane[i].z /= length;
-//		tempFrustumPlane[i].w /= length;
-//	}
-//
-//	return tempFrustumPlane;
-//
-//}
-//
-//void cullAABB(vector<XMFLOAT4> &frustrumPlanes)
-//{
-//	numOfModelsToDraw = 0;
-//
-//	vector<InstanceData> tempInstDat(numOfModels);
-//
-//
-//	bool cull = false;
-//
-//	for (int i = 0; i < numOfModels; i++)
-//	{
-//		cull = false;
-//
-//		for (int planeID = 0; planeID < 6; ++planeID)
-//		{
-//			XMVECTOR planeNormal = XMVectorSet(frustrumPlanes[planeID].x, frustrumPlanes[planeID].y, frustrumPlanes[planeID].z, 0.0f);
-//
-//			float planeConstant = frustrumPlanes[planeID].w;
-//			XMFLOAT3 axisVert;
-//
-//
-//			if (frustrumPlanes[planeID].x < 0.0f)    // Which AABB vertex is furthest down (plane normals direction) the x axis
-//				axisVert.x = AABBs[0].x + instancedData[i].pos.x; // min x plus tree positions x
-//			else
-//				axisVert.x = AABBs[1].x + instancedData[i].pos.x; // max x plus tree positions x
-//
-//																  // y-axis
-//			if (frustrumPlanes[planeID].y < 0.0f)    // Which AABB vertex is furthest down (plane normals direction) the y axis
-//				axisVert.y = AABBs[0].y + instancedData[i].pos.y; // min y plus tree positions y
-//			else
-//				axisVert.y = AABBs[1].y + instancedData[i].pos.y; // max y plus tree positions y
-//
-//																  // z-axis
-//			if (frustrumPlanes[planeID].z < 0.0f)    // Which AABB vertex is furthest down (plane normals direction) the z axis
-//				axisVert.z = AABBs[0].z + instancedData[i].pos.z; // min z plus tree positions z
-//			else
-//				axisVert.z = AABBs[1].z + instancedData[i].pos.z; // max z plus tree positions z
-//
-//																  // Now we get the signed distance from the AABB vertex that's furthest down the frustum planes normal,                                                          // and if the signed distance is negative, then the entire bounding box is behind the frustum plane, which means
-//																  // that it should be culled
-//			if (XMVectorGetX(XMVector3Dot(planeNormal, XMLoadFloat3(&axisVert))) + planeConstant < 0.0f)
-//			{
-//				cull = true;
-//				// Skip remaining planes to check and move on to next tree
-//				break;
-//			}
-//		}
-//		if (!cull)
-//		{
-//			tempInstDat[numOfModelsToDraw].pos = instancedData[i].pos;
-//
-//			numOfModelsToDraw++;
-//		}
-//	}
-//}
-//
-//vector<XMFLOAT3> CreateAABB(vector<XMFLOAT3>& vertPosArray)
-//{
-//	XMFLOAT3 minVertex = XMFLOAT3(FLT_MAX, FLT_MAX, FLT_MAX);
-//	XMFLOAT3 maxVertex = XMFLOAT3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
-//
-//	for (UINT i = 0; i < vertPosArray.size(); i++)
-//	{
-//
-//
-//		//Get the smallest vertex 
-//		minVertex.x = min(minVertex.x, vertPosArray[i].x);    // Find smallest x value in model
-//		minVertex.y = min(minVertex.y, vertPosArray[i].y);    // Find smallest y value in model
-//		minVertex.z = min(minVertex.z, vertPosArray[i].z);    // Find smallest z value in model
-//
-//															  //Get the largest vertex 
-//		maxVertex.x = max(maxVertex.x, vertPosArray[i].x);    // Find largest x value in model
-//		maxVertex.y = max(maxVertex.y, vertPosArray[i].y);    // Find largest y value in model
-//		maxVertex.z = max(maxVertex.z, vertPosArray[i].z);    // Find largest z value in model
-//	}
-//
-//	std::vector<XMFLOAT3> AABB;
-//
-//	// Our AABB [0] is the min vertex and [1] is the max
-//	AABB.push_back(minVertex);
-//	AABB.push_back(maxVertex);
-//
-//	return AABB;
-//}
-//
-//
-//#pragma endregion
+#pragma region Frustum
+
+void getFrustrumPlanes(float farZ, XMFLOAT4X4 projection, XMFLOAT4X4 &viewMatrix)
+
+{
+	float zMin = -projection._43 / projection._33;
+	float r = (farZ / (farZ - zMin));
+	projection._33 = r;
+	projection._43 = -r * zMin;
+
+
+	XMMATRIX temp = XMMatrixMultiply(XMLoadFloat4x4(&viewMatrix), XMLoadFloat4x4(&projection));
+
+	XMFLOAT4X4 _viewProj;
+
+	XMStoreFloat4x4(&_viewProj, temp);
+
+	frustrumPlanes[0].normal.x = _viewProj._14 + _viewProj._11;
+	frustrumPlanes[0].normal.y = _viewProj._24 + _viewProj._21;
+	frustrumPlanes[0].normal.z = _viewProj._34 + _viewProj._31;
+	frustrumPlanes[0].distance = _viewProj._44 + _viewProj._41;
+
+	frustrumPlanes[1].normal.x = _viewProj._14 - _viewProj._11;
+	frustrumPlanes[1].normal.y = _viewProj._24 - _viewProj._21;
+	frustrumPlanes[1].normal.z = _viewProj._34 - _viewProj._31;
+	frustrumPlanes[1].distance = _viewProj._44 - _viewProj._41;
+
+	frustrumPlanes[2].normal.x = _viewProj._14 - _viewProj._12;
+	frustrumPlanes[2].normal.y = _viewProj._24 - _viewProj._22;
+	frustrumPlanes[2].normal.z = _viewProj._34 - _viewProj._32;
+	frustrumPlanes[2].distance = _viewProj._44 - _viewProj._42;
+
+	frustrumPlanes[3].normal.x = _viewProj._14 + _viewProj._12;
+	frustrumPlanes[3].normal.y = _viewProj._24 + _viewProj._22;
+	frustrumPlanes[3].normal.z = _viewProj._34 + _viewProj._32;
+	frustrumPlanes[3].distance = _viewProj._44 + _viewProj._42;
+
+	frustrumPlanes[4].normal.x = _viewProj._14 + _viewProj._13;
+	frustrumPlanes[4].normal.y = _viewProj._24 + _viewProj._23;
+	frustrumPlanes[4].normal.z = _viewProj._34 + _viewProj._33;
+	frustrumPlanes[4].distance = _viewProj._44 + _viewProj._43;
+
+	frustrumPlanes[5].normal.x = _viewProj._14 - _viewProj._13;
+	frustrumPlanes[5].normal.y = _viewProj._24 - _viewProj._23;
+	frustrumPlanes[5].normal.z = _viewProj._34 - _viewProj._33;
+	frustrumPlanes[5].distance = _viewProj._44 - _viewProj._43;
+
+
+	for (unsigned int i = 0; i < 6; i++)
+	{
+		//float length = sqrt((tempFrustumPlane[i].x * tempFrustumPlane[i].x) + (tempFrustumPlane[i].y * tempFrustumPlane[i].y) + (tempFrustumPlane[i].z * tempFrustumPlane[i].z));
+		float lenghtSquared =
+			frustrumPlanes[i].normal.x * frustrumPlanes[i].normal.x +
+			frustrumPlanes[i].normal.y * frustrumPlanes[i].normal.y +
+			frustrumPlanes[i].normal.z * frustrumPlanes[i].normal.z;
+
+		float denom = 1.0f / sqrt(lenghtSquared);
+
+		frustrumPlanes[i].normal.x *= denom;
+		frustrumPlanes[i].normal.y *= denom;
+		frustrumPlanes[i].normal.z *= denom;
+		frustrumPlanes[i].distance *= denom;
+	}
+
+}
+
+//positions
+bool checkCube(float xCenter, float yCenter, float zCenter, float radius)
+{
+
+	
+	for (unsigned int i = 0; i < 6; i++)
+	{
+		XMFLOAT4 plane = { frustrumPlanes[i].normal.x,frustrumPlanes[i].normal.y,frustrumPlanes[i].normal.z,frustrumPlanes[i].distance };
+
+		XMFLOAT3 point;
+		point = { (xCenter - radius),(yCenter - radius),(zCenter - radius) };
+		if(XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		{
+			continue;
+		}
+		point = { (xCenter + radius), (yCenter - radius), (zCenter - radius) };
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		{
+			continue;
+		}
+		point = { (xCenter - radius), (yCenter + radius), (zCenter - radius) };
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		{
+			continue;
+		}
+		point = { (xCenter + radius), (yCenter + radius), (zCenter - radius) };
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		{
+			continue;
+		}
+		point = { (xCenter - radius), (yCenter - radius), (zCenter + radius) };
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		{
+			continue;
+		}
+		point = { (xCenter + radius), (yCenter - radius), (zCenter + radius) };
+		if(XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		{
+			continue;
+		}
+		point = { (xCenter - radius), (yCenter + radius), (zCenter + radius) };
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		{
+			continue;
+		}
+		point = { (xCenter + radius), (yCenter + radius), (zCenter + radius) };
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		{
+			continue;
+		}
+		return false;
+	}
+	return true;
+}
+
+#pragma endregion
 
 #pragma region CreateHeightMap
 
@@ -2352,72 +2346,6 @@ bool SphereCollidingWithTriangle(Collision& cP, XMVECTOR &p0, XMVECTOR &p1, XMVE
 	}
 	return false;
 }
-void getFrustrumPlanes(XMMATRIX& viewProj)
-{
-	
-
-	XMFLOAT4X4 _viewProj;
-
-	XMStoreFloat4x4(&_viewProj, viewProj);
-
-	frustrumPlanes[0].normal.x = _viewProj._14 + _viewProj._11;
-	frustrumPlanes[0].normal.y = _viewProj._24 + _viewProj._21;
-	frustrumPlanes[0].normal.z = _viewProj._34 + _viewProj._31;
-	frustrumPlanes[0].distance = _viewProj._44 + _viewProj._41;
-	
-	frustrumPlanes[1].normal.x = _viewProj._14 - _viewProj._11;
-	frustrumPlanes[1].normal.y = _viewProj._24 - _viewProj._21;
-	frustrumPlanes[1].normal.z = _viewProj._34 - _viewProj._31;
-	frustrumPlanes[1].distance = _viewProj._44 - _viewProj._41;
-	
-	frustrumPlanes[2].normal.x = _viewProj._14 - _viewProj._12;
-	frustrumPlanes[2].normal.y = _viewProj._24 - _viewProj._22;
-	frustrumPlanes[2].normal.z = _viewProj._34 - _viewProj._32;
-	frustrumPlanes[2].distance = _viewProj._44 - _viewProj._42;
-	
-	frustrumPlanes[3].normal.x = _viewProj._14 + _viewProj._12;
-	frustrumPlanes[3].normal.y = _viewProj._24 + _viewProj._22;
-	frustrumPlanes[3].normal.z = _viewProj._34 + _viewProj._32;
-	frustrumPlanes[3].distance = _viewProj._44 + _viewProj._42;
-	
-	frustrumPlanes[5].normal.x = _viewProj._14 - _viewProj._13;
-	frustrumPlanes[5].normal.y = _viewProj._24 - _viewProj._23;
-	frustrumPlanes[5].normal.z = _viewProj._34 - _viewProj._33;
-	frustrumPlanes[5].distance = _viewProj._44 - _viewProj._43;
-
-
-	for (int i = 0; i < 6; ++i)
-	{
-
-		float length = 1.0f / retangleLenght(frustrumPlanes[i].normal); // rectangleLenght function to lower the amount of code.
-		frustrumPlanes[i].normal.x = frustrumPlanes[i].normal.x * length;
-		frustrumPlanes[i].normal.y = frustrumPlanes[i].normal.y * length;
-		frustrumPlanes[i].normal.z = frustrumPlanes[i].normal.z	* length;
-		frustrumPlanes[i].distance = frustrumPlanes[i].distance * length;
-	}
-}
-
-
-float retangleLenght(XMFLOAT3 input)
-{
-	return sqrt((input.x*input.x) + (input.y*input.y) + (input.z*input.z));
-}
-
-
-//void quadTreeCollided(BoundingBoxes * modelBox)
-//{
-//
-//}
-
-//bool hasCollided(BoundingBoxes*modelBox)
-//{
-//	return true;
-//}
-
-//void quadTreeCollision(GQuadTreeBoundingBox* rootBox, bool startCollision) //The loops herein could be hairy... Also: alway have the "original root" as input.
-//{
-//
-//}
 
 bool checkPointInTriangle(const XMVECTOR& point, const XMVECTOR& triV1, const XMVECTOR& triV2, const XMVECTOR& triV3)
 {
@@ -2784,15 +2712,45 @@ void RenderGBuffer()
 
 void RenderGBufferQuadTree(TreeNode* node)
 {
+	bool renderedOnce = false;
 	for (size_t i = 0; i < 4; i++)
 	{
+		if (checkCube(node->posX, 0.0f, node->posY, (node->width / 2) * 0.653))
+		{
+			if (node->VertexCount != 0 && node->vertexBuffer != 0 && renderedOnce != true)
+			{
+					UINT32 vertexSize = sizeof(VertexType);
+					UINT32 vertexCount = node->VertexCount;
+					UINT32 indexSize = obj.index_counter;
+					UINT32 offset = 0;
+
+					//UINT32 vertexSize = sizeof(obj.finalVector[0]);
+					//UINT32 vertexCount = obj.finalVector.size();
+					//UINT32 indexSize = obj.index_counter;
+					//UINT32 offset = 0;
+
+					gDeviceContext->IASetVertexBuffers(0, 1, &node->vertexBuffer, &vertexSize, &offset);
+					gDeviceContext->IASetIndexBuffer(node->indexBuffer, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
+
+					if (&textureResources[i] != 0)
+					{
+						gDeviceContext->PSSetShaderResources(0, 1, &textureResources[textureResources.size() - 1]);
+
+					}
+					if (&normalResources[i] != 0)
+					{
+						gDeviceContext->PSSetShaderResources(1, 1, &normalResources[normalResources.size() - 1]);
+					}
+
+
+					gDeviceContext->Draw(vertexCount, 0);
+
+
+					renderedOnce = true;
+			}
+		}
 		if (node->nodes[i] != 0)
 		{
-			//if (frustrum)
-			//{
-			//
-			//}
-			gDeviceContext->Draw(node->triangleCount * 3, 0);
 			RenderGBufferQuadTree(node->nodes[i]);
 		}
 	}
@@ -2818,13 +2776,13 @@ void testingfunc()
 	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->GSSetShader(GBuffer_GS, nullptr, 0);
 	gDeviceContext->PSSetShader(GBuffer_PS, nullptr, 0);
-
-	UINT32 vertexSize = sizeof(obj.finalVector[0]);
-	UINT32 vertexCount = obj.finalVector.size();
-	UINT32 indexSize = obj.index_counter;
-	UINT32 offset = 0;
+	gDeviceContext->IASetInputLayout(GBuffer_VertexLayout);
 
 	TreeNode* test = quadTree.getParent();
+
+	gDeviceContext->PSSetShaderResources(2, 1, &ShadowDepthResource);
+
+
 	RenderGBufferQuadTree(test);
 }
 
@@ -2904,9 +2862,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		CreateDirect3DContext(wndHandle); //2. Skapa och koppla SwapChain, Device och Device Context
 
 		SetViewport();
-		//myWindow.SetViewport(gDevice, gDevContext);
 
-		CreateShaders();
+		//myWindow.SetViewport(gDevice, gDevContext);
+		//CreateShaders();
 
 		CreateDefferedShaders();
 		CreateTextureViews();
@@ -2925,7 +2883,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 		createTextures();
 
-		CreateHeightMap();
+		//CreateHeightMap();
 
 		quadTree.Initialize(gDevice, gDeviceContext, &obj);
 
@@ -2955,26 +2913,41 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 
 				//UpdateParticles(getFrameTime());
+
+
+				//update buffers
 				UpdateBuffers();
+
+
+				//Render ShadowMap
 				RenderShadow(); // Rendera
-								//Render(); // Rendera
+
+
+				////Non quadTree deffered rendering (textures working)
 				//RenderGBuffer(); // Rendera
-				//RenderGBuffer2(); // Rendera
+
+				//QuadTree Render
 				testingfunc();
-				RenderParticles(); // Rendera
+
+				////HeightMap Render
+				//RenderGBuffer2(); // Rendera
+
+				////Particle Render
+				//RenderParticles(); // Rendera
 				
-				if (explosion)
-				{
-					RenderExplosion(); // Rendera
-					updateExplosion();
-					killExplosion();
-				}
 
+
+				////Explosion render
+				//if (explosion)
+				//{
+				//	RenderExplosion(); // Rendera
+				//	updateExplosion();
+				//	killExplosion();
+				//}
+
+
+				//Final Pass for deffered rendering
 				RenderFinalPass();
-
-
-
-
 
 				frameTime = getFrameTime();
 
@@ -2985,8 +2958,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		}
 
 		quadTree.Release();
-		groundVertexBuffer->Release();
-		groundIndexBuffer->Release();
 		gVertexBuffer->Release();
 		gIndexBuffer->Release();
 		gConstantBuffer->Release();

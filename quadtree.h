@@ -6,7 +6,7 @@
 #include <vector>
 #include "importer.h"
 
-#define MAX_TRIANGLES 500
+#define MAX_TRIANGLES 7200
 
 struct VertexType
 {

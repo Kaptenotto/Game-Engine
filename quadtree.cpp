@@ -1,6 +1,7 @@
 #include "quadtree.h"
 #include "importer.h"
 #include <ctgmath>
+
 void QuadTree::ReleaseNode(TreeNode * node)
 {
 	//Recursively release any child nodes
@@ -34,13 +35,15 @@ void QuadTree::ReleaseNode(TreeNode * node)
 
 
 
-void QuadTree::DimensionCalc(int count, float & posX, float & posY, float & width)
+void QuadTree::DimensionCalc(int count, float & posX, float & posY, float & meshWidth)
 {
 	//w = width, d = depth
-	float wMax, dMax, wMin, dMin, depth, xMax, yMax;
+	float wMax, dMax, wMin, dMin, width, depth, xMax, yMax;
+
 	//centering geometry
 	posX = 0.0f;
 	posY = 0.0f;
+
 	//Locate center point of geometry
 	for (size_t i = 0; i < count; i++)
 	{
@@ -55,6 +58,7 @@ void QuadTree::DimensionCalc(int count, float & posX, float & posY, float & widt
 	//locate proper min/max values
 	wMax = 0;
 	dMax = 0;
+
 	//fabs = absolute values
 	wMin = fabsf(this->obj->finalVector.at(0).x - posX);
 	dMin = fabsf(this->obj->finalVector.at(0).y - posY);
@@ -71,10 +75,12 @@ void QuadTree::DimensionCalc(int count, float & posX, float & posY, float & widt
 		if (depth < dMin) { dMin = depth; }
 	}
 
+	//MIN/MAX between depth and width
 	xMax = (float)max(fabs(wMin), fabs(wMax));
 	yMax = (float)max(fabs(dMin), fabs(dMax));
 
-	width = max(xMax, yMax) * 1.95f;
+	//set initial area for quadtree to encompass
+	meshWidth = max(xMax, yMax) * 5.0f;
 	return;
 }
 
@@ -84,27 +90,34 @@ void QuadTree::CreateTreeNode(TreeNode * parent, float posX, float posY, float w
 	unsigned int i;
 	float offsetX, offsetZ;
 
-
-	VertexType* vertices = nullptr;
-	unsigned int* indices = nullptr;
+	//prepare buffer descriptions
 	D3D11_BUFFER_DESC vertexBufferDesc, indexBufferDesc;
 	D3D11_SUBRESOURCE_DATA vertexData, indexData;
 
+
+	//init initial values
 	parent->posX = posX;
 	parent->posY = posY;
 	parent->width = width;
 	parent->triangleCount = 0;
 	parent->indexBuffer = 0;
 	parent->vertexBuffer = 0;
+	parent->VertexCount = 0;
+	parent->IndexCount = 0;
 	parent->nodes[0] = 0;
 	parent->nodes[1] = 0;
 	parent->nodes[2] = 0;
 	parent->nodes[3] = 0;
+
+	//count triangles
 	numTriangles = CountTriangles(posX,posY, width);
 
+	//if there are none, we dont want a treenode
 	if (numTriangles == 0)
 		return;
 
+
+	//MAX_TRIANGLES specifies maximum triangles for a single TreeNode. if the ammount we found is too large we need to divide the quadtrant into 4 smaller nodes and recursively try again. (depth first)
 	if (numTriangles > MAX_TRIANGLES)
 	{
 		for (size_t i = 0; i < 4; i++)
@@ -119,10 +132,10 @@ void QuadTree::CreateTreeNode(TreeNode * parent, float posX, float posY, float w
 			else
 				offsetZ = 1.0f * (width / 4.0f);
 
-			float posXWithOffset, posYWithOffset;
+			float posXWithOffset, posZWithOffset;
 			posXWithOffset = (posX + offsetX);
-			posYWithOffset = (posY + offsetZ);
-			count = CountTriangles(posXWithOffset, posYWithOffset, (width / 2.0f));
+			posZWithOffset = (posY + offsetZ);
+			count = CountTriangles(posXWithOffset, posZWithOffset, (width / 2.0f));
 
 			if (count > 0)
 			{
@@ -130,30 +143,32 @@ void QuadTree::CreateTreeNode(TreeNode * parent, float posX, float posY, float w
 				parent->nodes[i] = new TreeNode;
 
 				//Extend the tree starting from this new child node
-				CreateTreeNode(parent->nodes[i], posXWithOffset, posYWithOffset, (width / 2), gDevice);
+				CreateTreeNode(parent->nodes[i], posXWithOffset, posZWithOffset, (width / 2), gDevice);
 			}
 
 		}
 		return;
 	}
 	
+
+
+
+	//we are within our set Treenode bounds, so we prepare buffers with their vertex data
+
 	parent->triangleCount = numTriangles;
 	vertexCount = numTriangles * 3;
 	parent->VertexCount = vertexCount;
 
 
-	//Calculate the number of vertices
+	//Calculate the number of vertices, a triangle is 3 verts
 	vertexCount = numTriangles * 3;
 	parent->VertexCount = vertexCount;
-	//Create vertex array
-	vertices = new VertexType[vertexCount];
+
+	//Create vertex/index arrays
 	std::vector<VertexType> newVert;
 	newVert.resize(vertexCount);
 	std::vector<unsigned int> newInd;
 	newInd.resize(this->indexCount);
-	//Create the index array
-	indices = new unsigned int[this->indexCount];
-	//std::vector<UINT> indices2;
 
 
 	//Initialize the index
@@ -161,10 +176,11 @@ void QuadTree::CreateTreeNode(TreeNode * parent, float posX, float posY, float w
 	UINT indexCount = 0;
 	bool alreadyExist = false;
 
-	for (size_t i = 0; i < numTriangles; i++)
+	//Build triangles for every 3 vertices IF they pass the isContained() check, which specifies if its withing the bounds of the TreeNode
+	for (size_t i = 0; i < triangleCount; i++)
 	{
 		//If the triangle is inside this node then add it to the vertex array
-		if (isContained(i, posX, posY, width)) //ERROR HERE!
+		if (isContained(i, posX, posY, width))
 		{
 			//Calculate the index into the terrain vertex list
 			vertexIndex = i * 3;
@@ -175,6 +191,9 @@ void QuadTree::CreateTreeNode(TreeNode * parent, float posX, float posY, float w
 			newVert[index].z = this->obj->finalVector.at(vertexIndex).z;
 			newVert[index].u = this->obj->finalVector.at(vertexIndex).u;
 			newVert[index].v = this->obj->finalVector.at(vertexIndex).v;
+			newVert[index].nx = this->obj->finalVector.at(vertexIndex).nx;
+			newVert[index].ny = this->obj->finalVector.at(vertexIndex).ny;
+			newVert[index].nz = this->obj->finalVector.at(vertexIndex).nz;
 			newInd[index] = index;
 			index++;
 			indexCount++;
@@ -185,6 +204,9 @@ void QuadTree::CreateTreeNode(TreeNode * parent, float posX, float posY, float w
 			newVert[index].z = this->obj->finalVector.at(vertexIndex).z;
 			newVert[index].u = this->obj->finalVector.at(vertexIndex).u;
 			newVert[index].v = this->obj->finalVector.at(vertexIndex).v;
+			newVert[index].nx = this->obj->finalVector.at(vertexIndex).nx;
+			newVert[index].ny = this->obj->finalVector.at(vertexIndex).ny;
+			newVert[index].nz = this->obj->finalVector.at(vertexIndex).nz;
 			newInd[index] = index;
 			index++;
 			indexCount++;
@@ -195,14 +217,15 @@ void QuadTree::CreateTreeNode(TreeNode * parent, float posX, float posY, float w
 			newVert[index].z = this->obj->finalVector.at(vertexIndex).z;
 			newVert[index].u = this->obj->finalVector.at(vertexIndex).u;
 			newVert[index].v = this->obj->finalVector.at(vertexIndex).v;
+			newVert[index].nx = this->obj->finalVector.at(vertexIndex).nx;
+			newVert[index].ny = this->obj->finalVector.at(vertexIndex).ny;
+			newVert[index].nz = this->obj->finalVector.at(vertexIndex).nz;
 			newInd[index] = index;
 			index++;
 			indexCount++;
 
 		}
 	}
-	//MUST ADD A ZERO CHECK
-	//DOUBLE CHECK ISCONTAINED FUNC
 	newInd.shrink_to_fit();
 	newInd.resize(indexCount);
 	parent->IndexCount = indexCount;
@@ -240,12 +263,7 @@ void QuadTree::CreateTreeNode(TreeNode * parent, float posX, float posY, float w
 	//Create index buffer
 	hr = gDevice->CreateBuffer(&indexBufferDesc, &indexData, &parent->indexBuffer);
 
-	//Delete the vertices and indices arrays, as they are now stored in the buffers
-
-	delete[] vertices;
-	vertices = 0;
-	delete[] indices;
-	indices = 0;
+	//add to the total TreeNode Count
 	this->nodeCount += 1;
 	return;
 
@@ -258,8 +276,8 @@ int QuadTree::CountTriangles(float posX, float posY, float width)
 	bool result;
 
 	count = 0;
-	//Loop through all the triangles in the entire mesh and check wich ones should be inside this node
 
+	//Loop through all the triangles in the entire mesh and check wich ones should be inside this node
 	for (i = 0; i < triangleCount; i++)
 	{
 		if  (isContained(i, posX, posY, width))
@@ -284,12 +302,10 @@ bool QuadTree::isContained(int index, float posX, float posY, float width)
 	//Get the three vertices of this triangle from the vertex list
 	x1 = this->obj->finalVector.at(vertexIndex).x;
 	z1 = this->obj->finalVector.at(vertexIndex).z;
-	vertexIndex++;
-
+								
 	x2 = this->obj->finalVector.at(vertexIndex).x;
 	z2 = this->obj->finalVector.at(vertexIndex).z;
-	vertexIndex++;
-
+								   
 	x3 = this->obj->finalVector.at(vertexIndex).x;
 	z3 = this->obj->finalVector.at(vertexIndex).z;
 
@@ -333,8 +349,8 @@ QuadTree::~QuadTree()
 
 bool QuadTree::Initialize(ID3D11Device * gDevice, ID3D11DeviceContext * gDeviceContext, Importer* obj)
 {
-	//Create the parent node of the mesh
 
+	//Create the parent node of the mesh
 	this->gDevice = gDevice;
 	this->gDeviceContext = gDeviceContext;
 	this->obj = obj;
@@ -344,7 +360,7 @@ bool QuadTree::Initialize(ID3D11Device * gDevice, ID3D11DeviceContext * gDeviceC
 	float width;
 	float posX, posY;
 
-	//prep 1 scenemesh for quadtreeing
+	//prep initial parent values based on loaded OBJ file
 	this->vertCount = 0;
 	this->indexCount = 0;
 	
@@ -353,15 +369,18 @@ bool QuadTree::Initialize(ID3D11Device * gDevice, ID3D11DeviceContext * gDeviceC
 
 	triangleCount = indexCount / 3;
 
+	//calculate node dimensions
 	DimensionCalc(indexCount, posX, posY, width);
 	TreeNode* tempParentNode = new TreeNode;
 	m_parentNode = tempParentNode;
+
 	//Recursively build the quad tree, based on the vertex list and mesh dimensions
 	CreateTreeNode(m_parentNode, posX, posY, width, gDevice);
 
 	return true;
 }
 
+//THIS FUNCTION IS DEPRICATED
 void QuadTree::BindNodeBuffers(TreeNode* node)
 {
 	UINT32 vertexSize = sizeof(VertexType);
