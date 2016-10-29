@@ -1,7 +1,6 @@
 #include "quadtree.h"
 #include "importer.h"
 #include <ctgmath>
-Importer obj;
 void QuadTree::ReleaseNode(TreeNode * node)
 {
 	//Recursively release any child nodes
@@ -38,15 +37,15 @@ void QuadTree::ReleaseNode(TreeNode * node)
 void QuadTree::DimensionCalc(int count, float & posX, float & posY, float & width)
 {
 	//w = width, d = depth
-	float wMax, dMax, wMin, dMin, width, depth, xMax, yMax;
+	float wMax, dMax, wMin, dMin, depth, xMax, yMax;
 	//centering geometry
 	posX = 0.0f;
 	posY = 0.0f;
 	//Locate center point of geometry
 	for (size_t i = 0; i < count; i++)
 	{
-		posX += obj.finalVector.at(i).x;
-		posY += obj.finalVector.at(i).y;
+		posX += this->obj->finalVector.at(i).x;
+		posY += this->obj->finalVector.at(i).y;
 	}
 
 	posX = posX / (float)count;
@@ -57,14 +56,14 @@ void QuadTree::DimensionCalc(int count, float & posX, float & posY, float & widt
 	wMax = 0;
 	dMax = 0;
 	//fabs = absolute values
-	wMin = fabsf(obj.finalVector.at(0).x - posX);
-	dMin = fabsf(obj.finalVector.at(0).y - posY);
+	wMin = fabsf(this->obj->finalVector.at(0).x - posX);
+	dMin = fabsf(this->obj->finalVector.at(0).y - posY);
 
 	for (int i = 0; i < count; i++)
 	{
 
-		width = fabsf(obj.finalVector.at(i).x - posX);
-		depth = fabsf(obj.finalVector.at(i).y - posY);
+		width = fabsf(this->obj->finalVector.at(i).x - posX);
+		depth = fabsf(this->obj->finalVector.at(i).y - posY);
 
 		if (width > wMax) { wMax = width; }
 		if (depth > dMax) { dMax = depth; }
@@ -75,7 +74,7 @@ void QuadTree::DimensionCalc(int count, float & posX, float & posY, float & widt
 	xMax = (float)max(fabs(wMin), fabs(wMax));
 	yMax = (float)max(fabs(dMin), fabs(dMax));
 
-	width = max(xMax, yMax) * 10.95f;
+	width = max(xMax, yMax) * 1.95f;
 	return;
 }
 
@@ -162,40 +161,40 @@ void QuadTree::CreateTreeNode(TreeNode * parent, float posX, float posY, float w
 	UINT indexCount = 0;
 	bool alreadyExist = false;
 
-	for (size_t i = 0; i < triangleCount; i++)
+	for (size_t i = 0; i < numTriangles; i++)
 	{
 		//If the triangle is inside this node then add it to the vertex array
-		if (isContained(i, posX, posY, width))
+		if (isContained(i, posX, posY, width)) //ERROR HERE!
 		{
 			//Calculate the index into the terrain vertex list
 			vertexIndex = i * 3;
 
 			//Get the three vertices of this triangle from the vertex list.
-			newVert[index].x = obj.finalVector.at(vertexIndex).x;
-			newVert[index].y = obj.finalVector.at(vertexIndex).y;
-			newVert[index].z = obj.finalVector.at(vertexIndex).z;
-			newVert[index].u = obj.finalVector.at(vertexIndex).u;
-			newVert[index].v = obj.finalVector.at(vertexIndex).v;
+			newVert[index].x = this->obj->finalVector.at(vertexIndex).x;
+			newVert[index].y = this->obj->finalVector.at(vertexIndex).y;
+			newVert[index].z = this->obj->finalVector.at(vertexIndex).z;
+			newVert[index].u = this->obj->finalVector.at(vertexIndex).u;
+			newVert[index].v = this->obj->finalVector.at(vertexIndex).v;
 			newInd[index] = index;
 			index++;
 			indexCount++;
 			vertexIndex++;
 
-			newVert[index].x = obj.finalVector.at(vertexIndex).x;
-			newVert[index].y = obj.finalVector.at(vertexIndex).y;
-			newVert[index].z = obj.finalVector.at(vertexIndex).z;
-			newVert[index].u = obj.finalVector.at(vertexIndex).u;
-			newVert[index].v = obj.finalVector.at(vertexIndex).v;
+			newVert[index].x = this->obj->finalVector.at(vertexIndex).x;
+			newVert[index].y = this->obj->finalVector.at(vertexIndex).y;
+			newVert[index].z = this->obj->finalVector.at(vertexIndex).z;
+			newVert[index].u = this->obj->finalVector.at(vertexIndex).u;
+			newVert[index].v = this->obj->finalVector.at(vertexIndex).v;
 			newInd[index] = index;
 			index++;
 			indexCount++;
 			vertexIndex++;
 
-			newVert[index].x = obj.finalVector.at(vertexIndex).x;
-			newVert[index].y = obj.finalVector.at(vertexIndex).y;
-			newVert[index].z = obj.finalVector.at(vertexIndex).z;
-			newVert[index].u = obj.finalVector.at(vertexIndex).u;
-			newVert[index].v = obj.finalVector.at(vertexIndex).v;
+			newVert[index].x = this->obj->finalVector.at(vertexIndex).x;
+			newVert[index].y = this->obj->finalVector.at(vertexIndex).y;
+			newVert[index].z = this->obj->finalVector.at(vertexIndex).z;
+			newVert[index].u = this->obj->finalVector.at(vertexIndex).u;
+			newVert[index].v = this->obj->finalVector.at(vertexIndex).v;
 			newInd[index] = index;
 			index++;
 			indexCount++;
@@ -281,16 +280,16 @@ bool QuadTree::isContained(int index, float posX, float posY, float width)
 	vertexIndex = index * 3;
 
 	//Get the three vertices of this triangle from the vertex list
-	x1 = obj.finalVector.at(vertexIndex).x;
-	z1 = obj.finalVector.at(vertexIndex).z;
+	x1 = this->obj->finalVector.at(vertexIndex).x;
+	z1 = this->obj->finalVector.at(vertexIndex).z;
 	vertexIndex++;
 
-	x2 = obj.finalVector.at(vertexIndex).x;
-	z2 = obj.finalVector.at(vertexIndex).z;
+	x2 = this->obj->finalVector.at(vertexIndex).x;
+	z2 = this->obj->finalVector.at(vertexIndex).z;
 	vertexIndex++;
 
-	x3 = obj.finalVector.at(vertexIndex).x;
-	z3 = obj.finalVector.at(vertexIndex).z;
+	x3 = this->obj->finalVector.at(vertexIndex).x;
+	z3 = this->obj->finalVector.at(vertexIndex).z;
 
 	//Check if the minimum of the x coords of the triangle is inside the node
 	minX = min(x1, min(x2, x3));
@@ -330,12 +329,13 @@ QuadTree::~QuadTree()
 {
 }
 
-bool QuadTree::Initialize(ID3D11Device * gDevice, ID3D11DeviceContext * gDeviceContext)
+bool QuadTree::Initialize(ID3D11Device * gDevice, ID3D11DeviceContext * gDeviceContext, Importer* obj)
 {
 	//Create the parent node of the mesh
 
 	this->gDevice = gDevice;
 	this->gDeviceContext = gDeviceContext;
+	this->obj = obj;
 
 	this->vertCount = 0;
 	this->indexCount = 0;
@@ -345,9 +345,9 @@ bool QuadTree::Initialize(ID3D11Device * gDevice, ID3D11DeviceContext * gDeviceC
 	//prep 1 scenemesh for quadtreeing
 	this->vertCount = 0;
 	this->indexCount = 0;
-
-	this->vertCount = obj.finalVector.size();
-	this->indexCount = obj.finalVector.size();
+	
+	this->vertCount = this->obj->finalVector.size();
+	this->indexCount = this->obj->finalVector.size();
 
 	triangleCount = indexCount / 3;
 
@@ -364,7 +364,7 @@ void QuadTree::BindNodeBuffers(TreeNode* node)
 {
 	UINT32 vertexSize = sizeof(VertexType);
 	UINT32 vertexCount = node->VertexCount;
-	UINT32 indexSize = obj.index_counter;
+	UINT32 indexSize = this->obj->index_counter;
 	UINT32 offset = 0;
 
 	gDeviceContext->IASetVertexBuffers(0, 1, &node->vertexBuffer, &vertexSize, &offset);

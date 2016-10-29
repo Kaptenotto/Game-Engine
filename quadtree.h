@@ -4,6 +4,7 @@
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
 #include <vector>
+#include "importer.h"
 
 #define MAX_TRIANGLES 500
 
@@ -30,6 +31,7 @@ struct TreeNode
 class QuadTree
 {
 	private:
+		Importer* obj = nullptr;
 		ID3D11DeviceContext* gDeviceContext = nullptr;
 		ID3D11Device* gDevice = nullptr;
 
@@ -53,9 +55,9 @@ class QuadTree
 		QuadTree(const QuadTree &parent);
 		~QuadTree();
 
-		bool Initialize(ID3D11Device *gDevice, ID3D11DeviceContext *gDeviceContext);
+		bool Initialize(ID3D11Device *gDevice, ID3D11DeviceContext *gDeviceContext, Importer* obj);
 		void BindNodeBuffers(TreeNode* node);
 		void Release();
-		TreeNode* getParent(unsigned int index) { return this->parentNode->at(index); };
+		TreeNode* getParent() { return this->m_parentNode; };
 		unsigned int getNodeAmt() { return this->nodeCount; };
 };

@@ -147,7 +147,7 @@ typedef struct DIMOUSESTATES
 	BYTE rgbButtons[4];
 };
 
-struct VertexType
+struct VertexTypeColor
 {
 	float x, y, z;
 	float h, w;
@@ -263,6 +263,7 @@ bool SphereCollidingWithTriangle(Collision& cP, XMVECTOR &p0, XMVECTOR &p1, XMVE
 XMVECTOR CollideWithWorld(Collision& cP,
 	std::vector<XMFLOAT3>& vertPos,
 	std::vector<DWORD>& indices);
+QuadTree quadTree;
 #pragma endregion
 
 // INITIALIZE SHADER THINGS
@@ -2780,6 +2781,54 @@ void RenderGBuffer()
 	//gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
 }
 
+
+void RenderGBufferQuadTree(TreeNode* node)
+{
+	for (size_t i = 0; i < 4; i++)
+	{
+		if (node->nodes[i] != 0)
+		{
+			//if (frustrum)
+			//{
+			//
+			//}
+			gDeviceContext->Draw(node->triangleCount * 3, 0);
+			RenderGBufferQuadTree(node->nodes[i]);
+		}
+	}
+
+}
+void testingfunc()
+{
+	float clearColor[] = { 0.5f, 0.5f, 0.5f, 1 };
+	for (int i = 0; i < numRTVs; i++)
+		gDeviceContext->ClearRenderTargetView(textureRTVs[i], clearColor);
+	gDeviceContext->ClearDepthStencilView(GBufferDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+	ID3D11RenderTargetView* rtvsToSet[] = {
+		textureRTVs[0],
+		textureRTVs[1],
+		textureRTVs[2],
+		textureRTVs[3],
+	};
+	gDeviceContext->OMSetRenderTargets(numRTVs, rtvsToSet, GBufferDepthStencilView);
+
+	gDeviceContext->VSSetShader(GBuffer_VS, nullptr, 0);
+	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->GSSetShader(GBuffer_GS, nullptr, 0);
+	gDeviceContext->PSSetShader(GBuffer_PS, nullptr, 0);
+
+	UINT32 vertexSize = sizeof(obj.finalVector[0]);
+	UINT32 vertexCount = obj.finalVector.size();
+	UINT32 indexSize = obj.index_counter;
+	UINT32 offset = 0;
+
+	TreeNode* test = quadTree.getParent();
+	RenderGBufferQuadTree(test);
+}
+
+
 void RenderFinalPass()
 {
 	gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
@@ -2878,6 +2927,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 		CreateHeightMap();
 
+		quadTree.Initialize(gDevice, gDeviceContext, &obj);
+
 		//Shows the window
 		ShowWindow(wndHandle, nCmdShow);
 
@@ -2907,15 +2958,18 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 				UpdateBuffers();
 				RenderShadow(); // Rendera
 								//Render(); // Rendera
-				RenderGBuffer(); // Rendera
-				RenderGBuffer2(); // Rendera
+				//RenderGBuffer(); // Rendera
+				//RenderGBuffer2(); // Rendera
+				testingfunc();
 				RenderParticles(); // Rendera
+				
 				if (explosion)
 				{
 					RenderExplosion(); // Rendera
 					updateExplosion();
 					killExplosion();
 				}
+
 				RenderFinalPass();
 
 
@@ -2930,6 +2984,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 			}
 		}
 
+		quadTree.Release();
 		groundVertexBuffer->Release();
 		groundIndexBuffer->Release();
 		gVertexBuffer->Release();
