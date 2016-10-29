@@ -1176,7 +1176,7 @@ void updateCamera()
 	XMStoreFloat4x4(&tempProj2, tempProj1);
 	XMStoreFloat4x4(&tempView2, tempView1);
 
-	getFrustrumPlanes(100.0f, tempProj2, tempView2);
+	getFrustrumPlanes(50.0f, tempProj2, tempView2);
 #pragma endregion
 }
 
@@ -2715,7 +2715,8 @@ void RenderGBufferQuadTree(TreeNode* node)
 	bool renderedOnce = false;
 	for (size_t i = 0; i < 4; i++)
 	{
-		if (checkCube(node->posX, 0.0f, node->posY, (node->width / 2) * 0.653))
+		//The multiplied value at the end adjusts the Treenodes radius. low numbers reduce, high numbers increase
+		if (checkCube(node->posX, 0.0f, node->posY, (node->width / 2) * 0.853))
 		{
 			if (node->VertexCount != 0 && node->vertexBuffer != 0 && renderedOnce != true)
 			{
@@ -2864,7 +2865,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		SetViewport();
 
 		//myWindow.SetViewport(gDevice, gDevContext);
-		//CreateShaders();
+		CreateShaders();
 
 		CreateDefferedShaders();
 		CreateTextureViews();
