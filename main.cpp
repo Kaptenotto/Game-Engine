@@ -100,6 +100,11 @@ float Intersection(XMVECTOR rayOrigin, XMVECTOR rayDirection);
 bool PointInTriangle(XMVECTOR&triV1, XMVECTOR&triV2, XMVECTOR&triV3, XMVECTOR&point);
 #pragma endregion
 
+#pragma region HeightMap
+
+
+#pragma endregion
+
 #pragma region camVectors
 
 XMVECTOR camPosition = XMVectorSet(0, 1, -5, 0);
@@ -1351,6 +1356,19 @@ bool PointInTriangle(XMVECTOR&triV1, XMVECTOR&triV2, XMVECTOR&triV3, XMVECTOR&po
 
 }
 #pragma endregion
+
+
+#pragma region HeightMap
+
+
+
+
+
+
+
+#pragma endregion
+
+
 
 #pragma region timeFunctions
 void startTimer()
