@@ -655,6 +655,7 @@ void CreateTextureViews()
 }
 void finalPassQuadData()
 {
+	//To create a full screen quad 
 	struct TriangleVertex
 	{
 		float x, y, z;
@@ -721,7 +722,7 @@ void CreateFinalPassShaders()
 	samplerDesc.BorderColor[2] = 0.0f;
 	samplerDesc.BorderColor[3] = 1.0f;
 
-	hr = gDevice->CreateSamplerState(&samplerDesc, &linearSamplerState);
+	hr = gDevice->CreateSamplerState(&samplerDesc, &linearSamplerState); // creates a linear sampler , linear is better for high-end graphics 
 
 	gDeviceContext->PSSetSamplers(0, 1, &linearSamplerState);
 
@@ -737,7 +738,7 @@ void CreateFinalPassShaders()
 	samplerDescPoint.MinLOD = 0;
 	samplerDescPoint.MaxLOD = D3D11_FLOAT32_MAX;
 
-	hr = gDevice->CreateSamplerState(&samplerDesc, &pointSamplerState);
+	hr = gDevice->CreateSamplerState(&samplerDesc, &pointSamplerState); // creates a point Sampler, good for pixel art esk games
 
 	gDeviceContext->PSSetSamplers(1, 1, &pointSamplerState);
 
@@ -794,7 +795,7 @@ void createTextures()
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
 	
-
+	//if the obj is not empty we go through the texturemap struct to get all the information
 	if (!obj.textureMap.empty())
 	{
 		for (int i = 0; i < obj.textureMap.size(); i++)
@@ -822,6 +823,7 @@ void createTextures()
 		texResource->Release();
 	}
 
+	//if the normalMap struct is not empty we then read in all the information
 	if (!obj.normalMap.empty())
 	{
 		for (int i = 0; i < obj.normalMap.size(); i++)
@@ -847,7 +849,7 @@ void createTextures()
 
 		norResource->Release();
 	}
-	
+	//texture for the height map.
 	const wchar_t* wcharFilePath2 = L"grass.jpg";
 	CreateWICTextureFromFile(gDevice, gDeviceContext, wcharFilePath2, &HeightTex, &heightResource, 0);
 }
@@ -903,6 +905,7 @@ void CreateTriangleForBackFace()
 
 #pragma endregion
 
+//creates buffers for our index and vertex buffers, obj
 void createTriangle()
 {
 	D3D11_BUFFER_DESC bufferdesc;
@@ -933,7 +936,7 @@ void createTriangle()
 void createLightDepthStencil()
 {
 
-	//skapa depth stencilen som shadowmapping kommer använda som RTV/resurs
+	//skapa depth stencilen som shadowmapping kommer använda som Render target View/ resurs
 	ID3D11Texture2D* shadowDepthStencil = NULL;
 
 	D3D11_TEXTURE2D_DESC descDepth;
@@ -985,6 +988,7 @@ void createLightDepthStencil()
 
 void createDepthStencil()
 {
+	// Depth buffer for all of our renders. 
 	ID3D11Texture2D* gDepthStencil = NULL;
 	D3D11_TEXTURE2D_DESC backBufferSurfaceDesc;
 
@@ -1015,6 +1019,7 @@ void createDepthStencil()
 
 void ConstantBuffer()
 {
+	//Creates our constant buffers
 	float fovangleY = XM_PI * 0.45;
 	float aspectRatio = 1280.0 / 720.0;
 	float nearZ = 0.01;
@@ -1187,6 +1192,7 @@ void updateCamera()
 	cameraCP.w_Position = camPosition;
 	cameraCP.w_Velocity = (moveLeftRight*camRight) + (moveBackForward*camForward);
 
+	//information from the height map
 	camPosition = CollisionSliding(cameraCP,
 		collidableGeometryPositions,
 		collidableGeometryIndices);
@@ -1206,13 +1212,13 @@ void updateCamera()
 	matrices.camView = XMMatrixTranspose(matrices.camView);
 
 #pragma region
-	XMFLOAT4X4 tempProj2;
+	XMFLOAT4X4 tempProj2; 
 	XMFLOAT4X4 tempView2;
 
 	XMMATRIX tempProj1;
 	XMMATRIX tempView1;
 
-	tempView1 = XMMatrixTranspose(matrices.camView);
+	tempView1 = XMMatrixTranspose(matrices.camView);  // eftersom att våra matricer rendan är transponerar så transponerar vi dem igen för att kunna skicka in korrekta matricer till våra get frustrumplanes
 	tempProj1 = XMMatrixTranspose(matrices.Projection);
 
 
@@ -1848,10 +1854,15 @@ bool SphereCollisionWithTriangle(Collision& collisionP, XMVECTOR &p0, XMVECTOR &
 			edge = p0 - p2;
 			spherePositionToVertex = p2 - collisionP.e_Position;
 			edgeLengthSquared = XMVectorGetX(XMVector3Length(edge));
+
 			edgeLengthSquared = edgeLengthSquared * edgeLengthSquared;
+
 			edgeDotVelocity = XMVectorGetX(XMVector3Dot(edge, collisionP.e_Velocity));
+
 			edgeDotSpherePositionToVertex = XMVectorGetX(XMVector3Dot(edge, spherePositionToVertex));
+
 			spherePositionToVertexLengthSquared = XMVectorGetX(XMVector3Length(spherePositionToVertex));
+
 			spherePositionToVertexLengthSquared = spherePositionToVertexLengthSquared * spherePositionToVertexLengthSquared;
 
 			a = edgeLengthSquared * -velocityLengthSquared + (edgeDotVelocity * edgeDotVelocity);
@@ -2345,8 +2356,8 @@ void EmitParticles()
 		green = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
 		blue = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
 
-		vertexList.push_back(ParticleVertex{ positionX, 10, positionZ, 0.005f, 0.5f, 0.7f, 0.7f, 1.0f });
-		velocity.push_back(((float)rand() / (RAND_MAX + 1) + 1 + (rand() % 3)) / 5.0f);
+		vertexList.push_back(ParticleVertex{ positionX, 10, positionZ, 0.5f, 0.5f, 0.7f, 0.7f, 1.0f });
+		velocity.push_back(((float)rand() / (RAND_MAX + 1) + 1 + (rand() % 3)) / 50.0f);
 		i++;
 	}
 }																		
@@ -2411,37 +2422,47 @@ void getFrustrumPlanes(float farZ, XMFLOAT4X4 projection, XMFLOAT4X4 &viewMatrix
 
 	XMStoreFloat4x4(&_viewProj, temp);
 
+	//Left Frustrum Pane 
+	//Lägg till första columene av matricen till den fjärde kolumnen
 	frustrumPlanes[0].normal.x = _viewProj._14 + _viewProj._11;
 	frustrumPlanes[0].normal.y = _viewProj._24 + _viewProj._21;
 	frustrumPlanes[0].normal.z = _viewProj._34 + _viewProj._31;
 	frustrumPlanes[0].distance = _viewProj._44 + _viewProj._41;
 
+	//Right frustrum plane 
+	//substract first column of matrix from the fourth column
 	frustrumPlanes[1].normal.x = _viewProj._14 - _viewProj._11;
 	frustrumPlanes[1].normal.y = _viewProj._24 - _viewProj._21;
 	frustrumPlanes[1].normal.z = _viewProj._34 - _viewProj._31;
 	frustrumPlanes[1].distance = _viewProj._44 - _viewProj._41;
 
+	//top frustum Plane
+	//Subtract second column of matrix from the fourth column
 	frustrumPlanes[2].normal.x = _viewProj._14 - _viewProj._12;
 	frustrumPlanes[2].normal.y = _viewProj._24 - _viewProj._22;
 	frustrumPlanes[2].normal.z = _viewProj._34 - _viewProj._32;
 	frustrumPlanes[2].distance = _viewProj._44 - _viewProj._42;
-
+	//bottom Frustum plane
+	//Add Second column of the matrix to the fourth column
 	frustrumPlanes[3].normal.x = _viewProj._14 + _viewProj._12;
 	frustrumPlanes[3].normal.y = _viewProj._24 + _viewProj._22;
 	frustrumPlanes[3].normal.z = _viewProj._34 + _viewProj._32;
 	frustrumPlanes[3].distance = _viewProj._44 + _viewProj._42;
-
+	//Near frustrum plane, 
+	//add thrid column of the matrix to the fourth column
 	frustrumPlanes[4].normal.x = _viewProj._14 + _viewProj._13;
 	frustrumPlanes[4].normal.y = _viewProj._24 + _viewProj._23;
 	frustrumPlanes[4].normal.z = _viewProj._34 + _viewProj._33;
 	frustrumPlanes[4].distance = _viewProj._44 + _viewProj._43;
-
+	//Far Frustrum Plane
+	//subtract third column of matrix from the fourth column
 	frustrumPlanes[5].normal.x = _viewProj._14 - _viewProj._13;
 	frustrumPlanes[5].normal.y = _viewProj._24 - _viewProj._23;
 	frustrumPlanes[5].normal.z = _viewProj._34 - _viewProj._33;
 	frustrumPlanes[5].distance = _viewProj._44 - _viewProj._43;
 
 
+	//normalize the plane normals (A,B,C)
 	for (unsigned int i = 0; i < 6; i++)
 	{
 		//float length = sqrt((tempFrustumPlane[i].x * tempFrustumPlane[i].x) + (tempFrustumPlane[i].y * tempFrustumPlane[i].y) + (tempFrustumPlane[i].z * tempFrustumPlane[i].z));
@@ -2462,50 +2483,50 @@ void getFrustrumPlanes(float farZ, XMFLOAT4X4 projection, XMFLOAT4X4 &viewMatrix
 
 bool checkCube(float xCenter, float yCenter, float zCenter, float radius)
 {
-
+	//check which parts of the frustrum the quad is in. 
 
 	for (unsigned int i = 0; i < 6; i++)
 	{
-		XMFLOAT4 plane = { frustrumPlanes[i].normal.x,frustrumPlanes[i].normal.y,frustrumPlanes[i].normal.z,frustrumPlanes[i].distance };
+		XMFLOAT4 plane = { frustrumPlanes[i].normal.x,frustrumPlanes[i].normal.y,frustrumPlanes[i].normal.z,frustrumPlanes[i].distance }; // A,B,C,D ( NORMAL VECTOR ) 
 
-		XMFLOAT3 point;
-		point = { (xCenter - radius),(yCenter - radius),(zCenter - radius) };
-		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		XMFLOAT3 point; 
+		point = { (xCenter - radius),(yCenter - radius),(zCenter - radius) };// x y and z for the plane equation 
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f) // WE calculate the dot product between the an input plane and an vector 
 		{
-			continue;
+			continue; // even if we get in here we will continue through the different if statements to get a conculsive result 
 		}
 		point = { (xCenter + radius), (yCenter - radius), (zCenter - radius) };
-		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)//// WE calculate the dot product between the an input plane and an vector 
 		{
 			continue;
 		}
 		point = { (xCenter - radius), (yCenter + radius), (zCenter - radius) };
-		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)// WE calculate the dot product between the an input plane and an vector 
 		{
 			continue;
 		}
 		point = { (xCenter + radius), (yCenter + radius), (zCenter - radius) };
-		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)// WE calculate the dot product between the an input plane and an vector 
 		{
 			continue;
 		}
 		point = { (xCenter - radius), (yCenter - radius), (zCenter + radius) };
-		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)// WE calculate the dot product between the an input plane and an vector 
 		{
 			continue;
 		}
 		point = { (xCenter + radius), (yCenter - radius), (zCenter + radius) };
-		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)// WE calculate the dot product between the an input plane and an vector 
 		{
 			continue;
 		}
 		point = { (xCenter - radius), (yCenter + radius), (zCenter + radius) };
-		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)// WE calculate the dot product between the an input plane and an vector 
 		{
 			continue;
 		}
 		point = { (xCenter + radius), (yCenter + radius), (zCenter + radius) };
-		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)// WE calculate the dot product between the an input plane and an vector 
 		{
 			continue;
 		}
@@ -2960,7 +2981,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 				//RenderGBuffer();
 
-				//RenderHeightMap();
+				RenderHeightMap();
 
 				RenderTriangle();
 

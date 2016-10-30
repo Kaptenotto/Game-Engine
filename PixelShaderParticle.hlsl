@@ -8,5 +8,6 @@ struct VS_OUT
 
 float4 main(VS_OUT input) : SV_TARGET
 {
+	// we just send the color 
 	return float4(input.color, 1.0f);
 }

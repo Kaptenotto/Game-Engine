@@ -25,7 +25,7 @@ struct Output
 Output main(Input input)
 {
 	Output output = (Output)0;
-	
+	//just pass the values to the geometry shader
 	output.position = float4(input.position,1.0);
 	output.size = input.size;
 	output.color = input.color;

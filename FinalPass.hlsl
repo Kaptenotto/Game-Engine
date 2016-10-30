@@ -62,7 +62,7 @@ float4 PS_main(VS_OUT input) : SV_TARGET
 	
 	//NORMAL BLOCK
 	float4 normalSamp = normalTexture.Sample(pointSampler, input.uvs);
-	return normalSamp;
+	//return normalSamp;
 
 	//LIGHT CALC
 	float3 lightDirection = (float4(-lightDir, 1) - worldPos);

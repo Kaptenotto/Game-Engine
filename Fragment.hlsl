@@ -30,7 +30,7 @@ struct VS_OUT
 	float3 tangent		 : TANGENT;
 	float3 binormal		 : BINORMAL;
 };
-
+//PART OF OUR ORIGINAL ENGINE BUT ITS OBSOLETE
 float4 PS_main(VS_OUT input) : SV_Target
 {
 	//Normal stuff
