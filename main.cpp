@@ -226,8 +226,8 @@ struct Collision {
 };
 
 const float unitsPerMeter = 100.0f;
-//XMVECTOR gravity = XMVectorSet(0.0f, -0.2f, 0.0f, 0.0f);
-XMVECTOR gravity = XMVectorSet(0.0f, -0.0f, 0.0f, 0.0f);
+XMVECTOR gravity = XMVectorSet(0.0f, -0.2f, 0.0f, 0.0f);
+//XMVECTOR gravity = XMVectorSet(0.0f, -0.0f, 0.0f, 0.0f);
 
 vector<XMFLOAT3> collidableGeometryPositions;
 vector<DWORD> collidableGeometryIndices;
@@ -979,7 +979,7 @@ void ConstantBuffer()
 	float farZ = 1000.0;
 
 	//LIGHT
-	float lightfovangleY = XM_PI * 0.5;
+	float lightfovangleY = XM_PI * 0.75;
 	float lightaspectRatio = 2048.0f / 2048.0f;
 	float lightnearZ = 5.0;
 	float lightfarZ = 60.0;
@@ -2556,6 +2556,7 @@ void RenderExplosion()
 	gDeviceContext->Draw((explosionTest.size() - 1), 0);
 }
 
+//DEPRICATED
 void Render()
 {
 	float clearColor[] = { 0, 0, 0, 1 };
@@ -2724,11 +2725,6 @@ void RenderGBufferQuadTree(TreeNode* node)
 					UINT32 vertexCount = node->VertexCount;
 					UINT32 indexSize = obj.index_counter;
 					UINT32 offset = 0;
-
-					//UINT32 vertexSize = sizeof(obj.finalVector[0]);
-					//UINT32 vertexCount = obj.finalVector.size();
-					//UINT32 indexSize = obj.index_counter;
-					//UINT32 offset = 0;
 
 					gDeviceContext->IASetVertexBuffers(0, 1, &node->vertexBuffer, &vertexSize, &offset);
 					gDeviceContext->IASetIndexBuffer(node->indexBuffer, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
@@ -2920,7 +2916,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 				UpdateBuffers();
 
 
-				//Render ShadowMap
+				//Render ShadowMap //DISABLING THIS DOES NOT DISABLE SHADOWS, ONLY BREAKS THEM
 				RenderShadow(); // Rendera
 
 
@@ -3084,12 +3080,12 @@ HRESULT CreateDirect3DContext(HWND windowHandle)
 	SCD.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	SCD.Windowed = TRUE;
 
-	//Create a device, device context and swap chain using the information in the SCD struct
+	//Create a device, device context and swap chain using the information in the SCD struct // D3D11_CREATE_DEVICE_DEBUG
 	HRESULT hr = D3D11CreateDeviceAndSwapChain(
 		NULL,
 		D3D_DRIVER_TYPE_HARDWARE,
 		NULL,
-		D3D11_CREATE_DEVICE_DEBUG,
+		NULL, //r
 		NULL,
 		NULL,
 		D3D11_SDK_VERSION,

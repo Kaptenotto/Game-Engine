@@ -13,6 +13,9 @@ struct VertexType
 	float x, y, z;
 	float u, v;
 	float nx, ny, nz;
+
+	//this is to align with the 56byte stride
+	float junk1, junk2, junk3, junk4, junk5, junk6;
 };
 
 struct TreeNode

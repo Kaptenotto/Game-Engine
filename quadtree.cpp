@@ -33,8 +33,6 @@ void QuadTree::ReleaseNode(TreeNode * node)
 	}
 }
 
-
-
 void QuadTree::DimensionCalc(int count, float & posX, float & posY, float & meshWidth)
 {
 	//w = width, d = depth
@@ -79,7 +77,7 @@ void QuadTree::DimensionCalc(int count, float & posX, float & posY, float & mesh
 	xMax = (float)max(fabs(wMin), fabs(wMax));
 	yMax = (float)max(fabs(dMin), fabs(dMax));
 
-	//set initial area for quadtree to encompass
+	//set initial area for quadtree to encompass // use multiplier to tweak for various scene sizes
 	meshWidth = max(xMax, yMax) * 5.0f;
 	return;
 }

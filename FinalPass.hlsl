@@ -75,7 +75,7 @@ float4 PS_main(VS_OUT input) : SV_TARGET
 	//return float4(shadowSamp.a, 0, 0, 1);
 	//return float4(shadowSamp.x, 0, 0, 1);
 
-	finalColor = diffuseSamp * (norColor * 0.5f) + diffuseSamp * ambient * shadowSamp.a;
+	finalColor = diffuseSamp * (norColor * 0.4f) + diffuseSamp * ambient * shadowSamp.a;
 	finalColor = saturate(finalColor);
 	return finalColor;
 }
