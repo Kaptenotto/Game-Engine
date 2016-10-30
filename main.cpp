@@ -102,6 +102,63 @@ bool PointInTriangle(XMVECTOR&triV1, XMVECTOR&triV2, XMVECTOR&triV3, XMVECTOR&po
 
 #pragma region HeightMap
 
+struct Vertex    //Overloaded Vertex Structure
+{
+	Vertex() {}
+	Vertex(float x, float y, float z,
+		float u, float v,
+		float nx, float ny, float nz)
+		: pos(x, y, z), texCoord(u, v), normal(nx, ny, nz) {}
+
+	XMFLOAT3 pos;
+	XMFLOAT2 texCoord;
+	XMFLOAT3 normal;
+};
+
+struct HeightMapInfo{        // Heightmap structure
+	int terrainWidth;        // Width of heightmap
+int terrainHeight;        // Height (Length) of heightmap
+XMFLOAT3 *heightMap;    // Array to store terrain's vertex positions
+};
+
+struct Collision {
+	// Information about ellipsoid (in world space)
+	XMVECTOR ellipsoidSpace;
+	XMVECTOR w_Position;
+	XMVECTOR w_Velocity;
+
+	// Information about ellipsoid (in ellipsoid space)
+	XMVECTOR e_Position;
+	XMVECTOR e_Velocity;
+	XMVECTOR e_normalizedVelocity;
+
+	// Collision Information
+	bool foundCollision;
+	float nearestDistance;
+	XMVECTOR intersectionPoint;
+	int collisionRecursionDepth;
+};
+
+const float unitsPerMeter = 100.0f;
+XMVECTOR gravity = XMVectorSet(0.0f, -0.2f, 0.0f, 0.0f);
+
+vector<XMFLOAT3> collidableGeometryPositions;
+vector<DWORD> collidableGeometryIndices;
+
+int NumFaces = 0;
+int NumVertices = 0;
+
+UINT32 groundVertexSize;
+
+XMVECTOR CollisionSliding(Collision& cP,
+	std::vector<XMFLOAT3>& vertPos,
+	std::vector<DWORD>& indices);
+bool getLowestRoot(float a, float b, float c, float maxR, float*root);
+bool checkPointInTriangle(const XMVECTOR& point, const XMVECTOR& triV1, const XMVECTOR& triV2, const XMVECTOR& triV3);
+bool SphereCollisionWithTriangle(Collision& cP, XMVECTOR &p0, XMVECTOR &p1, XMVECTOR &p2, XMVECTOR &triNormal);
+XMVECTOR CollideWithHeightMap(Collision& cP,
+	std::vector<XMFLOAT3>& vertPos,
+	std::vector<DWORD>& indices);
 
 #pragma endregion
 
@@ -168,6 +225,9 @@ ID3D11Buffer* gVertexBuffer = nullptr;
 ID3D11Buffer* gVertexBufferParticle = nullptr;
 ID3D11Buffer* gVertexBufferExplosion = nullptr;
 ID3D11Buffer* gIndexBuffer = nullptr;
+
+ID3D11Buffer* groundVertexBuffer = nullptr;
+ID3D11Buffer* groundIndexBuffer = nullptr;
 
 ID3D11Buffer* gConstantBuffer = nullptr;
 ID3D11Buffer* gConstantLightBuffer = nullptr;
@@ -246,6 +306,9 @@ float particleDeviationX, particleDeviationY, particleDeviationZ;
 //GLOBALS FOR INPUT ************************************************
 
 HWND wndHandle = NULL;
+
+ID3D11Resource* HeightTex;
+ID3D11ShaderResourceView* heightResource;
 
 
 IDirectInputDevice8* DIKeyboard;
@@ -586,10 +649,6 @@ void CreateTextureViews()
 	{
 		GBuffer_Textures[i]->Release();
 	}
-
-
-
-
 }
 void finalPassQuadData()
 {
@@ -786,6 +845,8 @@ void createTextures()
 		norResource->Release();
 	}
 	
+	const wchar_t* wcharFilePath2 = L"grass.jpg";
+	CreateWICTextureFromFile(gDevice, gDeviceContext, wcharFilePath2, &HeightTex, &heightResource, 0);
 }
 
 void createTriangle()
@@ -1069,6 +1130,18 @@ void updateCamera()
 	/**/ camUpDown = XMVector3TransformCoord(defaultUp, RotateYTempMatrix);
 	/**/ camForward = XMVector3TransformCoord(defaultForward, RotateYTempMatrix);
 
+
+	Collision cameraCP;
+	cameraCP.ellipsoidSpace = XMVectorSet(1.0f, 3.0f, 1.0f, 0.0f);
+	cameraCP.w_Position = camPosition;
+	cameraCP.w_Velocity = (moveLeftRight*camRight) + (moveBackForward*camForward);
+
+	camPosition = CollisionSliding(cameraCP,
+		collidableGeometryPositions,
+		collidableGeometryIndices);
+
+
+
 	camPosition += moveLeftRight* camRight;
 	camPosition += moveBackForward* camForward;
 	camPosition += moveupDown * camUpDown;
@@ -1211,7 +1284,6 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 
 	return;
 }
-
 
 #pragma region Picking
 void calcRay(float mouseX, float mouseY, XMVECTOR& rayOrigin, XMVECTOR& rayDirection)
@@ -1357,18 +1429,661 @@ bool PointInTriangle(XMVECTOR&triV1, XMVECTOR&triV2, XMVECTOR&triV3, XMVECTOR&po
 }
 #pragma endregion
 
-
 #pragma region HeightMap
+XMVECTOR CollisionSliding(Collision& collisionPoint,
+	std::vector<XMFLOAT3>& vertPos,
+	std::vector<DWORD>& indices)
+{
+	//Transformerar hastighets/velocity vektorn till ellipsoidens space
+	collisionPoint.e_Velocity = collisionPoint.w_Velocity / collisionPoint.ellipsoidSpace;
+
+	//Vi transformerar även positionvektorn till ellipsoidsens space
+	collisionPoint.e_Position = collisionPoint.w_Position / collisionPoint.ellipsoidSpace;
+
+	// Här kollar vi kollision med vår värld som i detta fallet är vår heightmap, denna funktion kallar på sig själv 5 gånger som mest eller
+	// till velocity vektorn är helt använd( väldigt liten eller nära noll)
+	collisionPoint.collisionRecursionDepth = 0;
+	XMVECTOR finalPosition = CollideWithHeightMap(collisionPoint, vertPos, indices);
+
+
+	//Vi vill även ha gravitation mot vår heightmap för att kunna skapa sliding beteendet eller för att komma tillbaka ner efter vi hoppat eller flygit
+	// Detta gör vi genom att lägga till en ny hastighetsvektor nedåt. Vi definierar denna variabel globalt vid våra variabler och ger den att dra nedåt y axeln
+	// Om vi inte hade haft detta hade den slidat ner för den brantare kanterna.
+
+	//Eftersom vi definierar gravitationen i worldspace ändrar vi även om denna till ellipsoid space.
+	collisionPoint.e_Velocity = gravity / collisionPoint.ellipsoidSpace;
+
+
+	collisionPoint.e_Position = finalPosition;
+	collisionPoint.collisionRecursionDepth = 0;
+	finalPosition = CollideWithHeightMap(collisionPoint, vertPos, indices);
+
+
+	// Slutligen ändrar vi finalposition till world space för att kunna uppdatera vår kamera.
+	finalPosition = finalPosition * collisionPoint.ellipsoidSpace;
+
+	// Return our final position!
+	return finalPosition;
+}
+
+XMVECTOR CollideWithHeightMap(Collision& collisionPoint,
+	std::vector<XMFLOAT3>& vertPos,
+	std::vector<DWORD>& indices)
+{
+	// These are based off the unitsPerMeter from above
+	float unitScale = unitsPerMeter / 100.0f;
+	// VerycloseDistance variabeln är viktig eftersom den håller spheren/ellipsen borta från att faktiskt röra triangeln
+	// annars skulle det skapa stora poblem eftersom den vid varje loop skulle alltid hitta en kollision istället för
+	// att glida över trianglen.
+	float veryCloseDistance = 0.005f * unitScale;
 
 
 
+	// Denna ifsats är väldigt viktig eftersom den kommer att stoppa oss från att gå in i en infinite eller väldigt long loop
+	// Exempelvis är det tillfällen då spheren faktiskt kan be knuffad lite in i triangelns center där, där rekursionen skulle fortsätta upprepa
+	// och hitta en kollision även fast att hastigheten inte ändrar.                                     
+	if (collisionPoint.collisionRecursionDepth > 5)
+		return collisionPoint.e_Position;
 
+	//normaliserar ellipsens hastighetsvektor
+	collisionPoint.e_normalizedVelocity = XMVector3Normalize(collisionPoint.e_Velocity);
+
+	// initierar variabler i collision paketet"
+	collisionPoint.foundCollision = false;
+	collisionPoint.nearestDistance = 0.0f;
+
+	// loopa igenom varje triangle i meshen och kolla efter en kollision
+	for (int triCounter = 0; triCounter < indices.size() / 3; triCounter++)
+	{
+		//hämta punkterna från trianglen(hämta trianglen)
+
+		XMVECTOR p0, p1, p2, tempVec;
+		p0 = XMLoadFloat3(&vertPos[indices[3 * triCounter]]);
+		p1 = XMLoadFloat3(&vertPos[indices[3 * triCounter + 1]]);
+		p2 = XMLoadFloat3(&vertPos[indices[3 * triCounter + 2]]);
+
+		// Sätter trianglen in i ellipsen space.
+		p0 = p0 / collisionPoint.ellipsoidSpace;
+		p1 = p1 / collisionPoint.ellipsoidSpace;
+		p2 = p2 / collisionPoint.ellipsoidSpace;
+
+		// Beräkna triangelns normal för att skicka med den i collidefunktionen.
+		XMVECTOR triNormal;
+		triNormal = XMVector3Normalize(XMVector3Cross((p1 - p0), (p2 - p0)));
+
+		// Här använder vi funktionen för att se om sphären kolliderar med triangeln.
+		SphereCollisionWithTriangle(collisionPoint, p0, p1, p2, triNormal);
+	}
+
+	// Om de inte var någon kollision returnera helt enkelt positionen och hastigheten på ellipsen.
+	if (collisionPoint.foundCollision == false) {
+		return collisionPoint.e_Position + collisionPoint.e_Velocity;
+	}
+
+	// Om vi däremot kommit hit har en kollision inträffat
+
+	// If we've made it here, a collision occured
+
+	// destinationPoint is where the sphere would travel if there was
+	// no collisions, however, at this point, there has a been a collision
+	// detected. We will use this vector to find the new "sliding" vector
+	// based off the plane created from the sphere and collision point
+	XMVECTOR destinationPoint = collisionPoint.e_Position + collisionPoint.e_Velocity;
+
+	XMVECTOR newPosition = collisionPoint.e_Position;    // Just initialize newPosition
+
+	if (collisionPoint.nearestDistance >= veryCloseDistance)
+	{
+		// Move the new position down velocity vector to ALMOST touch the collision point
+		XMVECTOR V = collisionPoint.e_Velocity;
+		V = XMVector3Normalize(V);
+		V = V * (collisionPoint.nearestDistance - veryCloseDistance);
+		newPosition = collisionPoint.e_Position + V;
+
+		// Adjust polygon intersection point (so sliding
+		// plane will be unaffected by the fact that we
+		// move slightly less than collision tells us)
+		V = XMVector3Normalize(V);
+		collisionPoint.intersectionPoint -= veryCloseDistance * V;
+	}
+
+	// This is our sliding plane (point in the plane and plane normal)
+	XMVECTOR slidePlaneOrigin = collisionPoint.intersectionPoint;
+	XMVECTOR slidePlaneNormal = newPosition - collisionPoint.intersectionPoint;
+	slidePlaneNormal = XMVector3Normalize(slidePlaneNormal);
+
+	float x = XMVectorGetX(slidePlaneOrigin);
+	float y = XMVectorGetY(slidePlaneOrigin);
+	float z = XMVectorGetZ(slidePlaneOrigin);
+
+	// Next the planes normal
+	float A = XMVectorGetX(slidePlaneNormal);
+	float B = XMVectorGetY(slidePlaneNormal);
+	float C = XMVectorGetZ(slidePlaneNormal);
+	float D = -((A*x) + (B*y) + (C*z));
+
+	// To keep the variable names clear, we will rename D to planeConstant
+	float planeConstant = D;
+
+	// Get the distance between sliding plane and destination point
+	float signedDistFromDestPointToSlidingPlane = XMVectorGetX(XMVector3Dot(destinationPoint, slidePlaneNormal)) + planeConstant;
+
+	XMVECTOR newDestinationPoint = destinationPoint - signedDistFromDestPointToSlidingPlane * slidePlaneNormal;
+
+	// I believe this line was covered briefly in the above explanation
+	XMVECTOR newVelocityVector = newDestinationPoint - collisionPoint.intersectionPoint;
+
+	if (XMVectorGetX(XMVector3Length(newVelocityVector)) < veryCloseDistance) {
+		return newPosition;
+	}
+	collisionPoint.collisionRecursionDepth++;
+	collisionPoint.e_Position = newPosition;
+	collisionPoint.e_Velocity = newVelocityVector;
+	return CollideWithHeightMap(collisionPoint, vertPos, indices);
+}
+
+bool SphereCollisionWithTriangle(Collision& collisionP, XMVECTOR &p0, XMVECTOR &p1, XMVECTOR &p2, XMVECTOR &triNormal)
+{
+	float facing = XMVectorGetX(XMVector3Dot(triNormal, collisionP.e_normalizedVelocity));
+	if (facing <= 0)
+	{
+		
+			float t0, t1;
+
+
+		bool sphereInPlane = false;
+
+		float xPoint = XMVectorGetX(p0);
+		float yPoint = XMVectorGetY(p0);
+		float zPoint = XMVectorGetZ(p0);
+
+		// Planets normal
+		float planeNormalA = XMVectorGetX(triNormal);
+		float planeNormalB = XMVectorGetY(triNormal);
+		float planeNormalC = XMVectorGetZ(triNormal);
+
+		float D = -((planeNormalA*xPoint) + (planeNormalB*yPoint) + (planeNormalC *zPoint));
+
+		float planeConstant = D;
+
+
+		float signedDistFromPositionToTriPlane = XMVectorGetX(XMVector3Dot(collisionP.e_Position, triNormal)) + planeConstant;
+
+
+		float planeNormalDotVelocity = XMVectorGetX(XMVector3Dot(triNormal, collisionP.e_Velocity));
+
+
+		if (planeNormalDotVelocity == 0.0f)
+		{
+			if (fabs(signedDistFromPositionToTriPlane) >= 1.0f)
+			{
+
+				return false;
+			}
+			else
+			{
+				
+					sphereInPlane = true;
+			}
+		}
+		else
+		{
+
+			t0 = (1.0f - signedDistFromPositionToTriPlane) / planeNormalDotVelocity;
+			t1 = (-1.0f - signedDistFromPositionToTriPlane) / planeNormalDotVelocity;
+
+
+			if (t0 > t1)
+			{
+				float temp = t0;
+				t0 = t1;
+				t1 = temp;
+			}
+
+			if (t0 > 1.0f || t1 < 0.0f)
+			{
+				return false;
+			}
+
+
+			if (t0 < 0.0) t0 = 0.0;
+			if (t1 > 1.0) t1 = 1.0;
+		}
+
+		XMVECTOR collisionPoint;        // Point on plane where collision occured
+		bool collidingWithTri = false;    // This is set so we know if there was a collision with the CURRENT triangle
+		float t = 1.0;                    // Time
+
+										  // If the sphere is not IN the triangles plane, we continue the sphere to inside of triangle test
+		if (!sphereInPlane)
+		{
+
+			XMVECTOR planeIntersectionPoint = (collisionP.e_Position + t0 * collisionP.e_Velocity - triNormal);
+
+			// Now we call the function that checks if a point on a triangle's plane is inside the triangle
+			if (checkPointInTriangle(planeIntersectionPoint, p0, p1, p2))
+			{
+				collidingWithTri = true;
+				t = t0;
+				collisionPoint = planeIntersectionPoint;
+			}
+		}
+
+
+		if (collidingWithTri == false)
+		{
+			float a, b, c; // Equation Parameters
+
+			float velocityLengthSquared = XMVectorGetX(XMVector3Length(collisionP.e_Velocity));
+			velocityLengthSquared *= velocityLengthSquared;
+
+			// We'll start by setting 'a', since all 3 point equations use this 'a'
+			a = velocityLengthSquared;
+
+			// This is a temporary variable to hold the distance down the velocity vector that
+			// the sphere will touch the vertex.
+			float newT;
+
+			// P0 - Collision test with sphere and p0
+			b = 2.0f * (XMVectorGetX(XMVector3Dot(collisionP.e_Velocity, collisionP.e_Position - p0)));
+			c = XMVectorGetX(XMVector3Length((p0 - collisionP.e_Position)));
+			c = (c*c) - 1.0f;
+			if (getLowestRoot(a, b, c, t, &newT)) {
+				t = newT;
+				collidingWithTri = true;
+				collisionPoint = p0;
+			}
+
+			// P1 - Collision test with sphere and p1
+			b = 2.0*(XMVectorGetX(XMVector3Dot(collisionP.e_Velocity, collisionP.e_Position - p1)));
+			c = XMVectorGetX(XMVector3Length((p1 - collisionP.e_Position)));
+			c = (c*c) - 1.0;
+			if (getLowestRoot(a, b, c, t, &newT)) {
+				t = newT;
+				collidingWithTri = true;
+				collisionPoint = p1;
+			}
+
+			// P2 - Collision test with sphere and p2
+			b = 2.0*(XMVectorGetX(XMVector3Dot(collisionP.e_Velocity, collisionP.e_Position - p2)));
+			c = XMVectorGetX(XMVector3Length((p2 - collisionP.e_Position)));
+			c = (c*c) - 1.0;
+			if (getLowestRoot(a, b, c, t, &newT)) {
+				t = newT;
+				collidingWithTri = true;
+				collisionPoint = p2;
+			}
+
+			// Edge (p0, p1):
+			XMVECTOR edge = p1 - p0;
+			XMVECTOR spherePositionToVertex = p0 - collisionP.e_Position;
+			float edgeLengthSquared = XMVectorGetX(XMVector3Length(edge));
+			edgeLengthSquared *= edgeLengthSquared;
+			float edgeDotVelocity = XMVectorGetX(XMVector3Dot(edge, collisionP.e_Velocity));
+			float edgeDotSpherePositionToVertex = XMVectorGetX(XMVector3Dot(edge, spherePositionToVertex));
+			float spherePositionToVertexLengthSquared = XMVectorGetX(XMVector3Length(spherePositionToVertex));
+			spherePositionToVertexLengthSquared = spherePositionToVertexLengthSquared * spherePositionToVertexLengthSquared;
+
+			// Equation parameters
+			a = edgeLengthSquared * -velocityLengthSquared + (edgeDotVelocity * edgeDotVelocity);
+			b = edgeLengthSquared * (2.0f * XMVectorGetX(XMVector3Dot(collisionP.e_Velocity, spherePositionToVertex))) - (2.0f * edgeDotVelocity * edgeDotSpherePositionToVertex);
+			c = edgeLengthSquared * (1.0f - spherePositionToVertexLengthSquared) + (edgeDotSpherePositionToVertex * edgeDotSpherePositionToVertex);
+
+			// We start by finding if the swept sphere collides with the edges "infinite line"
+			if (getLowestRoot(a, b, c, t, &newT)) {
+				float f = (edgeDotVelocity * newT - edgeDotSpherePositionToVertex) / edgeLengthSquared;
+				if (f >= 0.0f && f <= 1.0f) {
+					// If the collision with the edge happened, we set the results
+					t = newT;
+					collidingWithTri = true;
+					collisionPoint = p0 + f * edge;
+				}
+			}
+
+			// Edge (p1, p2):
+			edge = p2 - p1;
+			spherePositionToVertex = p1 - collisionP.e_Position;
+			edgeLengthSquared = XMVectorGetX(XMVector3Length(edge));
+			edgeLengthSquared = edgeLengthSquared * edgeLengthSquared;
+			edgeDotVelocity = XMVectorGetX(XMVector3Dot(edge, collisionP.e_Velocity));
+			edgeDotSpherePositionToVertex = XMVectorGetX(XMVector3Dot(edge, spherePositionToVertex));
+			spherePositionToVertexLengthSquared = XMVectorGetX(XMVector3Length(spherePositionToVertex));
+			spherePositionToVertexLengthSquared = spherePositionToVertexLengthSquared * spherePositionToVertexLengthSquared;
+
+			a = edgeLengthSquared * -velocityLengthSquared + (edgeDotVelocity * edgeDotVelocity);
+			b = edgeLengthSquared * (2.0f * XMVectorGetX(XMVector3Dot(collisionP.e_Velocity, spherePositionToVertex))) - (2.0f * edgeDotVelocity * edgeDotSpherePositionToVertex);
+			c = edgeLengthSquared * (1.0f - spherePositionToVertexLengthSquared) + (edgeDotSpherePositionToVertex * edgeDotSpherePositionToVertex);
+
+			if (getLowestRoot(a, b, c, t, &newT)) {
+				float f = (edgeDotVelocity * newT - edgeDotSpherePositionToVertex) / edgeLengthSquared;
+				if (f >= 0.0f && f <= 1.0f) {
+					t = newT;
+					collidingWithTri = true;
+					collisionPoint = p1 + f * edge;
+				}
+			}
+
+			// Edge (p2, p0):
+			edge = p0 - p2;
+			spherePositionToVertex = p2 - collisionP.e_Position;
+			edgeLengthSquared = XMVectorGetX(XMVector3Length(edge));
+			edgeLengthSquared = edgeLengthSquared * edgeLengthSquared;
+			edgeDotVelocity = XMVectorGetX(XMVector3Dot(edge, collisionP.e_Velocity));
+			edgeDotSpherePositionToVertex = XMVectorGetX(XMVector3Dot(edge, spherePositionToVertex));
+			spherePositionToVertexLengthSquared = XMVectorGetX(XMVector3Length(spherePositionToVertex));
+			spherePositionToVertexLengthSquared = spherePositionToVertexLengthSquared * spherePositionToVertexLengthSquared;
+
+			a = edgeLengthSquared * -velocityLengthSquared + (edgeDotVelocity * edgeDotVelocity);
+			b = edgeLengthSquared * (2.0f * XMVectorGetX(XMVector3Dot(collisionP.e_Velocity, spherePositionToVertex))) - (2.0f * edgeDotVelocity * edgeDotSpherePositionToVertex);
+			c = edgeLengthSquared * (1.0f - spherePositionToVertexLengthSquared) + (edgeDotSpherePositionToVertex * edgeDotSpherePositionToVertex);
+
+			if (getLowestRoot(a, b, c, t, &newT)) {
+				float f = (edgeDotVelocity * newT - edgeDotSpherePositionToVertex) / edgeLengthSquared;
+				if (f >= 0.0f && f <= 1.0f) {
+					t = newT;
+					collidingWithTri = true;
+					collisionPoint = p2 + f * edge;
+				}
+			}
+		}
+
+		// If we have found a collision, we will set the results of the collision here
+		if (collidingWithTri == true)
+		{
+			// We find the distance to the collision using the time variable (t) times the length of the velocity vector
+			float distToCollision = t * XMVectorGetX(XMVector3Length(collisionP.e_Velocity));
+
+			// Now we check if this is the first triangle that has been collided with OR it is
+			// the closest triangle yet that was collided with
+			if (collisionP.foundCollision == false || distToCollision < collisionP.nearestDistance) {
+
+				// Collision response information (used for "sliding")
+				collisionP.nearestDistance = distToCollision;
+				collisionP.intersectionPoint = collisionPoint;
+
+				// Make sure this is set to true if we've made it this far
+				collisionP.foundCollision = true;
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool checkPointInTriangle(const XMVECTOR& point, const XMVECTOR& triangleV1, const XMVECTOR& triangleV2, const XMVECTOR& triangleV3)
+{
+	//Denna funktion kolla om en point är i en triangle genom att
+	XMVECTOR collisionPoint1 = XMVector3Cross((triangleV3 - triangleV2), (point - triangleV2));
+	XMVECTOR collisionPoint2 = XMVector3Cross((triangleV3 - triangleV2), (triangleV1 - triangleV2));
+	if (XMVectorGetX(XMVector3Dot(collisionPoint1, collisionPoint2)) >= 0)
+	{
+		collisionPoint1 = XMVector3Cross((triangleV3 - triangleV1), (point - triangleV1));
+		collisionPoint2 = XMVector3Cross((triangleV3 - triangleV1), (triangleV2 - triangleV1));
+		if (XMVectorGetX(XMVector3Dot(collisionPoint1, collisionPoint2)) >= 0)
+		{
+			collisionPoint1 = XMVector3Cross((triangleV2 - triangleV1), (point - triangleV1));
+			collisionPoint2 = XMVector3Cross((triangleV2 - triangleV1), (triangleV3 - triangleV1));
+			if (XMVectorGetX(XMVector3Dot(collisionPoint1, collisionPoint2)) >= 0)
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool getLowestRoot(float a, float b, float c, float maxR, float* root)
+{
+	// Vi börjar genom att kolla om det finns en lösning
+	// Om determinanten är negativ så finns det inga lösningar och därför returnar vi false.
+	float determinant = b*b - 4.0f*a*c;
+
+	if (determinant < 0.0f) return false;
+
+	// Beräknar två rötter
+	float sqrtDeterminant = sqrt(determinant);
+
+	float root1 = (-b - sqrtDeterminant) / (2 * a);
+
+	float root2 = (-b + sqrtDeterminant) / (2 * a);
+	// Soterar så att x1 <= x2
+	if (root1 > root2) {
+		float temp = root2;
+		root2 = root1;
+		root1 = temp;
+	}
+	// Hämtar den lägsta rooten
+	if (root1 > 0 && root1 < maxR) {
+		*root = root1;
+		return true;
+	}
+
+	if (root2 > 0 && root2 < maxR) {
+		*root = root2;
+		return true;
+	}
+
+	// Ingen möjliga lösningar isåfall returnerar vi false.
+	return false;
+}
+
+bool HeightMapLoad(char *fileName, HeightMapInfo &hminfo)
+{
+	FILE *filePointer;                            // Point to the current position in the file
+	BITMAPFILEHEADER bitmapFileHeader;        // Structure which stores information about file
+	BITMAPINFOHEADER bitmapInfoHeader;        // Structure which stores information about image
+	int imageSize, index;
+	unsigned char height;
+
+	// Open the file
+	filePointer = fopen(fileName, "rb");
+	if (filePointer == NULL)
+		return 0;
+
+	// Läser bitmapens header
+	fread(&bitmapFileHeader, sizeof(BITMAPFILEHEADER), 1, filePointer);
+
+	// läser in infoheader för bitmapen
+	fread(&bitmapInfoHeader, sizeof(BITMAPINFOHEADER), 1, filePointer);
+
+	// hämtar width och height från bitmapen och lagrar de som width och height i hminfo structen
+	hminfo.terrainWidth = bitmapInfoHeader.biWidth;
+	hminfo.terrainHeight = bitmapInfoHeader.biHeight;
+
+	// Storlek av bilden i bytes, 3an representerar rgb för varje pixel
+	imageSize = hminfo.terrainWidth * hminfo.terrainHeight * 3;
+
+	//Initierar arrayen som lagrar bildens data
+	unsigned char* bitmapImageArray = new unsigned char[imageSize];
+
+	// Sätter filens pekare till början av bildens data
+	fseek(filePointer, bitmapFileHeader.bfOffBits, SEEK_SET);
+
+	// Lagrar bild datan i bitmapimage.
+	fread(bitmapImageArray, 1, imageSize, filePointer);
+
+	// Stänger filen.
+	fclose(filePointer);
+
+	// Initierar heightmap arrayen och lagrar verticerna i vår terräng
+	hminfo.heightMap = new XMFLOAT3[hminfo.terrainWidth * hminfo.terrainHeight];
+
+	// Vi anänvder en gråskalad Bmp bild så alla 3 rgb väden är det samma men vi  behöver bara en för höjd
+	// Därför anävnder vi denna int som räknare för att skippa två komponenter i bildens data, vi läser endast R
+	int skipGB = 0;
+
+	// Denna float delar vi med för att sänka terrängens terräng och minska att den inte är lika "spiky", utan istället mer jämn.
+	float heightFactor = 25.0f;
+
+	// Läser bildens data in i vår heightmap array
+	//två loopar för att läsa höjd och bredd.
+	for (int j = 0; j< hminfo.terrainHeight; j++)
+	{
+		for (int i = 0; i< hminfo.terrainWidth; i++)
+		{
+			height = bitmapImageArray[skipGB];
+
+			index = (hminfo.terrainHeight * j) + i;
+
+			hminfo.heightMap[index].x = (float)i;
+			// Behöver endast dela med heightfactor på y för att det är där vi har vår höjd i y led.
+			hminfo.heightMap[index].y = (float)height / heightFactor;
+			hminfo.heightMap[index].z = (float)j;
+
+			skipGB += 3;
+		}
+	}
+
+	//Deletar sedan vår bitmapimage då vi är klara med den.
+	delete[] bitmapImageArray;
+	bitmapImageArray = 0;
+
+	return true;
+
+}
+
+void CreateHeightMap()
+{
+	//Här anger vi ett namn för att komma åt vår struct heightMapInfo och väljer även namnet på vår heightmapfil.
+	HeightMapInfo hmInfo;
+	HeightMapLoad("Heightmap2.bmp", hmInfo);        // Load the heightmap and store it into hmInfo
+
+													//Lägger in terrägens brädd och höjd i respektive int variabel.
+	int cols = hmInfo.terrainWidth;
+	int rows = hmInfo.terrainHeight;
+
+	//Skapar gridden verticer endast genom att multiplicera rader och kolumner som står för höjd och bredd.
+	//Vi subtraherar här med -1 i varje för att undvika hörnen och sedan multiplicerar vi med 2 för att få fram antalet faces.
+	NumVertices = rows * cols;
+	NumFaces = (rows - 1)*(cols - 1) * 2;
+
+	//Gör vertex structen med antalet vertices som vi beräknade tidigare.
+	std::vector<Vertex> v(NumVertices);
+
+
+	// Denna loopen loopar igenom informationen i hminfo för att kunna ge vår vertices våra positioner som var lagrade där.
+	// Vi sätter även normalen uppåt för att kunna lysa upp ytan
+	for (DWORD i = 0; i < rows; ++i)
+	{
+		for (DWORD j = 0; j < cols; ++j)
+		{
+			v[i*cols + j].pos = hmInfo.heightMap[i*cols + j];
+			v[i*cols + j].normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
+		}
+	}
+
+	std::vector<DWORD> indices(NumFaces * 3);
+
+	int k = 0;
+	int textureUIndex = 0;
+	int texureVIndex = 0;
+	// Anledningen  till varför vi även använder textureUVindex är för att om vi sätter samma på alla så kommer nästa quad skriva över texturkoordinaterna
+	// där de är vertices som delar de två quadsen. Därför annvänder vi wrappin för att komma runt det. Där du använder värden högre än ett eller lägre än 0 för texturering
+	for (DWORD i = 0; i < rows - 1; i++)
+	{
+		for (DWORD j = 0; j < cols - 1; j++)
+		{
+			indices[k] = i*cols + j;        // Bottom left of quad
+			v[i*cols + j].texCoord = XMFLOAT2(textureUIndex + 0.0f, texureVIndex + 1.0f);
+
+			indices[k + 1] = (i + 1)*cols + j;    // Top left of quad
+			v[(i + 1)*cols + j].texCoord = XMFLOAT2(textureUIndex + 0.0f, texureVIndex + 0.0f);
+
+			indices[k + 2] = i*cols + j + 1;        // Bottom right of quad
+			v[i*cols + j + 1].texCoord = XMFLOAT2(textureUIndex + 1.0f, texureVIndex + 1.0f);
+
+			indices[k + 3] = (i + 1)*cols + j;    // Top left of quad
+			v[(i + 1)*cols + j].texCoord = XMFLOAT2(textureUIndex + 0.0f, texureVIndex + 0.0f);
+
+			indices[k + 4] = (i + 1)*cols + j + 1;    // Top right of quad
+			v[(i + 1)*cols + j + 1].texCoord = XMFLOAT2(textureUIndex + 1.0f, texureVIndex + 0.0f);
+
+			indices[k + 5] = i*cols + j + 1;        // Bottom right of quad
+			v[i*cols + j + 1].texCoord = XMFLOAT2(textureUIndex + 1.0f, texureVIndex + 1.0f);
+
+			k += 6; // adderar med 6 för att komma till nästa quad med indices.
+
+			textureUIndex++;
+		}
+		textureUIndex = 0;
+		texureVIndex++;
+	}
+
+	//Lagra terrängens vertex positioner och index i polygon soppan som vi kollar kollisioner med
+	// Vi kan lagra all statisk eftersom de är en mesh som inte ändras , det vill säga den vi vill kolla kollisioner med.
+
+	//Vertex offset för att varje mesh lägs till i slutet på positionsarrayen.
+	int vertexOffset = collidableGeometryPositions.size();
+
+	//Temporära arrayer för att vi behöver lagra geometrin i världsspace
+	XMVECTOR temporaryVertexPositionVector;
+	XMFLOAT3 temporaryVertFloat3;
+
+	// Här lägger vi till vertex positionerna i polygon soppan att kolla med sedan det vill säga i collidableGeometryPositions
+	// Där vi först laddar in v i en temp array för att sedan transformera de i världsspace.
+	// Sedan lägger vi till de i vår float3 variabel och pussar in den i vår collidablegeometry vector
+	for (int i = 0; i < v.size(); i++)
+	{
+		temporaryVertexPositionVector = XMLoadFloat3(&v[i].pos);
+
+		temporaryVertexPositionVector = XMVector3TransformCoord(temporaryVertexPositionVector, matrices.World);
+
+		XMStoreFloat3(&temporaryVertFloat3, temporaryVertexPositionVector);
+
+		collidableGeometryPositions.push_back(temporaryVertFloat3);
+	}
+
+	// Här är sedan nästa steg där vi lägger in indices i "polygon soppan" Vi måste dock vara säkra att vi
+	// LÄgger till de ovanpå tidigare inlagda vertex positioner därför använder vi vertexoffset variabeln.
+
+	for (int i = 0; i < indices.size(); i++)
+	{
+		collidableGeometryIndices.push_back(indices[i] + vertexOffset);
+	}
+
+	D3D11_SUBRESOURCE_DATA indexBufferdata;
+
+	D3D11_BUFFER_DESC indexBufferDesc;
+	ZeroMemory(&indexBufferDesc, sizeof(indexBufferDesc));
+
+	indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	indexBufferDesc.ByteWidth = sizeof(DWORD) * NumFaces * 3;
+
+	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	indexBufferDesc.CPUAccessFlags = 0;
+	indexBufferDesc.MiscFlags = 0;
+
+	// När vi använder en vector som bufferns data behöver vi ge en pekare till första elementet i vector arrayen
+	// Eller de första elementen vi vill läsa ifrån
+	indexBufferdata.pSysMem = &indices[0];
+
+	gDevice->CreateBuffer(&indexBufferDesc, &indexBufferdata, &groundIndexBuffer);
+
+
+	D3D11_BUFFER_DESC vertexBufferDesc;
+	ZeroMemory(&vertexBufferDesc, sizeof(vertexBufferDesc));
+
+	vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+
+	vertexBufferDesc.ByteWidth = sizeof(Vertex) * NumVertices;
+
+	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	vertexBufferDesc.CPUAccessFlags = 0;
+	vertexBufferDesc.MiscFlags = 0;
+
+	D3D11_SUBRESOURCE_DATA vertexBufferData;
+	ZeroMemory(&vertexBufferData, sizeof(vertexBufferData));
+
+	// När vi använder en vector som bufferns data behöver vi ge en pekare till första elementet i vector arrayen
+	// Eller de första elementen vi vill läsa ifrån
+	vertexBufferData.pSysMem = &v[0];
+
+	gDevice->CreateBuffer(&vertexBufferDesc, &vertexBufferData, &groundVertexBuffer);
+}
 
 
 
 #pragma endregion
-
-
 
 #pragma region timeFunctions
 void startTimer()
@@ -1541,8 +2256,8 @@ void EmitParticles()
 		green = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
 		blue = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
 
-		vertexList.push_back(ParticleVertex{ positionX, 10, positionZ, 0.5f, 0.5f, 0.7f, 0.7f, 1.0f });
-		velocity.push_back(((float)rand() / (RAND_MAX + 1) + 1 + (rand() % 3)) / 50.0f);
+		vertexList.push_back(ParticleVertex{ positionX, 10, positionZ, 0.005f, 0.5f, 0.7f, 0.7f, 1.0f });
+		velocity.push_back(((float)rand() / (RAND_MAX + 1) + 1 + (rand() % 3)) / 5.0f);
 		i++;
 	}
 }																		
@@ -1891,6 +2606,41 @@ void Render()
 	}
 }
 
+void RenderHeightMap()
+{
+	ID3D11RenderTargetView* rtvsToSet[] = {
+		textureRTVs[0],
+		textureRTVs[1],
+		textureRTVs[2],
+		textureRTVs[3],
+	};
+	gDeviceContext->OMSetRenderTargets(numRTVs, rtvsToSet, GBufferDepthStencilView);
+
+	gDeviceContext->VSSetShader(GBuffer_VS, nullptr, 0);
+	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->GSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->PSSetShader(GBuffer_PS, nullptr, 0);
+
+	UINT offset2 = 0;
+	UINT stride = sizeof(Vertex);
+
+	gDeviceContext->IASetIndexBuffer(groundIndexBuffer, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
+	gDeviceContext->IASetVertexBuffers(0, 1, &groundVertexBuffer, &stride, &offset2);
+
+	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	gDeviceContext->IASetInputLayout(GBuffer_VertexLayout);
+
+	gDeviceContext->PSSetSamplers(0, 1, &pointSamplerState);
+
+	gDeviceContext->PSSetShaderResources(2, 1, &ShadowDepthResource);
+	gDeviceContext->PSSetShaderResources(0, 1, &heightResource);
+
+	gDeviceContext->DrawIndexed(NumFaces * 3, 0, 0);
+}
+
+
+
 void RenderGBuffer()
 {
 	for (int i = 0; i < numRTVs; i++)
@@ -2045,6 +2795,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 		quadTree.Initialize(gDevice, gDeviceContext, &obj);
 		
+		CreateHeightMap();
+
 		//Shows the window
 		ShowWindow(wndHandle, nCmdShow);
 
@@ -2076,15 +2828,22 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 
 				testingfunc();
+
 				//Render(); // Rendera
 				//RenderGBuffer(); // Rendera
+
+				RenderHeightMap();
+
 				RenderParticles(); // Rendera
+
+
 				if (explosion)
 				{
 					RenderExplosion(); // Rendera
 					updateExplosion();
 					killExplosion();
 				}
+
 				RenderFinalPass();
 
 				
