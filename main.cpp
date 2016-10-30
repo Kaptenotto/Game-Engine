@@ -18,6 +18,7 @@
 #include <fcntl.h>
 
 #include "importer.h"
+#include "quadtree.h"
 #include "Wic.h"
 //#include "ParticleSystem.h"
 
@@ -77,6 +78,21 @@ ID3D11VertexShader*	FinalPass_VS = nullptr;
 ID3D11PixelShader* FinalPass_PS = nullptr;
 ID3D11InputLayout* FinalPass_VertexLayout = nullptr;
 #pragma endregion
+
+
+#pragma region Frustrum/quadtree
+QuadTree quadTree;
+void getFrustrumPlanes(float farZ, XMFLOAT4X4 projection, XMFLOAT4X4 &viewMatrix); //hämtar frustrum planes
+bool checkCube(float xCenter, float yCenter, float zCenter, float radius);
+struct Planes
+{
+	XMFLOAT3 normal;
+	float distance;
+};
+Planes frustrumPlanes[6];
+
+#pragma endregion
+
 
 #pragma region camVectors
 
@@ -874,7 +890,7 @@ void ConstantBuffer()
 	float fovangleY = XM_PI * 0.45;
 	float aspectRatio = 1280.0 / 720.0;
 	float nearZ = 0.01;
-	float farZ = 50.0;
+	float farZ = 500.0;
 
 	//LIGHT
 	float lightfovangleY = XM_PI * 0.5;
@@ -1054,6 +1070,24 @@ void updateCamera()
 	matrices.camPos = camPosition;
 	matrices.camView = XMMatrixLookAtLH(camPosition, camTarget, camUp);
 	matrices.camView = XMMatrixTranspose(matrices.camView);
+
+#pragma region
+	XMFLOAT4X4 tempProj2;
+	XMFLOAT4X4 tempView2;
+
+	XMMATRIX tempProj1;
+	XMMATRIX tempView1;
+
+	tempView1 = XMMatrixTranspose(matrices.camView);
+	tempProj1 = XMMatrixTranspose(matrices.Projection);
+
+
+	XMStoreFloat4x4(&tempProj2, tempProj1);
+	XMStoreFloat4x4(&tempView2, tempView1);
+
+	getFrustrumPlanes(50.0f, tempProj2, tempView2);
+#pragma endregion
+
 }
 
 void detectInput(double time) // checking keyboard and mouse input for movement in Engine
@@ -1316,8 +1350,8 @@ void EmitParticles()
 		green = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
 		blue = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
 
-		vertexList.push_back(ParticleVertex{ positionX, 10, positionZ, 0.05f, 0.5f, 0.7f, 0.7f, 1.0f });
-		velocity.push_back(((float)rand() / (RAND_MAX + 1) + 1 + (rand() % 3)) / 5.0f);
+		vertexList.push_back(ParticleVertex{ positionX, 10, positionZ, 0.5f, 0.5f, 0.7f, 0.7f, 1.0f });
+		velocity.push_back(((float)rand() / (RAND_MAX + 1) + 1 + (rand() % 3)) / 50.0f);
 		i++;
 	}
 }																		
@@ -1367,6 +1401,198 @@ void Update()
 	gDeviceContext->VSSetConstantBuffers(1, 1, &gConstantLightBuffer);
 	gDeviceContext->PSSetConstantBuffers(1, 1, &gConstantLightBuffer);
 }
+
+void getFrustrumPlanes(float farZ, XMFLOAT4X4 projection, XMFLOAT4X4 &viewMatrix)
+{
+	float zMin = -projection._43 / projection._33;
+	float r = (farZ / (farZ - zMin));
+	projection._33 = r;
+	projection._43 = -r * zMin;
+
+
+	XMMATRIX temp = XMMatrixMultiply(XMLoadFloat4x4(&viewMatrix), XMLoadFloat4x4(&projection));
+
+	XMFLOAT4X4 _viewProj;
+
+	XMStoreFloat4x4(&_viewProj, temp);
+
+	frustrumPlanes[0].normal.x = _viewProj._14 + _viewProj._11;
+	frustrumPlanes[0].normal.y = _viewProj._24 + _viewProj._21;
+	frustrumPlanes[0].normal.z = _viewProj._34 + _viewProj._31;
+	frustrumPlanes[0].distance = _viewProj._44 + _viewProj._41;
+
+	frustrumPlanes[1].normal.x = _viewProj._14 - _viewProj._11;
+	frustrumPlanes[1].normal.y = _viewProj._24 - _viewProj._21;
+	frustrumPlanes[1].normal.z = _viewProj._34 - _viewProj._31;
+	frustrumPlanes[1].distance = _viewProj._44 - _viewProj._41;
+
+	frustrumPlanes[2].normal.x = _viewProj._14 - _viewProj._12;
+	frustrumPlanes[2].normal.y = _viewProj._24 - _viewProj._22;
+	frustrumPlanes[2].normal.z = _viewProj._34 - _viewProj._32;
+	frustrumPlanes[2].distance = _viewProj._44 - _viewProj._42;
+
+	frustrumPlanes[3].normal.x = _viewProj._14 + _viewProj._12;
+	frustrumPlanes[3].normal.y = _viewProj._24 + _viewProj._22;
+	frustrumPlanes[3].normal.z = _viewProj._34 + _viewProj._32;
+	frustrumPlanes[3].distance = _viewProj._44 + _viewProj._42;
+
+	frustrumPlanes[4].normal.x = _viewProj._14 + _viewProj._13;
+	frustrumPlanes[4].normal.y = _viewProj._24 + _viewProj._23;
+	frustrumPlanes[4].normal.z = _viewProj._34 + _viewProj._33;
+	frustrumPlanes[4].distance = _viewProj._44 + _viewProj._43;
+
+	frustrumPlanes[5].normal.x = _viewProj._14 - _viewProj._13;
+	frustrumPlanes[5].normal.y = _viewProj._24 - _viewProj._23;
+	frustrumPlanes[5].normal.z = _viewProj._34 - _viewProj._33;
+	frustrumPlanes[5].distance = _viewProj._44 - _viewProj._43;
+
+
+	for (unsigned int i = 0; i < 6; i++)
+	{
+		//float length = sqrt((tempFrustumPlane[i].x * tempFrustumPlane[i].x) + (tempFrustumPlane[i].y * tempFrustumPlane[i].y) + (tempFrustumPlane[i].z * tempFrustumPlane[i].z));
+		float lenghtSquared =
+			frustrumPlanes[i].normal.x * frustrumPlanes[i].normal.x +
+			frustrumPlanes[i].normal.y * frustrumPlanes[i].normal.y +
+			frustrumPlanes[i].normal.z * frustrumPlanes[i].normal.z;
+
+		float denom = 1.0f / sqrt(lenghtSquared);
+
+		frustrumPlanes[i].normal.x *= denom;
+		frustrumPlanes[i].normal.y *= denom;
+		frustrumPlanes[i].normal.z *= denom;
+		frustrumPlanes[i].distance *= denom;
+	}
+
+}
+
+bool checkCube(float xCenter, float yCenter, float zCenter, float radius)
+{
+
+
+	for (unsigned int i = 0; i < 6; i++)
+	{
+		XMFLOAT4 plane = { frustrumPlanes[i].normal.x,frustrumPlanes[i].normal.y,frustrumPlanes[i].normal.z,frustrumPlanes[i].distance };
+
+		XMFLOAT3 point;
+		point = { (xCenter - radius),(yCenter - radius),(zCenter - radius) };
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		{
+			continue;
+		}
+		point = { (xCenter + radius), (yCenter - radius), (zCenter - radius) };
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		{
+			continue;
+		}
+		point = { (xCenter - radius), (yCenter + radius), (zCenter - radius) };
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		{
+			continue;
+		}
+		point = { (xCenter + radius), (yCenter + radius), (zCenter - radius) };
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		{
+			continue;
+		}
+		point = { (xCenter - radius), (yCenter - radius), (zCenter + radius) };
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		{
+			continue;
+		}
+		point = { (xCenter + radius), (yCenter - radius), (zCenter + radius) };
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		{
+			continue;
+		}
+		point = { (xCenter - radius), (yCenter + radius), (zCenter + radius) };
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		{
+			continue;
+		}
+		point = { (xCenter + radius), (yCenter + radius), (zCenter + radius) };
+		if (XMPlaneDotCoord(XMLoadFloat4(&plane), DirectX::XMLoadFloat3(&point)).m128_f32[0] >= 0.0f)
+		{
+			continue;
+		}
+		return false;
+	}
+	return true;
+}
+
+void RenderGBufferQuadTree(TreeNode* node)
+{
+	bool renderedOnce = false;
+	for (size_t i = 0; i < 4; i++)
+	{
+		//The multiplied value at the end adjusts the Treenodes radius. low numbers reduce, high numbers increase
+		if (checkCube(node->posX, 0.0f, node->posY, (node->width / 2) * 0.853))
+		{
+			if (node->VertexCount != 0 && node->vertexBuffer != 0 && renderedOnce != true)
+			{
+				UINT32 vertexSize = sizeof(VertexType);
+				UINT32 vertexCount = node->VertexCount;
+				UINT32 indexSize = obj.index_counter;
+				UINT32 offset = 0;
+
+				gDeviceContext->IASetVertexBuffers(0, 1, &node->vertexBuffer, &vertexSize, &offset);
+				gDeviceContext->IASetIndexBuffer(node->indexBuffer, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
+
+				if (&textureResources[i] != 0)
+				{
+					gDeviceContext->PSSetShaderResources(0, 1, &textureResources[textureResources.size() - 1]);
+
+				}
+				if (&normalResources[i] != 0)
+				{
+					gDeviceContext->PSSetShaderResources(1, 1, &normalResources[normalResources.size() - 1]);
+				}
+
+
+				gDeviceContext->Draw(vertexCount, 0);
+
+
+				renderedOnce = true;
+			}
+		}
+		if (node->nodes[i] != 0)
+		{
+			RenderGBufferQuadTree(node->nodes[i]);
+		}
+	}
+
+}
+
+void testingfunc()
+{
+	float clearColor[] = { 0.5f, 0.5f, 0.5f, 1 };
+	for (int i = 0; i < numRTVs; i++)
+		gDeviceContext->ClearRenderTargetView(textureRTVs[i], clearColor);
+	gDeviceContext->ClearDepthStencilView(GBufferDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+	ID3D11RenderTargetView* rtvsToSet[] = {
+		textureRTVs[0],
+		textureRTVs[1],
+		textureRTVs[2],
+		textureRTVs[3],
+	};
+	gDeviceContext->OMSetRenderTargets(numRTVs, rtvsToSet, GBufferDepthStencilView);
+
+	gDeviceContext->VSSetShader(GBuffer_VS, nullptr, 0);
+	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->GSSetShader(GBuffer_GS, nullptr, 0);
+	gDeviceContext->PSSetShader(GBuffer_PS, nullptr, 0);
+	gDeviceContext->IASetInputLayout(GBuffer_VertexLayout);
+
+	TreeNode* test = quadTree.getParent();
+
+	gDeviceContext->PSSetShaderResources(2, 1, &ShadowDepthResource);
+
+
+	RenderGBufferQuadTree(test);
+}
+
+
 
 void RenderShadow()
 {
@@ -1632,6 +1858,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		initParticle();
 
 		createTextures();
+
+		quadTree.Initialize(gDevice, gDeviceContext, &obj);
 		
 		//Shows the window
 		ShowWindow(wndHandle, nCmdShow);
@@ -1661,8 +1889,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 				//UpdateParticles(getFrameTime());
 				UpdateBuffers();
 				RenderShadow(); // Rendera
+
+
+				testingfunc();
 				//Render(); // Rendera
-				RenderGBuffer(); // Rendera
+				//RenderGBuffer(); // Rendera
 				RenderParticles(); // Rendera
 				if (explosion)
 				{
