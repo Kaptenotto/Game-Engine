@@ -2575,37 +2575,6 @@ void RenderShadow()
 	gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
 }
 
-void RenderTriangle()
-{
-	ID3D11RenderTargetView* rtvsToSet[] = {
-		textureRTVs[0],
-		textureRTVs[1],
-		textureRTVs[2],
-		textureRTVs[3],
-	};
-	gDeviceContext->OMSetRenderTargets(numRTVs, rtvsToSet, GBufferDepthStencilView);
-
-	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
-	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
-	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
-	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
-	gDeviceContext->PSSetShader(gPixelShader, nullptr, 0);
-
-	UINT offset2 = 0;
-	UINT vertexSize = sizeof(TriangleVertex);
-
-	gDeviceContext->IASetVertexBuffers(0, 1, &triBuffer, &vertexSize, &offset2);
-	gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
-	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	gDeviceContext->IASetInputLayout(FinalPass_VertexLayout);
-
-	gDeviceContext->PSSetSamplers(0, 1, &pointSamplerState);
-
-	gDeviceContext->PSSetShaderResources(2, 1, &ShadowDepthResource);
-	gDeviceContext->PSSetShaderResources(0, 1, &heightResource);
-
-	gDeviceContext->Draw(6, 0);
-}
 
 void RenderParticles()
 {
@@ -2722,6 +2691,37 @@ void RenderHeightMap() //renderGbuffer2
 	gDeviceContext->DrawIndexed(NumFaces * 3, 0, 0);
 }
 
+void RenderTriangle()
+{
+	ID3D11RenderTargetView* rtvsToSet[] = {
+		textureRTVs[0],
+		textureRTVs[1],
+		textureRTVs[2],
+		textureRTVs[3],
+	};
+	gDeviceContext->OMSetRenderTargets(numRTVs, rtvsToSet, GBufferDepthStencilView);
+
+	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
+	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
+	gDeviceContext->PSSetShader(gPixelShader, nullptr, 0);
+
+	UINT offset2 = 0;
+	UINT vertexSize = sizeof(float) * 5;
+
+	gDeviceContext->IASetVertexBuffers(0, 1, &triBuffer, &vertexSize, &offset2);
+	gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
+	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	gDeviceContext->IASetInputLayout(FinalPass_VertexLayout);
+
+	gDeviceContext->PSSetSamplers(0, 1, &pointSamplerState);
+
+	gDeviceContext->PSSetShaderResources(2, 1, &ShadowDepthResource);
+	gDeviceContext->PSSetShaderResources(0, 1, &heightResource);
+
+	gDeviceContext->Draw(6, 0);
+}
 
 void RenderGBuffer()
 {
@@ -2777,8 +2777,6 @@ void RenderGBuffer()
 		gDeviceContext->Draw((obj.drawOffset[(i + 1)] - obj.drawOffset[i]), obj.drawOffset[i]);
 
 	}
-
-	//gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
 }
 void RenderFinalPass()
 {
