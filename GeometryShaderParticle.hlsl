@@ -38,8 +38,6 @@ void main(
 	float halfWidth = 0.5f*input[0].size.x; // half of the width from the input. 
 	float halfHeight = 0.5f*input[0].size.y; // half of the height from the input we do this since we want the acutal center of the billboard
 
-
-	
 	float4 v[4]; // this is how we create the billboard from the information calculated this creates the billboarded "quad" 
 	v[0] = float4(input[0].pos + halfWidth*right - halfHeight*up, 1.0f);
 	v[1] = float4(input[0].pos + halfWidth*right + halfHeight*up, 1.0f);
