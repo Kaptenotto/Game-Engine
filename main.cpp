@@ -2717,9 +2717,6 @@ void RenderTriangle()
 
 	gDeviceContext->PSSetSamplers(0, 1, &pointSamplerState);
 
-	gDeviceContext->PSSetShaderResources(2, 1, &ShadowDepthResource);
-	gDeviceContext->PSSetShaderResources(0, 1, &heightResource);
-
 	gDeviceContext->Draw(6, 0);
 }
 

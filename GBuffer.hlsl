@@ -96,7 +96,7 @@ void GBUFFER_GS_main(
 		float3 pos = mul(worldMatrix, input[i].pos);
 		pos = mul(camView, pos);
 		pos = mul(projectionMatrix, pos);
-		float4 direction = normalize(camPos - float4(pos, 1));
+		float4 direction = normalize(float4(0, 0, 0, 0) - float4(pos, 1));
 
 		if (dot(direction, normal) <= 0) // change < for forward rendering
 		{
