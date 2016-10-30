@@ -121,7 +121,7 @@ typedef struct DIMOUSESTATES
 	BYTE rgbButtons[4];
 };
 
-struct VertexType
+struct ParticleVertex
 {
 	float x,y,z;
 	float h,w;
@@ -201,9 +201,9 @@ float particleSize;
 
 int maxParticles;
 
-vector<VertexType> explosionTest;
+vector<ParticleVertex> explosionTest;
 
-vector<VertexType> vertexList;
+vector<ParticleVertex> vertexList;
 
 vector<StartingPos> explosionStartingPos;
 
@@ -1102,23 +1102,26 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 	}
 	if (mouseCurrentState.rgbButtons[0])
 	{
-		if (isShot == false)
-		{
-			POINT mousePos;
 
-			GetCursorPos(&mousePos);
-			ScreenToClient(hwnd, &mousePos);
 
-			int mousex = mousePos.x;
-			int mousey = mousePos.y;
 
-			float tempDist;
-			float closestDist = FLT_MAX;
-			int hitIndex;
 
-			XMVECTOR prwsPos, prwsDir;
-			//pickRayVector(mousex, mousey, prwsPos, prwsDir);
-		}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	}
 	if (!mouseCurrentState.rgbButtons[0])
 	{
@@ -1140,155 +1143,6 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 	updateCamera();
 
 	return;
-}
-
-void pickRayVector(float mouseX, float mouseY, XMVECTOR& pickRayInWorldSpacePos, XMVECTOR& pickRayInWorldSpaceDir)
-{
-	XMVECTOR pickRayInViewSpaceDir = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-	XMVECTOR pickRayInViewSpacePos = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-
-	float PRVecX, PRVecY, PRVecZ;
-
-	XMVECTOR projectionRow1 = matrices.Projection.r[0];
-	float camProjectionFloat0 = XMVectorGetX(projectionRow1);
-
-	XMVECTOR projectionRow2 = matrices.Projection.r[1];
-	float camProjectionFloatMid = XMVectorGetY(projectionRow2);
-
-	//Transform 2D pick position on screen space to 3D ray in View space
-	PRVecX = (((2.0f * mouseX) / clientWidth) - 1) / camProjectionFloat0;
-	PRVecY = -(((2.0f * mouseY) / clientHeight) - 1) / camProjectionFloatMid;
-	PRVecZ = 1.0f;    //View space's Z direction ranges from 0 to 1, so we set 1 since the ray goes "into" the screen
-
-	pickRayInViewSpaceDir = XMVectorSet(PRVecX, PRVecY, PRVecZ, 0.0f);
-
-	//Uncomment this line if you want to use the center of the screen (client area)
-	//to be the point that creates the picking ray (eg. first person shooter)
-	//pickRayInViewSpaceDir = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
-
-	// Transform 3D Ray from View space to 3D ray in World space
-	XMMATRIX pickRayToWorldSpaceMatrix;
-	XMVECTOR matInvDeter;    //We don't use this, but the xna matrix inverse function requires the first parameter to not be null
-
-	pickRayToWorldSpaceMatrix = XMMatrixInverse(&matInvDeter, matrices.camView);    //Inverse of View Space matrix is World space matrix
-
-	pickRayInWorldSpacePos = XMVector3TransformCoord(pickRayInViewSpacePos, pickRayToWorldSpaceMatrix);
-	pickRayInWorldSpaceDir = XMVector3TransformNormal(pickRayInViewSpaceDir, pickRayToWorldSpaceMatrix);
-}
-
-bool PointInTriangle(XMVECTOR& triV1, XMVECTOR& triV2, XMVECTOR& triV3, XMVECTOR& point)
-{
-	//To find out if the point is inside the triangle, we will check to see if the point
-	//is on the correct side of each of the triangles edges.
-
-	XMVECTOR cp1 = XMVector3Cross((triV3 - triV2), (point - triV2));
-	XMVECTOR cp2 = XMVector3Cross((triV3 - triV2), (triV1 - triV2));
-	if (XMVectorGetX(XMVector3Dot(cp1, cp2)) >= 0)
-	{
-		cp1 = XMVector3Cross((triV3 - triV1), (point - triV1));
-		cp2 = XMVector3Cross((triV3 - triV1), (triV2 - triV1));
-		if (XMVectorGetX(XMVector3Dot(cp1, cp2)) >= 0)
-		{
-			cp1 = XMVector3Cross((triV2 - triV1), (point - triV1));
-			cp2 = XMVector3Cross((triV2 - triV1), (triV3 - triV1));
-			if (XMVectorGetX(XMVector3Dot(cp1, cp2)) >= 0)
-			{
-				return true;
-			}
-			else
-				return false;
-		}
-		else
-			return false;
-	}
-	return false;
-}
-
-float pick(XMVECTOR pickRayInWorldSpacePos,
-	XMVECTOR pickRayInWorldSpaceDir,
-	std::vector<XMFLOAT3>& vertPosArray,
-	std::vector<DWORD>& indexPosArray,
-	XMMATRIX& worldSpace)
-{
-	//Loop through each triangle in the object
-	for (int i = 0; i < indexPosArray.size() / 3; i++)
-	{
-		//Triangle's vertices V1, V2, V3
-		XMVECTOR tri1V1 = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-		XMVECTOR tri1V2 = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-		XMVECTOR tri1V3 = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-
-		//Temporary 3d floats for each vertex
-		XMFLOAT3 tV1, tV2, tV3;
-
-		//Get triangle 
-		tV1 = vertPosArray[indexPosArray[(i * 3) + 0]];
-		tV2 = vertPosArray[indexPosArray[(i * 3) + 1]];
-		tV3 = vertPosArray[indexPosArray[(i * 3) + 2]];
-
-		tri1V1 = XMVectorSet(tV1.x, tV1.y, tV1.z, 0.0f);
-		tri1V2 = XMVectorSet(tV2.x, tV2.y, tV2.z, 0.0f);
-		tri1V3 = XMVectorSet(tV3.x, tV3.y, tV3.z, 0.0f);
-
-		//Transform the vertices to world space
-		tri1V1 = XMVector3TransformCoord(tri1V1, worldSpace);
-		tri1V2 = XMVector3TransformCoord(tri1V2, worldSpace);
-		tri1V3 = XMVector3TransformCoord(tri1V3, worldSpace);
-
-		//Find the normal using U, V coordinates (two edges)
-		XMVECTOR U = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-		XMVECTOR V = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-		XMVECTOR faceNormal = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-
-		U = tri1V2 - tri1V1;
-		V = tri1V3 - tri1V1;
-
-		//Compute face normal by crossing U, V
-		faceNormal = XMVector3Cross(U, V);
-
-		faceNormal = XMVector3Normalize(faceNormal);
-
-		//Calculate a point on the triangle for the plane equation
-		XMVECTOR triPoint = tri1V1;
-
-		//Get plane equation ("Ax + By + Cz + D = 0") Variables
-		float tri1A = XMVectorGetX(faceNormal);
-		float tri1B = XMVectorGetY(faceNormal);
-		float tri1C = XMVectorGetZ(faceNormal);
-		float tri1D = (-tri1A*XMVectorGetX(triPoint) - tri1B*XMVectorGetY(triPoint) - tri1C*XMVectorGetZ(triPoint));
-
-		//Now we find where (on the ray) the ray intersects with the triangles plane
-		float ep1, ep2, t = 0.0f;
-		float planeIntersectX, planeIntersectY, planeIntersectZ = 0.0f;
-		XMVECTOR pointInPlane = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-
-		ep1 = (XMVectorGetX(pickRayInWorldSpacePos) * tri1A) + (XMVectorGetY(pickRayInWorldSpacePos) * tri1B) + (XMVectorGetZ(pickRayInWorldSpacePos) * tri1C);
-		ep2 = (XMVectorGetX(pickRayInWorldSpaceDir) * tri1A) + (XMVectorGetY(pickRayInWorldSpaceDir) * tri1B) + (XMVectorGetZ(pickRayInWorldSpaceDir) * tri1C);
-
-		//Make sure there are no divide-by-zeros
-		if (ep2 != 0.0f)
-			t = -(ep1 + tri1D) / (ep2);
-
-		if (t > 0.0f)    //Make sure you don't pick objects behind the camera
-		{
-			//Get the point on the plane
-			planeIntersectX = XMVectorGetX(pickRayInWorldSpacePos) + XMVectorGetX(pickRayInWorldSpaceDir) * t;
-			planeIntersectY = XMVectorGetY(pickRayInWorldSpacePos) + XMVectorGetY(pickRayInWorldSpaceDir) * t;
-			planeIntersectZ = XMVectorGetZ(pickRayInWorldSpacePos) + XMVectorGetZ(pickRayInWorldSpaceDir) * t;
-
-			pointInPlane = XMVectorSet(planeIntersectX, planeIntersectY, planeIntersectZ, 0.0f);
-
-			//Call function to check if point is in the triangle
-			if (PointInTriangle(tri1V1, tri1V2, tri1V3, pointInPlane))
-			{
-				//Return the distance to the hit, so you can check all the other pickable objects in your scene
-				//and choose whichever object is closest to the camera
-				return t / 2.0f;
-			}
-		}
-	}
-	//return the max float value (near infinity) if an object was not picked
-	return FLT_MAX;
 }
 
 #pragma region timeFunctions
@@ -1354,7 +1208,7 @@ void initExplosion()
 		//saving the starting position for all particles for reset;
 		explosionStartingPos.push_back(StartingPos{ positionX,positionY,positionZ });
 
-		explosionTest.push_back(VertexType{ positionX, positionY, positionZ, 0.02f, 0.02f, 1.0f, 0.0f, 0.0f });
+		explosionTest.push_back(ParticleVertex{ positionX, positionY, positionZ, 0.02f, 0.02f, 1.0f, 0.0f, 0.0f });
 		
 		i++;
 	}
@@ -1364,7 +1218,7 @@ void initExplosion()
 	bufferdesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bufferdesc.Usage = D3D11_USAGE_DYNAMIC;
 	bufferdesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	bufferdesc.ByteWidth = sizeof(VertexType) * maxExplosionParticles;
+	bufferdesc.ByteWidth = sizeof(ParticleVertex) * maxExplosionParticles;
 	bufferdesc.MiscFlags = 0;
 	bufferdesc.StructureByteStride = 0;
 
@@ -1393,11 +1247,11 @@ void updateExplosion()
 	}
 
 	D3D11_MAPPED_SUBRESOURCE gMappedResource;
-	VertexType* vtxPtr;
+	ParticleVertex* vtxPtr;
 	HRESULT hr = gDeviceContext->Map(gVertexBufferExplosion, 0, D3D11_MAP_WRITE_DISCARD, 0, &gMappedResource);
 
-	vtxPtr = (VertexType*)gMappedResource.pData;
-	memcpy(vtxPtr, explosionTest.data(), sizeof(VertexType) * maxExplosionParticles);
+	vtxPtr = (ParticleVertex*)gMappedResource.pData;
+	memcpy(vtxPtr, explosionTest.data(), sizeof(ParticleVertex) * maxExplosionParticles);
 
 	gDeviceContext->Unmap(gVertexBufferExplosion, 0);
 }
@@ -1423,14 +1277,12 @@ void killExplosion()
 
 void initParticle()
 {
-	//vertexList.push_back(VertexType{ 1.0f, 1.0f, 1.0f, 0.2f, 0.2f, 1.0f, 0.0f, 0.0f });
-
 	D3D11_BUFFER_DESC bufferdesc;
 	std::memset(&bufferdesc, 0, sizeof(bufferdesc));
 	bufferdesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bufferdesc.Usage = D3D11_USAGE_DYNAMIC;
 	bufferdesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	bufferdesc.ByteWidth = sizeof(VertexType) * maxParticles;
+	bufferdesc.ByteWidth = sizeof(ParticleVertex) * maxParticles;
 	bufferdesc.MiscFlags = 0;
 	bufferdesc.StructureByteStride = 0;
 
@@ -1464,12 +1316,10 @@ void EmitParticles()
 		green = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
 		blue = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
 
-		vertexList.push_back(VertexType{ positionX, 10, positionZ, 0.002f, 0.5f, 0.7f, 0.7f, 1.0f });
+		vertexList.push_back(ParticleVertex{ positionX, 10, positionZ, 0.05f, 0.5f, 0.7f, 0.7f, 1.0f });
 		velocity.push_back(((float)rand() / (RAND_MAX + 1) + 1 + (rand() % 3)) / 5.0f);
 		i++;
 	}
-
-
 }																		
 																				
 void UpdateBuffers()
@@ -1490,22 +1340,13 @@ void UpdateBuffers()
 	}
 
 	D3D11_MAPPED_SUBRESOURCE gMappedResource;
-	VertexType* vtxPtr;
+	ParticleVertex* vtxPtr;
 	HRESULT hr = gDeviceContext->Map(gVertexBufferParticle, 0, D3D11_MAP_WRITE_DISCARD, 0, &gMappedResource);
 
-	vtxPtr = (VertexType*)gMappedResource.pData;
-	memcpy(vtxPtr, vertexList.data(), sizeof(VertexType) * maxParticles);
+	vtxPtr = (ParticleVertex*)gMappedResource.pData;
+	memcpy(vtxPtr, vertexList.data(), sizeof(ParticleVertex) * maxParticles);
 
 	gDeviceContext->Unmap(gVertexBufferParticle, 0);
-
-
-	
-
-	//matrices.World = XMMatrixTranslation(1.0f, 2.0f, 0.0f);
-	//gDeviceContext->UpdateSubresource(gVertexBufferParticle, 0, 0, vertexList.data(), 0, 0);
-
-	//gDeviceContext->GSSetConstantBuffers(0, 1, &gConstantBuffer);
-
 }
 
 void Update()
@@ -1557,22 +1398,17 @@ void RenderShadow()
 
 void RenderParticles()
 {
-	//gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-	
 	gDeviceContext->VSSetShader(gVertexShaderParticle, nullptr, 0);
 	gDeviceContext->GSSetShader(gGeometryShaderParticle, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShaderParticle, nullptr, 0);
 
-	UINT32 vertexSize = sizeof(VertexType);
+	UINT32 vertexSize = sizeof(ParticleVertex);
 	UINT32 offset = 0;
 
 	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBufferParticle, &vertexSize, &offset);
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 
 	gDeviceContext->Draw((vertexList.size() - 1), 0);
-	
-
-	
 }
 
 void RenderExplosion()
@@ -1581,7 +1417,7 @@ void RenderExplosion()
 	gDeviceContext->GSSetShader(gGeometryShaderParticle, nullptr, 0);
 	gDeviceContext->PSSetShader(gPixelShaderParticle, nullptr, 0);
 
-	UINT32 vertexSize = sizeof(VertexType);
+	UINT32 vertexSize = sizeof(ParticleVertex);
 	UINT32 offset = 0;
 
 	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBufferExplosion, &vertexSize, &offset);
