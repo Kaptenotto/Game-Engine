@@ -30,6 +30,8 @@ struct VS_OUT
 
 VS_OUT VS_main(VS_IN input)
 {
+	//Då vi vill ha shadowmap stencilen från ljusets perspektiv använder vi ljusets matriser och simulerar en kamera (world view projection)
+	//detta är allt som behövs för att få en användbar stencil
 	VS_OUT output = (VS_OUT)0;
 
 	output.pos = float4(input.pos, 1);

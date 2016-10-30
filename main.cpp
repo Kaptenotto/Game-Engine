@@ -932,6 +932,8 @@ void createTriangle()
 
 void createLightDepthStencil()
 {
+
+	//skapa depth stencilen som shadowmapping kommer använda som RTV/resurs
 	ID3D11Texture2D* shadowDepthStencil = NULL;
 
 	D3D11_TEXTURE2D_DESC descDepth;
@@ -2547,6 +2549,9 @@ void testingfunc()
 
 void RenderShadow()
 {
+	//rendera shadowmap stencilen som sedan skall bli en resurs i gbuffern.
+	//vi ändrar viewport med set viewport funktionerna så att stencilens storlek är 1:1 ratio istället för samma storlek som fönstret
+	//behöver bara en shader vilket är vertex shadern
 	SetViewportShadow();
 	gDeviceContext->ClearDepthStencilView(gShadowDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 

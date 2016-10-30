@@ -111,14 +111,7 @@ void GBUFFER_GS_main(
 		}
 		else
 		{
-			//output.pos = input[i].pos;
-			//output.uvs = input[i].uvs;
-			//output.norm = float4(mul(input[i].norm.xyz, (float3x3)worldMatrix), 0);
-			//output.tangent = tangent;
-			//output.binormal = binormal;
-			//output.wPos = input[i].wPos;
-			//
-			//TriStream.Append(output);
+
 		}
 	}
 }
@@ -144,15 +137,21 @@ GBUFFER_PS_OUT GBUFFER_PS_main(GBUFFER_GS_OUT input)
 	float4 lightPos;
 	float SMAP_SIZE = 2048.0f;
 
-	//NORMAL BLOCK
+	//sampla diffuse texturen, kan sparas direkt.
 	output.diffuseRes = diffuseTex.Sample(SampleTypeClamp, input.uvs);
+	
+	
+	//NORMAL BLOCK
 
+	//sampla normaltexturen från objn
 	norMap = normalTex.Sample(SampleTypeClamp, input.uvs);
 
+	//av normalizera värderna
 	norMap = (norMap*2.0f) - 1.0f;
 
 	norMap.z = (norMap.z * -1);
 
+	//influera de förberäknade normal/binormal tangent värderna med hjälp av normal mappen
 	Normal = (norMap.x * input.tangent) + (norMap.y * input.binormal) + (norMap.z * input.norm);
 	Normal = normalize(Normal);
 
@@ -164,6 +163,8 @@ GBUFFER_PS_OUT GBUFFER_PS_main(GBUFFER_GS_OUT input)
 	output.normalRes = float4(Normal,0);
 
 	//SHADOW BLOCK
+
+	//projecering av koordinater
 	lightPos = mul(input.wPos, view);
 	lightPos = mul(lightPos, projection);
 
@@ -172,23 +173,33 @@ GBUFFER_PS_OUT GBUFFER_PS_main(GBUFFER_GS_OUT input)
 
 	lightDepthValue = lightPos.z / lightPos.w;
 
+	//homogenisera the projecerade koordinaterna
 	projectTexCoord.x = projectTexCoord.x * 0.5f + 0.5f;
 	projectTexCoord.y = projectTexCoord.y * -0.5f + 0.5f;
 
+	//samplar depth stencilen som shadow passet gjort
 	depthValue = shadowTex.Sample(SampleTypeClamp, projectTexCoord.xy).r + bias;
 
+
+	//2x2 point sampling
 	float dx = 1.0f / SMAP_SIZE;
 	float s0 = (shadowTex.Sample(SampleTypeClamp, projectTexCoord).r + bias < lightDepthValue) ? 0.0f : 1.0f;
 	float s1 = (shadowTex.Sample(SampleTypeClamp, projectTexCoord + float2(dx, 0.0f)).r + bias < lightDepthValue) ? 0.0f : 1.0f;
 	float s2 = (shadowTex.Sample(SampleTypeClamp, projectTexCoord + float2(0.0f, dx)).r + bias < lightDepthValue) ? 0.0f : 1.0f;
 	float s3 = (shadowTex.Sample(SampleTypeClamp, projectTexCoord + float2(dx, dx)).r + bias < lightDepthValue) ? 0.0f : 1.0f;
 
+	//ändra till texel space
 	float2 texelpos = projectTexCoord * SMAP_SIZE;
+
+	//linjär interpolering för att få fram cooefficienten för denna pixel
 	float2 lerps = frac(texelpos);
 	float shadowcooef = lerp(lerp(s0, s1, lerps.x), lerp(s2, s3, lerps.x), lerps.y);
 
+	//spara cooefficienten så den kan användas i final pass
 	output.shadowRes.a = shadowcooef;
+	//spara wpos på samma sätt
 	output.positionRes = input.wPos;
+	//spara depth då den kan vara bra att ha ibland
 	float depth = input.pos.z / input.pos.w;
 	output.shadowRes.x = depth;
 

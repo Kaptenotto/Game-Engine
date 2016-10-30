@@ -38,7 +38,7 @@ void QuadTree::DimensionCalc(int count, float & posX, float & posY, float & mesh
 	//w = width, d = depth
 	float wMax, dMax, wMin, dMin, width, depth, xMax, yMax;
 
-	//centering geometry
+	//init values
 	posX = 0.0f;
 	posY = 0.0f;
 
@@ -61,6 +61,7 @@ void QuadTree::DimensionCalc(int count, float & posX, float & posY, float & mesh
 	wMin = fabsf(this->obj->finalVector.at(0).x - posX);
 	dMin = fabsf(this->obj->finalVector.at(0).y - posY);
 
+	//compare initial width depth values and replace if a lower is found
 	for (int i = 0; i < count; i++)
 	{
 
@@ -77,7 +78,7 @@ void QuadTree::DimensionCalc(int count, float & posX, float & posY, float & mesh
 	xMax = (float)max(fabs(wMin), fabs(wMax));
 	yMax = (float)max(fabs(dMin), fabs(dMax));
 
-	//set initial area for quadtree to encompass // use multiplier to tweak for various scene sizes
+	//set initial area for quadtree to encompass // use multiplier to tweak for various scene sizes (should have been a defined variable)
 	meshWidth = max(xMax, yMax) * 5.0f;
 	return;
 }
@@ -115,11 +116,14 @@ void QuadTree::CreateTreeNode(TreeNode * parent, float posX, float posY, float w
 		return;
 
 
-	//MAX_TRIANGLES specifies maximum triangles for a single TreeNode. if the ammount we found is too large we need to divide the quadtrant into 4 smaller nodes and recursively try again. (depth first)
+	//MAX_TRIANGLES specifies maximum triangles for a single TreeNode.
+	//if the ammount we found is too large we need to divide the quadrant
+	//into 4 smaller nodes and recursively try again. (depth first)
 	if (numTriangles > MAX_TRIANGLES)
 	{
 		for (size_t i = 0; i < 4; i++)
 		{
+			//quadrant division
 			if (float(i % 2) < 1)
 				offsetX = -1.0f * (width / 4.0f);
 			else
