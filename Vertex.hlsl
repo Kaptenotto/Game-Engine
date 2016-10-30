@@ -3,6 +3,8 @@ cbuffer MatrixBuffer : register (b0)
 	matrix worldMatrix;
 	matrix camView;
 	matrix projectionMatrix;
+	float4 camPos;
+
 }
 
 cbuffer Lights : register (b1)
@@ -38,8 +40,8 @@ VS_OUT VS_main(VS_IN input)
 	output.norm = float4(input.norm,1);
 	output.pos = float4(input.pos, 1);
 
-	output.pos = mul(output.pos, worldMatrix);
 	output.wPos = output.pos;
+	output.pos = mul(output.pos, worldMatrix);
 	output.pos = mul(output.pos, camView);
 	output.pos = mul(output.pos, projectionMatrix);
 
