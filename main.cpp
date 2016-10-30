@@ -93,6 +93,12 @@ Planes frustrumPlanes[6];
 
 #pragma endregion
 
+#pragma region Picking
+float clearColor[] = { 0.5, 0, 0, 1 };
+void calcRay(float mouseX, float mouseY, XMVECTOR& rayOrigin, XMVECTOR& rayDirection);
+float Intersection(XMVECTOR rayOrigin, XMVECTOR rayDirection);
+bool PointInTriangle(XMVECTOR&triV1, XMVECTOR&triV2, XMVECTOR&triV3, XMVECTOR&point);
+#pragma endregion
 
 #pragma region camVectors
 
@@ -1136,26 +1142,48 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 	}
 	if (mouseCurrentState.rgbButtons[0])
 	{
+		//ShowCursor(TRUE);
+		XMVECTOR rayOrigin, rayDirection;
+		POINT mousePos;
 
+		GetCursorPos(&mousePos);
+		ScreenToClient(hwnd, &mousePos);
 
+		int mouseX = mousePos.x;
+		int mouseY = mousePos.y;
+		if (mouseX > WIN_WIDTH)
+			mouseX = WIN_WIDTH;
+		else if (mouseX < 0)
+			mouseX = 0;
+		if (mouseY > WIN_HEIGHT)
+			mouseY = WIN_HEIGHT;
+		else if (mouseY < 0)
+			mouseY = 0;
 
+		float tempDist;
+		float closestDist = FLT_MAX;
 
+		calcRay((float)mouseX, (float)mouseY, rayOrigin, rayDirection);
 
+		tempDist = Intersection(rayOrigin, rayDirection);
 
+		if (tempDist < closestDist)
+		{
+			closestDist = tempDist;
+		}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+		if (closestDist < FLT_MAX)
+		{
+			float temp[] = { 0.5, 0.5, 0.5, 1 };
+			for (size_t i = 0; i < 3; i++)
+				clearColor[i] = temp[i];
+		}
+		if (closestDist == FLT_MAX)
+		{
+			float temp[] = { 0.5, 0, 0, 1 };
+			for (size_t i = 0; i < 3; i++)
+				clearColor[i] = temp[i];
+		}
 	}
 	if (!mouseCurrentState.rgbButtons[0])
 	{
@@ -1178,6 +1206,151 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 
 	return;
 }
+
+
+#pragma region Picking
+void calcRay(float mouseX, float mouseY, XMVECTOR& rayOrigin, XMVECTOR& rayDirection)
+{
+	XMVECTOR localRayDirection = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+	XMVECTOR LocalRayOrigin = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+	//XMVECTOR LocalRayOrigin        = matrices.camPos;
+
+	float X, Y, Z;
+	XMFLOAT4X4 camProjection;
+	XMStoreFloat4x4(&camProjection, matrices.Projection);
+
+	//Transform 2D pick position on screen space to 3D ray in View space
+	X = (((2.0f * mouseX) / WIN_WIDTH) - 1) / camProjection._11;
+	Y = -(((2.0f * mouseY) / WIN_HEIGHT) - 1) / camProjection._22;
+	Z = 1.0f;    //View space's Z direction ranges from 0 to 1, so we set 1 since the ray goes "into" the screen
+
+				 //localRayDirection = XMVectorSet(X, Y, Z, 0.0f);
+	localRayDirection = XMVectorSet(0.0f, 0.0f, Z, 0.0f);
+
+	XMMATRIX inverseCamView;
+	XMVECTOR det = { 1,1,1,1 };
+	XMMATRIX temp = XMMatrixTranspose(matrices.camView);
+	inverseCamView = XMMatrixInverse(&det, temp);
+
+	rayOrigin = XMVector3TransformCoord(LocalRayOrigin, inverseCamView);
+	//rayOrigin = matrices.camPos;
+	rayDirection = XMVector3TransformNormal(localRayDirection, inverseCamView);
+	rayDirection = XMVector3Normalize(rayDirection);
+}
+float Intersection(XMVECTOR rayOrigin, XMVECTOR rayDirection)
+{
+	for (int i = 0; i < obj.face_idxs.size() / 3; i++)
+	{
+
+		//Triangle's vertices, V1, V2, V3
+		XMVECTOR tri1V1 = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+		XMVECTOR tri1V2 = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+		XMVECTOR tri1V3 = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+
+
+		//Temporary 3d floats for each vertex.
+		XMFLOAT3 _tV1, _tV2, _tV3;
+
+		_tV1.x = obj.finalVector[i * 3 + 0].x;
+		_tV1.y = obj.finalVector[i * 3 + 0].y;
+		_tV1.z = obj.finalVector[i * 3 + 0].z;
+
+		_tV2.x = obj.finalVector[i * 3 + 1].x;
+		_tV2.y = obj.finalVector[i * 3 + 1].y;
+		_tV2.z = obj.finalVector[i * 3 + 1].z;
+
+		_tV3.x = obj.finalVector[i * 3 + 2].x;
+		_tV3.y = obj.finalVector[i * 3 + 2].y;
+		_tV3.z = obj.finalVector[i * 3 + 2].z;
+
+
+		tri1V1 = XMVectorSet(_tV1.x, _tV1.y, _tV1.z, 1.0f);
+		tri1V2 = XMVectorSet(_tV2.x, _tV2.y, _tV2.z, 1.0f);
+		tri1V3 = XMVectorSet(_tV3.x, _tV3.y, _tV3.z, 1.0f);
+
+		tri1V1 = XMVector3TransformCoord(tri1V1, matrices.World);
+		tri1V2 = XMVector3TransformCoord(tri1V2, matrices.World);
+		tri1V3 = XMVector3TransformCoord(tri1V3, matrices.World);
+
+
+		XMVECTOR U = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+		XMVECTOR V = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+
+		XMVECTOR faceNormal = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+
+		U = tri1V2 - tri1V1;
+		V = tri1V3 - tri1V1;
+		faceNormal = XMVector3Cross(U, V);
+		faceNormal = XMVector3Normalize(faceNormal);
+
+		XMVECTOR triPoint = tri1V1;
+
+		//plane equation
+		float tri1A = XMVectorGetX(faceNormal);
+		float tri1B = XMVectorGetY(faceNormal);
+		float tri1C = XMVectorGetZ(faceNormal);
+		float tri1D = (-tri1A*XMVectorGetX(triPoint) - tri1B*XMVectorGetY(triPoint) - tri1C*XMVectorGetZ(triPoint));
+
+		//now we find wher the ray intersects with the triangles plane,
+
+		float ep1, ep2, t = 0.0f;
+
+		float planeIntersectX, planeIntersectY, planeIntersectz = 0.0f;
+
+
+		XMVECTOR pointInPlane = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+
+		ep1 = (XMVectorGetX(rayOrigin)      *   tri1A) + (XMVectorGetY(rayOrigin)       *   tri1B) + (XMVectorGetZ(rayOrigin)       *   tri1C);
+		ep2 = (XMVectorGetX(rayDirection)   *   tri1A) + (XMVectorGetY(rayDirection)    *   tri1B) + (XMVectorGetZ(rayDirection)    *   tri1C);
+
+		if (ep2 != 0.0f)
+		{
+			t = -(ep1 + tri1D) / (ep2);
+		}
+		if (t > 0.0f)
+		{
+			planeIntersectX = XMVectorGetX(rayOrigin) + XMVectorGetX(rayDirection) * t;
+			planeIntersectY = XMVectorGetY(rayOrigin) + XMVectorGetY(rayDirection) * t;
+			planeIntersectz = XMVectorGetZ(rayOrigin) + XMVectorGetZ(rayDirection) * t;
+
+			pointInPlane = XMVectorSet(planeIntersectX, planeIntersectY, planeIntersectz, 0.0f);
+
+			if (PointInTriangle(tri1V1, tri1V2, tri1V3, pointInPlane))
+			{
+				return t / 2.0f;
+			}
+		}
+
+
+	}
+	return FLT_MAX;
+}
+bool PointInTriangle(XMVECTOR&triV1, XMVECTOR&triV2, XMVECTOR&triV3, XMVECTOR&point)
+{
+	XMVECTOR cp1 = XMVector3Cross((triV3 - triV2), (point - triV2));
+	XMVECTOR cp2 = XMVector3Cross((triV3 - triV2), (triV1 - triV2));
+	if (XMVectorGetX(XMVector3Dot(cp1, cp2)) >= 0)
+	{
+		cp1 = XMVector3Cross((triV3 - triV1), (point - triV1));
+		cp2 = XMVector3Cross((triV3 - triV1), (triV2 - triV1));
+		if (XMVectorGetX(XMVector3Dot(cp1, cp2)) >= 0)
+		{
+			cp1 = XMVector3Cross((triV2 - triV1), (point - triV1));
+			cp2 = XMVector3Cross((triV2 - triV1), (triV3 - triV1));
+			if (XMVectorGetX(XMVector3Dot(cp1, cp2)) >= 0)
+			{
+				return true;
+			}
+			else
+				return false;
+		}
+		else
+			return false;
+	}
+	return false;
+
+}
+#pragma endregion
 
 #pragma region timeFunctions
 void startTimer()
@@ -1564,7 +1737,6 @@ void RenderGBufferQuadTree(TreeNode* node)
 
 void testingfunc()
 {
-	float clearColor[] = { 0.5f, 0.5f, 0.5f, 1 };
 	for (int i = 0; i < numRTVs; i++)
 		gDeviceContext->ClearRenderTargetView(textureRTVs[i], clearColor);
 	gDeviceContext->ClearDepthStencilView(GBufferDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
@@ -1591,8 +1763,6 @@ void testingfunc()
 
 	RenderGBufferQuadTree(test);
 }
-
-
 
 void RenderShadow()
 {
@@ -1654,7 +1824,6 @@ void RenderExplosion()
 
 void Render()
 {
-	float clearColor[] = { 0, 0, 0, 1 };
 	gDeviceContext->ClearRenderTargetView(gBackBufferRTV, clearColor);
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
 
@@ -1706,7 +1875,6 @@ void Render()
 
 void RenderGBuffer()
 {
-	float clearColor[] = {0.5f, 0.5f, 0.5f, 1 };
 	for (int i = 0; i < numRTVs; i++)
 		gDeviceContext->ClearRenderTargetView(textureRTVs[i], clearColor);
 	gDeviceContext->ClearDepthStencilView(GBufferDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
@@ -1765,8 +1933,6 @@ void RenderGBuffer()
 void RenderFinalPass()
 {
 	gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
-
-	float clearColor[] = { 0, 0, 0, 1 };
 	gDeviceContext->ClearRenderTargetView(gBackBufferRTV, clearColor);
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 	
