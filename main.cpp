@@ -141,7 +141,7 @@ struct Collision {
 };
 
 const float unitsPerMeter = 100.0f;
-XMVECTOR gravity = XMVectorSet(0.0f, -0.2f, 0.0f, 0.0f);
+XMVECTOR gravity = XMVectorSet(0.0f, -0.0f, 0.0f, 0.0f);
 
 vector<XMFLOAT3> collidableGeometryPositions;
 vector<DWORD> collidableGeometryIndices;
@@ -1236,7 +1236,7 @@ void detectInput(double time) // checking keyboard and mouse input for movement 
 
 	DIKeyboard->GetDeviceState(sizeof(keyBoardState), (LPVOID)&keyBoardState);
 
-	float speed = 15.0f * time;
+	float speed = 10.0f * time;
 
 	if (keyBoardState[DIK_ESCAPE] & 0x80)
 	{
@@ -1994,7 +1994,7 @@ void CreateHeightMap()
 {
 	//Här anger vi ett namn för att komma åt vår struct heightMapInfo och väljer även namnet på vår heightmapfil.
 	HeightMapInfo hmInfo;
-	HeightMapLoad("Heightmap2.bmp", hmInfo);        // Load the heightmap and store it into hmInfo
+	HeightMapLoad("Heightmap3.bmp", hmInfo);        // Load the heightmap and store it into hmInfo
 
 													//Lägger in terrägens brädd och höjd i respektive int variabel.
 	int cols = hmInfo.terrainWidth;
@@ -2128,8 +2128,6 @@ void CreateHeightMap()
 
 	gDevice->CreateBuffer(&vertexBufferDesc, &vertexBufferData, &groundVertexBuffer);
 }
-
-
 
 #pragma endregion
 
@@ -2915,7 +2913,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 				//RenderGBuffer();
 
-				RenderHeightMap();
+				//RenderHeightMap();
 
 				RenderTriangle();
 
