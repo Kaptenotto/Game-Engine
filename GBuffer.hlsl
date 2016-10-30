@@ -149,6 +149,7 @@ GBUFFER_PS_OUT GBUFFER_PS_main(GBUFFER_GS_OUT input)
 
 	norMap = normalTex.Sample(SampleTypeClamp, input.uvs);
 
+
 	norMap = (norMap*2.0f) - 1.0f;
 
 	norMap.z = (norMap.z * -1);

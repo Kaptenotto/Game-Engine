@@ -1632,15 +1632,19 @@ XMVECTOR CollideWithHeightMap(Collision& collisionPoint,
 
 bool SphereCollisionWithTriangle(Collision& collisionP, XMVECTOR &p0, XMVECTOR &p1, XMVECTOR &p2, XMVECTOR &triNormal)
 {
+	//Vi gör detta eftersom att vi inte kommer att springa in i baksidan utav en triangle.
 	float facing = XMVectorGetX(XMVector3Dot(triNormal, collisionP.e_normalizedVelocity));
 	if (facing <= 0)
 	{
 		
-			float t0, t1;
+		//dessa variabler, håller tiden det tar för längs hastighets vektorn, till sfären t0 front side of triangle, t1 back side of triangle
+		float t0, t1;
 
 
+		//om sfären är i planet så kommer vi inte genomskjuta mitten av trianglen men kan kollidera med kanter eller verticeer först.
 		bool sphereInPlane = false;
 
+		//första punkten i planet
 		float xPoint = XMVectorGetX(p0);
 		float yPoint = XMVectorGetY(p0);
 		float zPoint = XMVectorGetZ(p0);
@@ -1650,99 +1654,118 @@ bool SphereCollisionWithTriangle(Collision& collisionP, XMVECTOR &p0, XMVECTOR &
 		float planeNormalB = XMVectorGetY(triNormal);
 		float planeNormalC = XMVectorGetZ(triNormal);
 
+		//kalkylerar planets ekvation D värdet 
 		float D = -((planeNormalA*xPoint) + (planeNormalB*yPoint) + (planeNormalC *zPoint));
 
+		//sparar om variablen i en annan variable.
 		float planeConstant = D;
 
 
+		//avståndet från kamera till trianglarna i planet
+		//vi behöver ta ut ett värde här i från dvs x värdet, ekvationen ser ut : distance = planetsNormal * punkt + D(planets konstant)
+		//det gör vi med hjälp utav xmvectorgetX för att få en skalär
 		float signedDistFromPositionToTriPlane = XMVectorGetX(XMVector3Dot(collisionP.e_Position, triNormal)) + planeConstant;
 
-
+		//här räknar vi ut x skalären utav vectorerna
 		float planeNormalDotVelocity = XMVectorGetX(XMVector3Dot(triNormal, collisionP.e_Velocity));
 
-
+		//kollar för att se om velocitiet vektorn är parallel med planet. 
 		if (planeNormalDotVelocity == 0.0f)
 		{
+			//om detta är sant så betyder det att sfären inte är i planet och att velociteten är parallel med planet, vilket betyder att det inte finns någon kollision
 			if (fabs(signedDistFromPositionToTriPlane) >= 1.0f)
 			{
-
+				
 				return false;
 			}
 			else
 			{
-				
+				//om det är mindre än 1.0f så finns det kollision, dvs att sfären är i planet. men kommer endast testa collision med trianglens verticer och kanter.
+				//vi sätter sphereInplane till true för att slippa 0 divisioner. om velociteten och planet är parallela.
 					sphereInPlane = true;
 			}
 		}
 		else
 		{
 
+			//kommer vi in hit vet vi att det kommer att finnas en " collision" med planet. vi behöver därför bara kolla hur långt ner vo beröver vara för att det ska räknas som en kollision
+			//t0 är när sfären först kolliderar med framsidan och t1 när back side kolliderar. 
 			t0 = (1.0f - signedDistFromPositionToTriPlane) / planeNormalDotVelocity;
 			t1 = (-1.0f - signedDistFromPositionToTriPlane) / planeNormalDotVelocity;
 
-
+			//vi ser till att t0 är mindre än t1 vilket betyder att t0 är när sfären traäffar planets yta först
 			if (t0 > t1)
 			{
 				float temp = t0;
 				t0 = t1;
 				t1 = temp;
 			}
-
+			//om sfären rör planet utan för 0 - 1 så vet vi att sfären inte kommer att kollidera med planets trianglar under denna checken. 
 			if (t0 > 1.0f || t1 < 0.0f)
 			{
 				return false;
 			}
 
-
+			//om t0 är mindre än 0 gör vi den till 0, och om t1 är störren än 1 gör vi den till 1. eftersom att vi bara kollar i 1 ellipsoid space.
 			if (t0 < 0.0) t0 = 0.0;
 			if (t1 > 1.0) t1 = 1.0;
 		}
 
-		XMVECTOR collisionPoint;        // Point on plane where collision occured
+		// Här vet vi att vi kommer att kollidera med triangel planet. 
+		XMVECTOR collisionPoint;    
 		bool collidingWithTri = false;    // This is set so we know if there was a collision with the CURRENT triangle
-		float t = 1.0;                    // Time
+		float t = 1.0;                    // tid
 
-										  // If the sphere is not IN the triangles plane, we continue the sphere to inside of triangle test
+		// Om sfären inte är i triangelns plan, så fortsätter vi testet
 		if (!sphereInPlane)
 		{
-
+			//vi hittar punkten på triangle planet, vart sfären rör planet. då vi använder ekavtionen, Planeintersection = (pos - normalen) + t0 * velociteten
+			//där t0 är avståndet ner mot velocitiet vektorn som sfären först träffar.
 			XMVECTOR planeIntersectionPoint = (collisionP.e_Position + t0 * collisionP.e_Velocity - triNormal);
 
-			// Now we call the function that checks if a point on a triangle's plane is inside the triangle
+			// Kallar på funktionen som kollar om en punkt på traingelns plan är inne i triangeln
 			if (checkPointInTriangle(planeIntersectionPoint, p0, p1, p2))
 			{
+				//om punkten är på planet är innuti en triangel, så betyder det att det är en kollision, så colliding with tri är sant. vi sätter även t = t0 eftersom att det är avståndet i velocitet vektorn.
 				collidingWithTri = true;
 				t = t0;
 				collisionPoint = planeIntersectionPoint;
 			}
 		}
 
-
+		//om det inte finns nån kollision med trianglarnas insida, så kollar vi om vi träffar nån utav verticerna , genom att kolla collision med vertex.
 		if (collidingWithTri == false)
 		{
-			float a, b, c; // Equation Parameters
 
+			//ekvations parametrar . quadratisk formula kommer anvädas At^2+Bt+C = 0, för att se vart sfären gled över. 
+			//a = sphereVelocityLenght * sphereVelocityLenght 
+			//b = 2(sphereVelocity . (spherePosition - vertexPosition))    // . denotes dot product
+			// c = (vertexPosition - spherePosition)^2 - 1
+			float a, b, c; 
+			//vi använder dem kvadratiska velociterenas längder för att kolla med kollisioner mellan (edges av trianglarna).
 			float velocityLengthSquared = XMVectorGetX(XMVector3Length(collisionP.e_Velocity));
 			velocityLengthSquared *= velocityLengthSquared;
 
-			// We'll start by setting 'a', since all 3 point equations use this 'a'
+			// Vi startar med att sätta a eftersom alla 3 punktekvationer använder den
 			a = velocityLengthSquared;
 
 			// This is a temporary variable to hold the distance down the velocity vector that
 			// the sphere will touch the vertex.
+			//denna variable kommer att hålla avståndet till velocitet vektorn.
 			float newT;
 
-			// P0 - Collision test with sphere and p0
+			// P0 - Kollisionstest me sphere och P0
 			b = 2.0f * (XMVectorGetX(XMVector3Dot(collisionP.e_Velocity, collisionP.e_Position - p0)));
 			c = XMVectorGetX(XMVector3Length((p0 - collisionP.e_Position)));
 			c = (c*c) - 1.0f;
-			if (getLowestRoot(a, b, c, t, &newT)) {
+			if (getLowestRoot(a, b, c, t, &newT)) { // vi kollar om ekvationen kan bli löst om den går att lösa så sätter vi värden på olika variabler, vi sätter t till nya avståndet. 
+				//vi sätter även collidingwithtri till sant eftersom att det har skett en kollision och vi sätter collisions punkten till p0
 				t = newT;
 				collidingWithTri = true;
 				collisionPoint = p0;
 			}
 
-			// P1 - Collision test with sphere and p1
+			// P1 - Kollisionstest med sfär och p1.
 			b = 2.0*(XMVectorGetX(XMVector3Dot(collisionP.e_Velocity, collisionP.e_Position - p1)));
 			c = XMVectorGetX(XMVector3Length((p1 - collisionP.e_Position)));
 			c = (c*c) - 1.0;
@@ -1752,7 +1775,7 @@ bool SphereCollisionWithTriangle(Collision& collisionP, XMVECTOR &p0, XMVECTOR &
 				collisionPoint = p1;
 			}
 
-			// P2 - Collision test with sphere and p2
+			// P2 - Kollisionstest med sfär och p2
 			b = 2.0*(XMVectorGetX(XMVector3Dot(collisionP.e_Velocity, collisionP.e_Position - p2)));
 			c = XMVectorGetX(XMVector3Length((p2 - collisionP.e_Position)));
 			c = (c*c) - 1.0;
@@ -1762,7 +1785,12 @@ bool SphereCollisionWithTriangle(Collision& collisionP, XMVECTOR &p0, XMVECTOR &
 				collisionPoint = p2;
 			}
 
-			// Edge (p0, p1):
+			//Här i från kollar vi kollisioner mellan sfären och kanter. även fast det har varit en kollision med en vertex punkt  i fall att kanten var träffad före vertex punkten, 
+			//använder oss utav en kvadratisk ekvation.  som ser ut som den ovan.  Ax^2 + Bx + C = 0;
+			//a = edgeLength ^ 2 * -velocityLength ^ 2 + (edge.velocity) ^ 2
+			// b = edgeLength^2 * 2(velocity dot spherePositionToVertex) - 2((edge dot velocity)(edge dot spherePositionToVertex))
+			// c =  edgeLength^2 * (1 - spherePositionToVertexLength^2) + (edge . spherePositionToVertex)^2
+			//Kollisionstest med sfär och Edge (p0, p1):
 			XMVECTOR edge = p1 - p0;
 			XMVECTOR spherePositionToVertex = p0 - collisionP.e_Position;
 			float edgeLengthSquared = XMVectorGetX(XMVector3Length(edge));
@@ -1777,18 +1805,21 @@ bool SphereCollisionWithTriangle(Collision& collisionP, XMVECTOR &p0, XMVECTOR &
 			b = edgeLengthSquared * (2.0f * XMVectorGetX(XMVector3Dot(collisionP.e_Velocity, spherePositionToVertex))) - (2.0f * edgeDotVelocity * edgeDotSpherePositionToVertex);
 			c = edgeLengthSquared * (1.0f - spherePositionToVertexLengthSquared) + (edgeDotSpherePositionToVertex * edgeDotSpherePositionToVertex);
 
-			// We start by finding if the swept sphere collides with the edges "infinite line"
-			if (getLowestRoot(a, b, c, t, &newT)) {
+			// vi kollar om svären har kolliderat med kanter i en oändlig linje. 
+			if (getLowestRoot(a, b, c, t, &newT)) { // kollar om det går att lösa., vi kollar även om kollisionen hände mellan de två verticer som skapar just den edgen.
+				//vi räknar ut vart nånstans vi kolliderar genom att tar dotpodukten av edge och velocitieten * NEWT - dotprodukten av edgen mot spärenspositiontillvertex punkten genom längden utav edgen ^2
+				//om f är mellan 0 - 1 så vet vi att kollisionen hände mella p0 och p1.
+				// men om kollisionen hände vid p0 (f = 0)  och om kollisionen hände vid p1 (f = 1)
 				float f = (edgeDotVelocity * newT - edgeDotSpherePositionToVertex) / edgeLengthSquared;
 				if (f >= 0.0f && f <= 1.0f) {
-					// If the collision with the edge happened, we set the results
+					// om kollisionen hände sätter vi upp resultaten.
 					t = newT;
 					collidingWithTri = true;
 					collisionPoint = p0 + f * edge;
 				}
 			}
 
-			// Edge (p1, p2):
+			// Kollisionstest med sfär och  Edge (p1, p2): vi gör samma som innan och men andra kollisioner. 
 			edge = p2 - p1;
 			spherePositionToVertex = p1 - collisionP.e_Position;
 			edgeLengthSquared = XMVectorGetX(XMVector3Length(edge));
@@ -1811,7 +1842,7 @@ bool SphereCollisionWithTriangle(Collision& collisionP, XMVECTOR &p0, XMVECTOR &
 				}
 			}
 
-			// Edge (p2, p0):
+			// Kollisionstest med sfär och  Edge (p2, p0):samma fast mella p0 - p2 
 			edge = p0 - p2;
 			spherePositionToVertex = p2 - collisionP.e_Position;
 			edgeLengthSquared = XMVectorGetX(XMVector3Length(edge));
@@ -1879,7 +1910,7 @@ bool checkPointInTriangle(const XMVECTOR& point, const XMVECTOR& triangleV1, con
 	}
 	return false;
 }
-
+//denna funktion löser kvadratiska ekvationer
 bool getLowestRoot(float a, float b, float c, float maxR, float* root)
 {
 	// Vi börjar genom att kolla om det finns en lösning
@@ -2136,6 +2167,10 @@ void startTimer()
 {
 	LARGE_INTEGER frequencycount;
 
+
+	// Querperformancefruency returnerar en 64 bitars integer som representerar
+	// frekvensen/antal räknare per sekund vi lagrar det i countspersecond variabeln
+	// Medans vi lagrar nuvarande tid i counterstart variabeln
 	QueryPerformanceFrequency(&frequencycount);
 	countsPerSecond = double(frequencycount.QuadPart);
 
@@ -2145,6 +2180,9 @@ void startTimer()
 
 double getTime()
 {
+	//hämtar nuvarande tid per sekund i variabeln currenttime
+	//sen subtraherar vi counterstart för att få den tiden sedan förra starttimer
+	// sen dividerar vi med countspersecond för att få tiden i sekunder sedan förra starttimer var kallad
 	LARGE_INTEGER currentTime;
 	QueryPerformanceCounter(&currentTime);
 	return double(currentTime.QuadPart - counterStart) / countsPerSecond;
@@ -2152,6 +2190,9 @@ double getTime()
 
 double getFrameTime()
 {
+	// Denna funktion gör i stort sett samma som de två tidigare. Ända skillnaden är att istället för att få tiden
+	// sedan senaste startimer är att vi får tiden från senaste gettimer vilket är tiden i sekunder  varje frame tar att bearbeta
+	// Vilket kan användas till att kameran och animation är med smooth.
 	LARGE_INTEGER currentTime;
 	__int64 tickCount;
 	QueryPerformanceCounter(&currentTime);
@@ -2773,6 +2814,7 @@ void RenderGBuffer()
 
 	}
 }
+
 void RenderFinalPass()
 {
 	gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
