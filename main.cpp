@@ -141,7 +141,7 @@ struct Collision {
 };
 
 const float unitsPerMeter = 100.0f;
-XMVECTOR gravity = XMVectorSet(0.0f, -0.0f, 0.0f, 0.0f);
+XMVECTOR gravity = XMVectorSet(0.0f, -0.2f, 0.0f, 0.0f);
 
 vector<XMFLOAT3> collidableGeometryPositions;
 vector<DWORD> collidableGeometryIndices;
@@ -1512,6 +1512,7 @@ XMVECTOR CollisionSliding(Collision& collisionPoint,
 
 	collisionPoint.e_Position = finalPosition;
 	collisionPoint.collisionRecursionDepth = 0;
+
 	finalPosition = CollideWithHeightMap(collisionPoint, vertPos, indices);
 
 
@@ -1529,7 +1530,7 @@ XMVECTOR CollideWithHeightMap(Collision& collisionPoint,
 	// These are based off the unitsPerMeter from above
 	float unitScale = unitsPerMeter / 100.0f;
 	// VerycloseDistance variabeln är viktig eftersom den håller spheren/ellipsen borta från att faktiskt röra triangeln
-	// annars skulle det skapa stora poblem eftersom den vid varje loop skulle alltid hitta en kollision istället för
+	// annars skulle det skapa stora problem eftersom den vid varje loop skulle alltid hitta en kollision istället för
 	// att glida över trianglen.
 	float veryCloseDistance = 0.005f * unitScale;
 
@@ -1588,6 +1589,7 @@ XMVECTOR CollideWithHeightMap(Collision& collisionPoint,
 
 	XMVECTOR newPosition = collisionPoint.e_Position;    // Just initialize newPosition
 
+	//Fortsätter tills den är nära att träffa trianglen/point
 	if (collisionPoint.nearestDistance >= veryCloseDistance)
 	{
 		// Move the new position down velocity vector to ALMOST touch the collision point
@@ -1616,6 +1618,7 @@ XMVECTOR CollideWithHeightMap(Collision& collisionPoint,
 	float A = XMVectorGetX(slidePlaneNormal);
 	float B = XMVectorGetY(slidePlaneNormal);
 	float C = XMVectorGetZ(slidePlaneNormal);
+
 	float D = -((A*x) + (B*y) + (C*z));
 
 	// To keep the variable names clear, we will rename D to planeConstant
@@ -1644,7 +1647,6 @@ bool SphereCollisionWithTriangle(Collision& collisionP, XMVECTOR &p0, XMVECTOR &
 	float facing = XMVectorGetX(XMVector3Dot(triNormal, collisionP.e_normalizedVelocity));
 	if (facing <= 0)
 	{
-		
 		//dessa variabler, håller tiden det tar för längs hastighets vektorn, till sfären t0 front side of triangle, t1 back side of triangle
 		float t0, t1;
 
@@ -2059,6 +2061,7 @@ void CreateHeightMap()
 	{
 		for (DWORD j = 0; j < cols; ++j)
 		{
+			//i * cols + j för att 
 			v[i*cols + j].pos = hmInfo.heightMap[i*cols + j];
 			v[i*cols + j].normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
 		}
@@ -2357,7 +2360,7 @@ void EmitParticles()
 		blue = (((float)rand() - (float)rand()) / RAND_MAX) + 0.5f;
 
 		vertexList.push_back(ParticleVertex{ positionX, 10, positionZ, 0.5f, 0.5f, 0.7f, 0.7f, 1.0f });
-		velocity.push_back(((float)rand() / (RAND_MAX + 1) + 1 + (rand() % 3)) / 50.0f);
+		velocity.push_back(((float)rand() / (RAND_MAX + 1) + 1 + (rand() % 3)) / 30.0f);
 		i++;
 	}
 }																		

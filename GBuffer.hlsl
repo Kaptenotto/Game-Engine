@@ -167,9 +167,10 @@ GBUFFER_PS_OUT GBUFFER_PS_main(GBUFFER_GS_OUT input)
 	//sampla normaltexturen från objn
 	norMap = normalTex.Sample(SampleTypeClamp, input.uvs);
 
-	//av normalizera värderna
+	//av normalizera värderna för att byta range från 0,1 till -1,1
 	norMap = (norMap*2.0f) - 1.0f;
 
+	// Gör z värdet negativt eftersom våra normaler tidigare behövdes inverteras
 	norMap.z = (norMap.z * -1);
 
 	//influera de förberäknade normal/binormal tangent värderna med hjälp av normal mappen
