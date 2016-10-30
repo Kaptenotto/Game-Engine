@@ -48,12 +48,24 @@ void main(
 	
 	for (int i = 0; i < 3; i++)
 	{
-		output.pos = input[i].pos;
-		output.uvs = input[i].uvs;
-		output.norm = mul(input[i].norm, worldMatrix);
-		output.tangent = tangent;
-		output.binormal = binormal;
-		output.wPos = input[i].wPos;
-		TriStream.Append(output);
+		float3 pos = mul(worldMatrix, input[i].pos);
+		pos = mul(camView, pos);
+		pos = mul(projectionMatrix, pos);
+		float4 direction = normalize(camPos - float4(pos, 1));
+
+		if (dot(direction, normal) <= 0) // change < for forward rendering
+		{
+			output.pos = input[i].pos;
+			output.uvs = input[i].uvs;
+			output.norm = mul(input[i].norm, worldMatrix);
+			output.tangent = tangent;
+			output.binormal = binormal;
+			output.wPos = input[i].wPos;
+			TriStream.Append(output);
+		}
+		else
+		{
+
+		}
 	}
 }

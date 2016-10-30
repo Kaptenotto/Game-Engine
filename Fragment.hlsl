@@ -101,5 +101,5 @@ float4 PS_main(VS_OUT input) : SV_Target
 	textureColor = textureColor * shadowcooef + textureColor * norColor;
 
 	textureColor = textureColor * color;
-	return textureColor;
+	return float4(float3(1.0f, 0.0f, 0.0f), 1.0f);
 };

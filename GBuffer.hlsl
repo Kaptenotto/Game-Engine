@@ -31,7 +31,7 @@ struct GBUFFER_VS_IN
 };
 struct GBUFFER_VS_OUT
 {
-	float4 pos : SV_POSITION; //!
+	float4 pos : SV_POSITION;
 	float2 uvs : TEXCOORD;
 	float4 norm : NORMAL;
 	float4 wPos : WPOS;
@@ -93,11 +93,10 @@ void GBUFFER_GS_main(
 
 	for (int i = 0; i < 3; i++)
 	{
-		float3 pos = mul(input[i].pos, worldMatrix);
+		float3 pos = mul(worldMatrix, input[i].pos);
 		pos = mul(camView, pos);
 		pos = mul(projectionMatrix, pos);
 		float4 direction = normalize(camPos - float4(pos, 1));
-
 
 		if (dot(direction, normal) <= 0) // change < for forward rendering
 		{
@@ -112,7 +111,14 @@ void GBUFFER_GS_main(
 		}
 		else
 		{
-
+			//output.pos = input[i].pos;
+			//output.uvs = input[i].uvs;
+			//output.norm = float4(mul(input[i].norm.xyz, (float3x3)worldMatrix), 0);
+			//output.tangent = tangent;
+			//output.binormal = binormal;
+			//output.wPos = input[i].wPos;
+			//
+			//TriStream.Append(output);
 		}
 	}
 }

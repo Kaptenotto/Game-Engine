@@ -50,6 +50,7 @@ ID3D11DeviceContext* gDeviceContext = nullptr;
 #pragma endregion
 
 ID3D11InputLayout* gVertexLayout = nullptr;
+ID3D11InputLayout* ParticleLayout = nullptr;
 #pragma region Init shaders
 ID3D11VertexShader* gVertexShader = nullptr;
 
@@ -164,11 +165,11 @@ XMVECTOR CollideWithHeightMap(Collision& cP,
 
 #pragma region camVectors
 
-XMVECTOR camPosition = XMVectorSet(0, 1, -5, 0);
-XMVECTOR camTarget = XMVectorSet(0, 0, 0, 0);
+XMVECTOR camPosition = XMVectorSet(0.0f, 1.0f, -5.0f, 0.0f); // 0.0f,0.0f,0.0f,0.0f
+XMVECTOR camTarget = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
 XMVECTOR camUp = XMVectorSet(0, 1, 0, 0);
 
-XMVECTOR lightPosition = XMVectorSet(10, 7, -5, 1);
+XMVECTOR lightPosition = XMVectorSet(10.0f, 7.0f, -5.0f, 1.0f);
 XMVECTOR lightDir = XMVectorSet(0, 0, 0, 0);
 XMVECTOR lightUp = XMVectorSet(0, 1, 0, 0);
 
@@ -263,6 +264,8 @@ ID3D11SamplerState* texSamplerState;
 ID3D11SamplerState* linearSamplerState;
 ID3D11SamplerState* pointSamplerState;
 Importer obj;
+
+ID3D11Buffer *triBuffer = nullptr;
 
 // GLOBALS FOR FIRST PERSON CAMERA *********************************
 
@@ -461,7 +464,7 @@ void CreateShaders()
 		nullptr
 		);
 	Hr = gDevice->CreateVertexShader(pVSParticle->GetBufferPointer(), pVSParticle->GetBufferSize(), nullptr, &gVertexShaderParticle);
-	gDevice->CreateInputLayout(inputDesc2, ARRAYSIZE(inputDesc2), pVSParticle->GetBufferPointer(), pVSParticle->GetBufferSize(), &gVertexLayout);
+	gDevice->CreateInputLayout(inputDesc2, ARRAYSIZE(inputDesc2), pVSParticle->GetBufferPointer(), pVSParticle->GetBufferSize(), &ParticleLayout);
 	pVSParticle->Release();
 
 	ID3DBlob* pGSParticle = nullptr;
@@ -606,7 +609,7 @@ void CreateTextureViews()
 		resourceViewDesc.Format = textureDesc.Format;
 		resourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 		resourceViewDesc.Texture2D.MostDetailedMip = 0;
-		resourceViewDesc.Texture2D.MipLevels = 1;
+		resourceViewDesc.Texture2D.MipLevels = 1; 
 
 		//Create the resourceView;
 
@@ -849,6 +852,57 @@ void createTextures()
 	CreateWICTextureFromFile(gDevice, gDeviceContext, wcharFilePath2, &HeightTex, &heightResource, 0);
 }
 
+#pragma region triangleToCheckCulling
+
+//Just a simple struct for the triangle
+struct TriangleVertex
+{
+	float x, y, z;
+	float u, v;
+};
+
+void CreateTriangleForBackFace()
+{
+
+	TriangleVertex triangleVertices[6] =
+	{
+		-1.0f, -1.0f, 0.0f,	//v0 pos
+		0.0f, 1.0f,			//v0 UV
+
+		-1.0f, 1.0f, 0.0f,	//v1
+		0.0f, 0.0f,			//v1 UV
+
+		1.0f, -1.0f, 0.0f, //v2
+		1.0f, 1.0f,			//v2 UV
+
+		//T2
+
+		-1.0f, 1.0f, 0.0f,	//v3 pos
+		0.0f, 0.0f,			//v3 UV
+
+		1.0f, 1.0f, 0.0f,	//v4
+		1.0f, 0.0f,			//v4 UV
+
+		1.0f, -1.0f, 0.0f,	//v5
+		1.0f, 1.0f			//v5 UV
+
+	};
+
+
+	D3D11_BUFFER_DESC bd;
+	memset(&bd, 0, sizeof(bd));
+	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	bd.Usage = D3D11_USAGE_DEFAULT;
+	bd.ByteWidth = sizeof(triangleVertices);
+
+	D3D11_SUBRESOURCE_DATA data;
+	data.pSysMem = triangleVertices;
+
+	gDevice->CreateBuffer(&bd, &data, &triBuffer);       // create the buffer
+}
+
+#pragma endregion
+
 void createTriangle()
 {
 	D3D11_BUFFER_DESC bufferdesc;
@@ -962,7 +1016,7 @@ void ConstantBuffer()
 	float fovangleY = XM_PI * 0.45;
 	float aspectRatio = 1280.0 / 720.0;
 	float nearZ = 0.01;
-	float farZ = 500.0;
+	float farZ = 1000.0;
 
 	//LIGHT
 	float lightfovangleY = XM_PI * 0.5;
@@ -1116,20 +1170,15 @@ bool initDirectInput(HINSTANCE hIstancen)
 void updateCamera()
 {
 	camRotationMatrix = XMMatrixRotationRollPitchYaw(camPitch, camYaw, 0); // Used to rotate around all the axis at the same time with the functoin XMMatixRotationpitchyaw
-	camTarget = XMVector3TransformCoord(defaultForward, camRotationMatrix); // sets the camera target vector by rotating the defaultforward vector with the
-																			// rotation matrix we created
+	camTarget = XMVector3TransformCoord(defaultForward, camRotationMatrix); // sets the camera target vector by rotating the defaultforward vector with the																	// rotation matrix we created
 	camTarget = XMVector3Normalize(camTarget); // normalizing the camtarget vector
 
 	XMMATRIX RotateYTempMatrix;
-	RotateYTempMatrix = XMMatrixRotationY(camYaw); // Finding the new right and forward directions of the camera by  using a rotation matrix 
-												   //which will be rotated on the Y-axis, since its a first perosn camera we need to keep our cam forward and right pointing only in x and z axis
+	RotateYTempMatrix = XMMatrixRotationY(camYaw);
 
-												   // transforming the cameras right up and forwards vectors using the matrix just defined.
-												   // also rotating the default right up and default foward vectors and set the result in the right up and foward vectors.
-	/**/ camRight = XMVector3TransformCoord(defaultRight, RotateYTempMatrix);
-	/**/ camUpDown = XMVector3TransformCoord(defaultUp, RotateYTempMatrix);
-	/**/ camForward = XMVector3TransformCoord(defaultForward, RotateYTempMatrix);
-
+	camRight = XMVector3TransformCoord(defaultRight, RotateYTempMatrix);
+	camUp = XMVector3TransformCoord(camUp, RotateYTempMatrix);
+	camForward = XMVector3TransformCoord(defaultForward, RotateYTempMatrix);
 
 	Collision cameraCP;
 	cameraCP.ellipsoidSpace = XMVectorSet(1.0f, 3.0f, 1.0f, 0.0f);
@@ -1140,10 +1189,8 @@ void updateCamera()
 		collidableGeometryPositions,
 		collidableGeometryIndices);
 
-
-
-	camPosition += moveLeftRight* camRight;
-	camPosition += moveBackForward* camForward;
+	camPosition += moveLeftRight*camRight;
+	camPosition += moveBackForward*camForward;
 	camPosition += moveupDown * camUpDown;
 
 	moveLeftRight = 0.0f;
@@ -1151,6 +1198,7 @@ void updateCamera()
 	moveupDown = 0.0f;
 
 	camTarget = camPosition + camTarget;
+
 	matrices.camPos = camPosition;
 	matrices.camView = XMMatrixLookAtLH(camPosition, camTarget, camUp);
 	matrices.camView = XMMatrixTranspose(matrices.camView);
@@ -2443,6 +2491,7 @@ void RenderGBufferQuadTree(TreeNode* node)
 				gDeviceContext->IASetVertexBuffers(0, 1, &node->vertexBuffer, &vertexSize, &offset);
 				gDeviceContext->IASetIndexBuffer(node->indexBuffer, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
 
+
 				if (&textureResources[i] != 0)
 				{
 					gDeviceContext->PSSetShaderResources(0, 1, &textureResources[textureResources.size() - 1]);
@@ -2487,6 +2536,7 @@ void testingfunc()
 	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->GSSetShader(GBuffer_GS, nullptr, 0);
 	gDeviceContext->PSSetShader(GBuffer_PS, nullptr, 0);
+	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	gDeviceContext->IASetInputLayout(GBuffer_VertexLayout);
 
 	TreeNode* test = quadTree.getParent();
@@ -2508,10 +2558,10 @@ void RenderShadow()
 	gDeviceContext->GSSetShader(nullptr, nullptr, 0);
 	gDeviceContext->PSSetShader(nullptr, nullptr, 0);
 
-	UINT32 vertexSize = sizeof(obj.finalVector[0]);
-	UINT32 vertexCount = obj.finalVector.size();
-	UINT32 indexSize = obj.index_counter;
-	UINT32 offset = 0;
+	UINT vertexSize = sizeof(obj.finalVector[0]);
+	UINT vertexCount = obj.finalVector.size();
+	UINT indexSize = obj.index_counter;
+	UINT offset = 0;
 
 	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBuffer, &vertexSize, &offset);
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -2525,6 +2575,38 @@ void RenderShadow()
 	gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
 }
 
+void RenderTriangle()
+{
+	ID3D11RenderTargetView* rtvsToSet[] = {
+		textureRTVs[0],
+		textureRTVs[1],
+		textureRTVs[2],
+		textureRTVs[3],
+	};
+	gDeviceContext->OMSetRenderTargets(numRTVs, rtvsToSet, GBufferDepthStencilView);
+
+	gDeviceContext->VSSetShader(gVertexShader, nullptr, 0);
+	gDeviceContext->HSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->DSSetShader(nullptr, nullptr, 0);
+	gDeviceContext->GSSetShader(gGeometryShader, nullptr, 0);
+	gDeviceContext->PSSetShader(gPixelShader, nullptr, 0);
+
+	UINT offset2 = 0;
+	UINT vertexSize = sizeof(TriangleVertex);
+
+	gDeviceContext->IASetVertexBuffers(0, 1, &triBuffer, &vertexSize, &offset2);
+	gDeviceContext->IASetIndexBuffer(gIndexBuffer, DXGI_FORMAT_R32_UINT, 0); // sets the index buffer
+	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	gDeviceContext->IASetInputLayout(FinalPass_VertexLayout);
+
+	gDeviceContext->PSSetSamplers(0, 1, &pointSamplerState);
+
+	gDeviceContext->PSSetShaderResources(2, 1, &ShadowDepthResource);
+	gDeviceContext->PSSetShaderResources(0, 1, &heightResource);
+
+	gDeviceContext->Draw(6, 0);
+}
+
 void RenderParticles()
 {
 	gDeviceContext->VSSetShader(gVertexShaderParticle, nullptr, 0);
@@ -2536,7 +2618,7 @@ void RenderParticles()
 
 	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBufferParticle, &vertexSize, &offset);
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-
+	gDeviceContext->IASetInputLayout(ParticleLayout);
 	gDeviceContext->Draw((vertexList.size() - 1), 0);
 }
 
@@ -2551,6 +2633,7 @@ void RenderExplosion()
 
 	gDeviceContext->IASetVertexBuffers(0, 1, &gVertexBufferExplosion, &vertexSize, &offset);
 	gDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+	gDeviceContext->IASetInputLayout(ParticleLayout);
 
 	gDeviceContext->Draw((explosionTest.size() - 1), 0);
 }
@@ -2606,7 +2689,7 @@ void Render()
 	}
 }
 
-void RenderHeightMap()
+void RenderHeightMap() //renderGbuffer2
 {
 	ID3D11RenderTargetView* rtvsToSet[] = {
 		textureRTVs[0],
@@ -2638,7 +2721,6 @@ void RenderHeightMap()
 
 	gDeviceContext->DrawIndexed(NumFaces * 3, 0, 0);
 }
-
 
 
 void RenderGBuffer()
@@ -2701,6 +2783,7 @@ void RenderGBuffer()
 void RenderFinalPass()
 {
 	gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
+
 	gDeviceContext->ClearRenderTargetView(gBackBufferRTV, clearColor);
 	gDeviceContext->ClearDepthStencilView(gDepthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 	
@@ -2783,6 +2866,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		ConstantBuffer();
 		finalPassQuadData();
 
+		CreateTriangleForBackFace();
+		
 		createTriangle();
 
 		initExplosion();
@@ -2793,9 +2878,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 		createTextures();
 
+		CreateHeightMap();
+
 		quadTree.Initialize(gDevice, gDeviceContext, &obj);
 		
-		CreateHeightMap();
 
 		//Shows the window
 		ShowWindow(wndHandle, nCmdShow);
@@ -2822,20 +2908,23 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 
 
-				//UpdateParticles(getFrameTime());
 				UpdateBuffers();
 				RenderShadow(); // Rendera
 
 
-				//testingfunc();
+				//Render();
+				testingfunc();
 
-				//Render(); // Rendera
-				RenderGBuffer(); // Rendera
+				// // Rendera
+				 // Rendera
+
+				//RenderGBuffer();
 
 				RenderHeightMap();
 
-				RenderParticles(); // Rendera
+				RenderTriangle();
 
+				RenderParticles(); // Rendera
 
 				if (explosion)
 				{
@@ -2843,12 +2932,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 					updateExplosion();
 					killExplosion();
 				}
-
+				
 				RenderFinalPass();
 
-				
 
-				
 
 				frameTime = getFrameTime();
 
@@ -2858,6 +2945,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 			}
 		}
 
+		triBuffer->Release();
 		gVertexBuffer->Release();
 		gIndexBuffer->Release();
 		gConstantBuffer->Release();
@@ -2877,6 +2965,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		texSamplerState->Release();
 		linearSamplerState->Release();
 		GBufferDepthStencilView->Release();
+
 		//shadowrenderpass
 		gVertexShaderShadow->Release();
 
@@ -3018,7 +3107,7 @@ HRESULT CreateDirect3DContext(HWND windowHandle)
 		//gShadowBackBuffer->Release();
 
 		//Set the render target as the back buffer
-		gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
+		//gDeviceContext->OMSetRenderTargets(1, &gBackBufferRTV, gDepthStencilView);
 	}
 	return hr;
 }
