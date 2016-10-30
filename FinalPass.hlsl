@@ -58,7 +58,7 @@ float4 PS_main(VS_OUT input) : SV_TARGET
 	//return diffuseSamp;
 
 	float3 worldPos = positionTexture.Sample(pointSampler, input.uvs).xyz;
-	return float4(worldPos,1);
+	//return float4(worldPos,1);
 	
 	//NORMAL BLOCK
 	float4 normalSamp = normalTexture.Sample(pointSampler, input.uvs);

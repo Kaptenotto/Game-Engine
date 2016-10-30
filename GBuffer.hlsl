@@ -55,6 +55,7 @@ struct GBUFFER_PS_OUT
 //VERTEX
 GBUFFER_VS_OUT GBUFFER_VS_main(GBUFFER_VS_IN input)
 {
+	// multiply with the vartious matrices, store wPos before camview and projection to get an accurate wPos for each vert.
 	GBUFFER_VS_OUT output = (GBUFFER_VS_OUT)0;
 
 	output.uvs = input.uvs;
@@ -77,15 +78,27 @@ void GBUFFER_GS_main(
 {
 	GBUFFER_GS_OUT output = (GBUFFER_GS_OUT)0;
 
+	//Normal calculations. generate a normal for each triangle passing the geo shader
+	//we use wPos here so that the calculations of the normal/binormal/tangent are not affected by the position and angle of the users camera in real-time.
+	
+	//Calculate faceedge a and b which are vectors.
 	float3 faceEdgeA = input[1].wPos - input[0].wPos;
 	float3 faceEdgeB = input[2].wPos - input[0].wPos;
+
+	// Same as previousbut for the uvedges
 	float2 uvEdge1 = input[1].uvs - input[0].uvs;
 	float2 uvEdge2 = input[2].uvs - input[0].uvs;
 
+	//We invert the cross product since our normals are inverted
+	//cross between two vectors = new vector in this case normal
 	float3 normal = normalize(-cross(faceEdgeA, faceEdgeB));
+
+	// Multiplying vector with vector minus vector with vector * vector with vector - vector with vector
+	// We do this to get our tangent vector.
 	float3 tangent = (uvEdge2[1] * faceEdgeA - uvEdge1[1] * faceEdgeB)*(1 / (uvEdge1[0] * uvEdge2[1] - uvEdge2[0] * uvEdge1[1]));
 	tangent = normalize(tangent);
 
+	//Same as previous but with normal and tangent to get a binormal
 	float3 binormal = normalize(-cross(normal, tangent));
 
 	tangent = mul(float4(tangent, 1), worldMatrix).xyz;
@@ -93,15 +106,23 @@ void GBUFFER_GS_main(
 
 	for (int i = 0; i < 3; i++)
 	{
+		// calculate position to get into projection space so we
+		// can get our direction needed to be able to check if the face is back or frontfaced to cam.
 		float3 pos = mul(worldMatrix, input[i].pos);
 		pos = mul(camView, pos);
 		pos = mul(projectionMatrix, pos);
+
+		//Calculate our direction of the cam normally dont by camPos - pos
 		float4 direction = normalize(float4(0, 0, 0, 0) - float4(pos, 1));
 
-		if (dot(direction, normal) <= 0) // change < for forward rendering
+		// we do the dot product to get a scalar value to see if the direction is a negative or positive
+		// one of the face, which gives the result if its backfaced or not.
+		if (dot(direction, normal) <= 0) // change < to invert the direction of the backface culling
 		{
+			//if the check passes it means the normal of the triangle in question is facing towards the camera and should not be culled
 			output.pos = input[i].pos;
 			output.uvs = input[i].uvs;
+			// We do this calculation to get per vertice normal in the world.
 			output.norm = float4(mul(input[i].norm.xyz, (float3x3)worldMatrix), 0);
 			output.tangent = tangent;
 			output.binormal = binormal;
@@ -111,7 +132,7 @@ void GBUFFER_GS_main(
 		}
 		else
 		{
-
+			//triangle in question should be culled
 		}
 	}
 }

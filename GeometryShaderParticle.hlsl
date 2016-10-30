@@ -38,8 +38,6 @@ void main(
 	float halfWidth = 0.5f*input[0].size.x;
 	float halfHeight = 0.5f*input[0].size.y;
 
-
-	
 	float4 v[4];
 	v[0] = float4(input[0].pos + halfWidth*right - halfHeight*up, 1.0f);
 	v[1] = float4(input[0].pos + halfWidth*right + halfHeight*up, 1.0f);
