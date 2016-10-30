@@ -2827,10 +2827,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 				RenderShadow(); // Rendera
 
 
-				testingfunc();
+				//testingfunc();
 
 				//Render(); // Rendera
-				//RenderGBuffer(); // Rendera
+				RenderGBuffer(); // Rendera
 
 				RenderHeightMap();
 
